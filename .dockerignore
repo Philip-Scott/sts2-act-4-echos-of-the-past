@@ -1,0 +1,9 @@
+.git/
+.godot/
+.idea/
+.vs/
+bin/
+obj/
+artifacts/
+publish/
+Directory.Build.props
