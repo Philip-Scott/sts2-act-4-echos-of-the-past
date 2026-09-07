@@ -10,3 +10,6 @@ packages/
 .editorconfig
 *.user
 Directory.Build.props
+artifacts/
+ci/
+obj/
