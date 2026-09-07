@@ -38,4 +38,20 @@ _Avoid_: Party owner, server
 
 **Corrupted Challenger**:
 The seed-selected compatible Challenger Snapshot that confronts the current party before the Architect.
-_Avoid_: Ghost
+_Avoid_: Player clone, ghost player
+
+**Challenger Simulation**:
+The Corrupted Challenger's private, deterministic model of its snapshot deck, card piles, and energy. It resembles player combat enough to preserve deck identity but is not a live player or a complete emulation of one.
+_Avoid_: Player simulation, hidden player
+
+**Challenger Plan**:
+The immutable, player-visible sequence of card outcomes selected and resolved in monotonic left-to-right order for one Corrupted Challenger turn. Both telegraphing and execution derive from it; this order supersedes the prototype's historical right-to-left presentation behavior.
+_Avoid_: Intent preview, move script
+
+**Unplayed Card**:
+A card that the Challenger Plan does not select because it is unaffordable, intrinsically unplayable, or fails an adapter-proven eligibility condition.
+_Avoid_: Unsupported card, skipped effect
+
+**Unsupported Card**:
+An otherwise eligible card whose complete effect cannot be translated safely; it remains visible and resolves as an explicit neutral no-op.
+_Avoid_: Unplayed card, ignored card
