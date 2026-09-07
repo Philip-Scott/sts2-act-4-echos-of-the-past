@@ -115,7 +115,7 @@ pre { white-space: pre-wrap; background: #1b1f28; padding: 12px; font-size: 12px
 </head>
 <body>
 <h1>Corrupted Challenger / telegraph study</h1>
-<p class="muted">THROWAWAY / revised C. Per-card intents, no aggregate summary. Architect health hidden in Phase 1. Recreated arena and invented effects; awaiting interpretation confirmation.</p>
+<p class="muted">THROWAWAY / approved C. Right-to-left play, per-card intents, card-only hover with keywords. Architect health hidden in Phase 1. Recreated arena and invented effects; not production UI.</p>
 <div class="controls">
   <label>Turn <select id="scene">
     <option value="basic">1 / Three-card baseline</option>
@@ -158,7 +158,7 @@ pre { white-space: pre-wrap; background: #1b1f28; padding: 12px; font-size: 12px
 <p class="muted">Hover or focus for the card and its keyword tooltips; click to pin. Esc clears. Number badges mean right-to-left play order. Grayed cards keep their drawn positions but do not play and have no number.
   Sword = attack, shield = Challenger block, up-arrow = Challenger Strength, down-arrow = Weak on player, ? = neutral fallback.
   Attack values are incoming damage before player block, not HP loss. Each icon belongs only to the card above it.</p>
-<details><summary>Relevant prototype state / unapproved assumptions</summary><pre id="state"></pre></details>
+<details><summary>Prototype state / approved presentation and fixture assumptions</summary><pre id="state"></pre></details>
 <nav class="switcher" aria-label="Prototype variant"><button id="prev" aria-label="Previous variant">&larr;</button><span id="variant-label"></span><button id="next" aria-label="Next variant">&rarr;</button></nav>
 <script>
 const card = (name, type, cost, effect, description, hits = [], block = 0, other = '') =>
@@ -230,7 +230,8 @@ function state() {
     variant, turn: sceneKey, phase: 1, architectHealthVisible: false, startEnergy: current().startEnergy ?? 3, cards: current().cards,
     inspection: { pinned, selected: inspected },
     decisions: ['Human selected C.', 'No Architect health bar until Phase 2.', 'Per-card intents directly below each card; no aggregate summary.', 'X uses remaining Challenger energy.', 'Unplayable cards stay gray in drawn positions; only playable cards are numbered.', 'Cards play right to left; overflow initially shows the rightmost cards.', 'Hover shows only the card and its keyword tooltips, not a custom explanation.'],
-    assumptions: ['Authored examples, not real card data or energy simulation.', 'Damage includes preceding preview buffs, before player block.', 'Neutral fallback shown as no effect for discussion.', 'Revised presentation awaits human interpretation confirmation.']
+    assumptions: ['Authored examples, not real card data or energy simulation.', 'Damage includes preceding preview buffs, before player block.', 'Neutral fallback is visibly no effect; its energy and simulation semantics remain separate design work.'],
+    approval: 'Human approved revised presentation on 2026-09-07 after iterative review.'
   }, null, 2);
 }
 function writeUrl() {
