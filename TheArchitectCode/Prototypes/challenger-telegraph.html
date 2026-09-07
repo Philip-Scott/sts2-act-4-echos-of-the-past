@@ -1,0 +1,289 @@
+<!doctype html>
+<!-- THROWAWAY: three telegraph/inspection layouts on one standalone route, ?variant=A|B|C.
+     No web host exists in this Godot mod. This recreated arena is not production UI.
+     Open this file directly, or: python3 -m http.server 8765 --bind 127.0.0.1
+     Keep on the prototype branch; no game assets, combat code, or persistence. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THROWAWAY - Corrupted Challenger telegraph</title>
+<style>
+* { box-sizing: border-box; }
+:root { color-scheme: dark; font-family: system-ui, sans-serif; background: #111318; color: #f1efe8; }
+body { margin: 0; padding: 18px 22px 90px; }
+h1 { font-size: 22px; margin: 0 0 5px; }
+p { margin: 5px 0 12px; }
+small, .muted { color: #b7bdc9; }
+button, select { font: inherit; color: inherit; background: #252b37; border: 1px solid #6d768b; border-radius: 5px; padding: 7px 10px; cursor: pointer; }
+button:hover, button:focus-visible, select:focus-visible { outline: 2px solid #fcdf8c; outline-offset: 2px; }
+button[aria-pressed="true"] { background: #554875; border-color: #decaff; }
+.controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 15px 0; }
+.viewport { width: 100%; margin: auto; position: relative; overflow: hidden; border: 1px solid #6b627c; }
+.arena { width: 1280px; height: 720px; position: absolute; transform-origin: top left; overflow: hidden; background: radial-gradient(ellipse at 60% 68%, #54404d 0, #29252e 40%, #171a24 75%); }
+.arch { position: absolute; left: 805px; top: 60px; width: 340px; height: 510px; border: 28px solid #45414c; border-radius: 180px 180px 0 0; opacity: .6; }
+.floor { position: absolute; left: 0; right: 0; top: 525px; height: 200px; background: #24242c; border-top: 3px solid #58505d; transform: skewY(-2deg); }
+.hud { position: absolute; inset: 16px 25px auto; display: flex; justify-content: space-between; font-size: 19px; }
+.hud span { background: #181b25; padding: 8px 14px; border: 1px solid #5d576a; }
+.figure { position: absolute; width: 130px; height: 225px; top: 314px; }
+.figure .head { position: absolute; width: 57px; height: 65px; top: 3px; left: 38px; border-radius: 50% 50% 35% 35%; background: #858376; border: 6px solid #202725; }
+.figure .cloak { position: absolute; inset: 45px 0 0; clip-path: polygon(40% 0, 62% 0, 95% 90%, 72% 100%, 50% 89%, 10% 100%); background: #586d5a; }
+.figure .eye { position: absolute; width: 26px; height: 5px; left: 55px; top: 30px; background: #eeeccf; }
+.player { left: 214px; }
+.challenger { left: 654px; filter: drop-shadow(0 0 18px #b077d0); }
+.challenger .cloak { background: repeating-linear-gradient(115deg, #586d5a 0 27px, #83548d 28px 34px); }
+.challenger .eye { background: #f2b9ff; }
+.architect { left: 1020px; top: 282px; transform: scale(1.17); opacity: .5; }
+.architect .cloak { background: #a38b68; }
+.architect .head { background: #aa966b; }
+.nameplate { position: absolute; top: 548px; width: 245px; text-align: center; font-size: 17px; }
+.nameplate .health { height: 12px; background: #a4434d; border: 2px solid #dbc2aa; margin: 5px 0; border-radius: 8px; }
+.hand { position: absolute; bottom: -50px; left: 345px; display: flex; gap: 8px; transform: rotate(-3deg); opacity: .8; }
+.hand div { width: 94px; height: 145px; border: 3px solid #b6ac85; background: #35544c; border-radius: 8px; padding-top: 20px; text-align: center; }
+.energy { position: absolute; left: 32px; bottom: 32px; background: #6c7164; border: 4px solid #c0c68c; border-radius: 50%; padding: 20px; font-size: 25px; }
+.end { position: absolute; right: 32px; bottom: 38px; padding: 13px 25px; border: 2px solid #b7a26d; background: #625638; }
+.telegraph { position: absolute; left: 510px; top: 131px; width: 420px; text-align: center; }
+.sequence-label { margin-bottom: 8px; font-size: 14px; color: #ddd6e7; letter-spacing: 1px; }
+.cards { display: flex; justify-content: center; gap: 8px; align-items: center; }
+.mini { position: relative; flex: 0 0 76px; height: 101px; padding: 5px; border: 2px solid #bbbe93; border-radius: 6px; background: #344d42; text-align: center; font-size: 13px; box-shadow: 0 4px 5px #0007; }
+.mini.attack { border-color: #ecc3a3; }
+.mini.skill { border-color: #b2cbdc; background: #364b59; }
+.mini.power { border-color: #d0b5f1; background: #574a69; }
+.mini.fallback { border: 2px dashed #efd19a; background: #514b40; }
+.order { position: absolute; left: -7px; top: -9px; border-radius: 50%; width: 24px; height: 24px; background: #eee2c3; color: #20232b; font-weight: 800; line-height: 24px; }
+.mini .cost { display: block; text-align: right; height: 18px; color: #e9e2af; font-size: 12px; }
+.mini .art { display: block; margin: 1px auto; font-size: 25px; line-height: 27px; font-weight: 800; }
+.mini .card-name { display: block; font-size: 12px; line-height: 13px; }
+.mini .effect { display: block; font-size: 13px; font-weight: 700; margin-top: 4px; white-space: nowrap; }
+.more { width: 52px; height: 82px; font-size: 18px; padding: 4px; border-style: dashed; }
+.more small { display: block; font-size: 11px; }
+.intent { position: relative; margin: 14px auto 0; width: max-content; max-width: 420px; font-size: 17px; background: #191b23ed; border: 1px solid #9e8ca8; border-radius: 9px; padding: 8px 13px; }
+.intent strong { color: #ffd2bd; font-size: 23px; }
+.intent .secondary { margin-top: 4px; color: #d9e7f0; font-size: 15px; }
+.inspector { position: absolute; display: none; padding: 15px; background: #10151bf5; border: 2px solid #c3aadd; border-radius: 8px; text-align: left; z-index: 5; font-size: 17px; box-shadow: 0 7px 25px #0009; }
+.inspector.visible { display: block; }
+.inspector h2 { font-size: 20px; margin: 0 35px 8px 0; }
+.inspector p { line-height: 1.4; margin-bottom: 8px; }
+.inspector .close { position: absolute; right: 7px; top: 7px; padding: 2px 8px; }
+.inspector .inspect-list { max-height: 240px; overflow: auto; }
+.inspect-item { display: block; width: 100%; text-align: left; margin: 6px 0; }
+.variant-A .inspector { left: 502px; top: 317px; width: 370px; }
+.variant-B .telegraph { top: 123px; width: 430px; left: 505px; display: flex; flex-direction: column; }
+.variant-B .intent { order: -1; margin: 0 auto 14px; padding: 9px 18px; }
+.variant-B .mini { flex-basis: 59px; height: 72px; }
+.variant-B .mini .art, .variant-B .mini .cost { display: none; }
+.variant-B .mini .card-name { margin-top: 12px; }
+.variant-B .inspector { left: 947px; top: 103px; width: 310px; min-height: 420px; }
+.variant-C .telegraph { width: 330px; left: 555px; }
+.variant-C .cards { justify-content: start; overflow-x: auto; padding: 11px 9px 10px; scroll-snap-type: x mandatory; }
+.variant-C .mini { flex-basis: 83px; scroll-snap-align: start; }
+.variant-C .intent { max-width: 380px; }
+.variant-C .sequence-label { margin: 0; }
+.variant-C .inspector { left: 388px; top: 430px; width: 610px; max-height: 188px; overflow: auto; }
+.variant-C .inspector .inspect-list { max-height: 100px; }
+.rail-nav { display: none; }
+.variant-C .rail-nav { display: flex; justify-content: space-between; gap: 8px; margin-top: 3px; font-size: 12px; align-items: center; }
+.rail-nav button { font-size: 12px; padding: 3px 7px; }
+.reading { margin: 14px 0 9px; padding: 12px; border-left: 3px solid #bda0e3; background: #1d202a; }
+.reading p { margin: 0 0 8px; }
+.answer { color: #ddcfed; margin-top: 10px; }
+details { margin: 12px 0; }
+pre { white-space: pre-wrap; background: #1b1f28; padding: 12px; font-size: 12px; max-height: 280px; overflow: auto; }
+.switcher { position: fixed; bottom: 17px; left: 50%; transform: translateX(-50%); border: 1px solid #b8a2d2; border-radius: 30px; background: #ebe2f5; color: #241a31; padding: 8px; display: flex; gap: 12px; align-items: center; box-shadow: 0 6px 25px #000a; z-index: 20; white-space: nowrap; }
+.switcher button { border: 0; background: #382b4b; border-radius: 50%; }
+.switcher span { min-width: 230px; text-align: center; }
+@media (max-width: 600px) { body { padding: 12px 8px 90px; } .switcher { gap: 5px; } .switcher span { min-width: 190px; font-size: 13px; } }
+</style>
+</head>
+<body>
+<h1>Corrupted Challenger / telegraph study</h1>
+<p class="muted">THROWAWAY. Three presentation options, not approved rules. Recreated arena and invented card effects; no game assets or simulation.</p>
+<div class="controls">
+  <label>Turn <select id="scene">
+    <option value="basic">1 / Three-card baseline</option>
+    <option value="multi">2 / Multi-hit and defense</option>
+    <option value="status">3 / Order changes damage</option>
+    <option value="fallback">4 / X-cost and unsupported</option>
+    <option value="overflow">5 / Nine-card stress case</option>
+    <option value="quiet">6 / No attacks</option>
+  </select></label>
+  <label>Arena width <select id="width"><option value="1280">1280 px</option><option value="960">960 px</option><option value="720">720 px</option></select></label>
+  <span id="scale" class="muted"></span>
+  <button id="inspect-turn">Inspect full turn</button>
+  <button id="clear">Clear inspection</button>
+</div>
+<div class="viewport" id="viewport">
+  <div class="arena" id="arena">
+    <div class="arch"></div><div class="floor"></div>
+    <div class="hud"><span>THE ARCHITECT / ACT IV</span><span>Player 62 / 80 HP &nbsp; | &nbsp; 0 block</span><span>Turn 3</span></div>
+    <div class="figure player"><div class="cloak"></div><div class="head"></div><div class="eye"></div></div>
+    <div class="figure challenger"><div class="cloak"></div><div class="head"></div><div class="eye"></div></div>
+    <div class="figure architect"><div class="cloak"></div><div class="head"></div><div class="eye"></div></div>
+    <div class="nameplate" style="left:157px">Player / Silent<div class="health"></div>62 / 80</div>
+    <div class="nameplate" style="left:597px">Corrupted Silent<div class="health"></div>80 / 80</div>
+    <div class="nameplate muted" style="left:967px">The Architect<div class="health"></div>Waiting</div>
+    <section id="telegraph" class="telegraph" aria-label="Challenger planned turn"></section>
+    <aside id="inspector" class="inspector" aria-label="Card and turn inspection"></aside>
+    <div class="energy">3 / 3</div>
+    <div class="hand"><div>Strike</div><div>Defend</div><div>Skill</div><div>Strike</div><div>Defend</div></div>
+    <div class="end">End turn</div>
+  </div>
+</div>
+<section class="reading">
+  <p><b>Read it before revealing the answer:</b> <span id="question"></span></p>
+  <button id="reveal">Reveal authored answer</button>
+  <div id="answer" class="answer" hidden></div>
+</section>
+<p id="variant-notes"></p>
+<p class="muted">Hover or focus a card to inspect; click to pin. Esc clears. Number badges mean left-to-right play order.
+  ATK = attack, BLK = block, PWR = buff, DBF = debuff, ? = neutral fallback. Totals are incoming damage before player block, not HP loss.</p>
+<details><summary>Relevant prototype state / unapproved assumptions</summary><pre id="state"></pre></details>
+<nav class="switcher" aria-label="Prototype variant"><button id="prev" aria-label="Previous variant">&larr;</button><span id="variant-label"></span><button id="next" aria-label="Next variant">&rarr;</button></nav>
+<script>
+const card = (name, type, cost, effect, description, hits = [], block = 0, other = '') =>
+  ({ name, type, cost, effect, description, hits, block, other });
+const strike = () => card('Strike', 'attack', 1, '6 ATK', 'Deal 6 damage to the player.', [6]);
+const defend = () => card('Defend', 'skill', 1, '5 BLK', 'Gain 5 block on the Challenger.', [], 5);
+const flurry = () => card('Twin Cut', 'attack', 1, '4 x 2', 'Deal 4 damage twice to the player. Two separate hits.', [4, 4]);
+const power = () => card('Sharpen', 'power', 1, '+2 STR', 'Challenger gains 2 Strength before later cards resolve.', [], 0, 'Self +2 Strength');
+const mark = () => card('Crippling Mark', 'skill', 1, '2 WEAK', 'Apply 2 Weak to the player. Does not change this incoming attack preview.', [], 0, 'Player 2 Weak');
+const unknown = () => card('Modded Echo', 'fallback', '?', 'NO EFFECT', 'Unsupported mechanic. Visible neutral fallback: this slot does nothing. Not the original card effect.', [], 0, '1 neutral fallback');
+const scenes = {
+  basic: { cards: [strike(), defend(), strike()], question: 'What happens first, how much incoming damage is planned, and who gains block?',
+    answer: 'Strike for 6, Challenger gains 5 block, Strike for 6. Incoming total 12 in two hits; block belongs to the Challenger.' },
+  multi: { cards: [flurry(), defend(), strike()], question: 'How many hits will you take, and how much is each? Does the shield reduce the attack total?',
+    answer: 'Three hits: 4, 4, then 6, for 14 incoming damage. The Challenger gains 5 block; that is not subtracted from incoming damage.' },
+  status: { cards: [power(), card('Twin Cut', 'attack', 1, '6 x 2', 'Base 4 per hit + 2 Strength from step 1 = 6 per hit. Already included in the total.', [6, 6]), mark()],
+    question: 'What acts first, are the displayed hits already buffed, and which character receives the debuff?',
+    answer: 'Sharpen first gives the Challenger +2 Strength. Twin Cut then hits twice for 6 (12 total, already buffed). Crippling Mark applies 2 Weak to the player.' },
+  fallback: { cards: [card('Many Blades', 'attack', 'X', '3 x 2', 'X resolves to 2 remaining energy in this authored example: two hits of 3. This is an illustration, not a settled X-cost policy.', [3, 3]), unknown()],
+    question: 'What value did X resolve to, how many hits are expected, and what does the dashed card do?',
+    answer: 'X = 2 in this example, so Many Blades deals two hits of 3, total 6. Modded Echo remains visible in slot 2 but has no effect. Its original behavior is not executed.' },
+  overflow: { cards: [power(), card('Twin Cut', 'attack', 1, '6 x 2', 'Two hits of 6, already including step 1 Strength.', [6, 6]), defend(), mark(), card('Strike', 'attack', 1, '8 ATK', '6 base + 2 Strength = 8 damage.', [8]), defend(), unknown(), card('Many Blades', 'attack', 'X', '5 x 2', 'X = 2 in this example; two hits of 5 including Strength.', [5, 5]), card('Strike', 'attack', 1, '8 ATK', '6 base + 2 Strength = 8 damage.', [8])],
+    question: 'How many cards are planned, does the total include hidden cards, and what happens in slot 7?',
+    answer: 'Nine planned cards. All nine are included in 38 incoming damage across six hits, 10 Challenger block, +2 self Strength, and 2 Weak on the player. Slot 7 is a neutral fallback. Inspect the full ordered list to find it.' },
+  quiet: { cards: [defend(), power(), mark()], question: 'Will the Challenger attack? Who receives each non-damage effect?',
+    answer: 'No attack: 0 incoming damage. Challenger gains 5 block and +2 Strength; player receives 2 Weak.' }
+};
+const variants = {
+  A: { name: 'Card row + local peek', note: 'A / Four readable miniatures, then a +N overflow slot. Normal intent below. Inspection stays near the Challenger, but can cover its body.' },
+  B: { name: 'Intent first + side dossier', note: 'B / Aggregate intent is the primary read, with five smaller cards underneath. Inspection uses a right-side dossier; compare the cost to Architect visibility.' },
+  C: { name: 'Sliding row + lower drawer', note: 'C / Three-and-a-bit cards in a horizontal rail, with normal intent below. No hidden-count tile; scroll to keep the original sequence. Inspection opens lower down.' }
+};
+const params = new URLSearchParams(location.search);
+let variant = variants[params.get('variant')] ? params.get('variant') : 'A';
+let sceneKey = scenes[params.get('turn')] ? params.get('turn') : 'basic';
+let pinned = false;
+let inspected = null;
+const $ = id => document.getElementById(id);
+const glyphs = { attack: '/', skill: '[]', power: '+', fallback: '?' };
+function current() { return scenes[sceneKey]; }
+function totals() {
+  const cards = current().cards;
+  const hits = cards.flatMap(c => c.hits);
+  return { damage: hits.reduce((a, b) => a + b, 0), hits, block: cards.reduce((n, c) => n + c.block, 0), other: cards.map(c => c.other).filter(Boolean) };
+}
+function state() {
+  $('state').textContent = JSON.stringify({
+    variant, turn: sceneKey, cards: current().cards, aggregate: totals(),
+    inspection: { pinned, selected: inspected },
+    assumptions: ['Authored examples, not real card data or energy simulation.', 'Damage includes preceding preview buffs, before player block.', 'Neutral fallback shown as no effect for discussion.', 'Unselected layouts and all presentation rules await human feedback.']
+  }, null, 2);
+}
+function writeUrl() {
+  const url = new URL(location.href);
+  url.searchParams.set('variant', variant);
+  url.searchParams.set('turn', sceneKey);
+  history.replaceState(null, '', url);
+}
+function clearInspection() {
+  pinned = false; inspected = null;
+  $('inspector').classList.remove('visible');
+  state();
+}
+function inspectionShell(title, contents) {
+  $('inspector').innerHTML = `<button class="close" aria-label="Close inspection">x</button><h2>${title}</h2>${contents}`;
+  $('inspector').classList.add('visible');
+  $('inspector').querySelector('.close').onclick = clearInspection;
+}
+function inspectCard(index, pin = false) {
+  if (pinned && !pin) return;
+  const c = current().cards[index];
+  pinned = pin; inspected = index + 1;
+  inspectionShell(`${index + 1}. ${c.name}`, `<p><b>${c.effect}</b> &nbsp; / &nbsp; Cost ${c.cost}</p><p>${c.description}</p><small>${pin ? 'Pinned. Click another card or close.' : 'Hover preview. Click the card to pin.'}</small>`);
+  state();
+}
+function inspectTurn() {
+  pinned = true; inspected = 'full turn';
+  const t = totals();
+  inspectionShell(`Full turn / ${current().cards.length} cards`, `<p>${t.damage} incoming / ${t.hits.length} hits / ${t.block} Challenger block</p><div class="inspect-list">${current().cards.map((c, i) => `<button class="inspect-item" data-index="${i}">${i + 1}. ${c.name} / ${c.effect}</button>`).join('')}</div><small>Click a row for its effect. Total includes every slot.</small>`);
+  $('inspector').querySelectorAll('[data-index]').forEach(el => el.onclick = () => inspectCard(Number(el.dataset.index), true));
+  state();
+}
+function mini(c, index) {
+  return `<button class="mini ${c.type}" data-index="${index}" aria-label="Step ${index + 1}, ${c.name}, ${c.effect}, inspect"><span class="order">${index + 1}</span><span class="cost">${c.cost}</span><span class="art" aria-hidden="true">${glyphs[c.type]}</span><span class="card-name">${c.name}</span><span class="effect">${c.effect}</span></button>`;
+}
+function render() {
+  clearInspection();
+  $('arena').className = `arena variant-${variant}`;
+  $('variant-label').textContent = `${variant} / ${variants[variant].name}`;
+  $('variant-notes').textContent = variants[variant].note;
+  $('scene').value = sceneKey;
+  const cards = current().cards;
+  const count = variant === 'A' ? 4 : variant === 'B' ? 5 : cards.length;
+  const t = totals();
+  const multi = t.hits.length > 1;
+  const damage = t.damage ? `<strong>${t.damage} ATK</strong> / ${t.hits.length} ${multi ? 'hits' : 'hit'}` : '<strong>No attack</strong>';
+  const details = [t.block ? `Self ${t.block} BLK` : '', ...t.other].filter(Boolean);
+  $('telegraph').innerHTML = `<div class="sequence-label">${cards.length} CARDS / LEFT TO RIGHT</div>
+    <div class="cards">${cards.slice(0, count).map(mini).join('')}${cards.length > count ? `<button class="more" aria-label="Inspect all ${cards.length} cards">+${cards.length - count}<small>more</small></button>` : ''}</div>
+    <div class="rail-nav"><button id="rail-prev" aria-label="Earlier cards">&larr;</button><span>Scroll / inspect all ${cards.length}</span><button id="rail-next" aria-label="Later cards">&rarr;</button></div>
+    <button class="intent" aria-label="Inspect aggregate intent and full turn">${damage}${multi ? `<div class="secondary">${t.hits.join(' + ')} incoming</div>` : ''}${details.length ? `<div class="secondary">${details.join(' / ')}</div>` : ''}</button>`;
+  $('telegraph').querySelectorAll('.mini').forEach(el => {
+    const index = Number(el.dataset.index);
+    el.onmouseenter = () => inspectCard(index);
+    el.onfocus = () => inspectCard(index);
+    el.onclick = () => inspectCard(index, true);
+    el.onmouseleave = () => { if (!pinned) clearInspection(); };
+    el.onblur = () => { if (!pinned) clearInspection(); };
+  });
+  const more = $('telegraph').querySelector('.more');
+  if (more) more.onclick = inspectTurn;
+  $('telegraph').querySelector('.intent').onclick = inspectTurn;
+  $('rail-prev').onclick = () => $('telegraph').querySelector('.cards').scrollBy({ left: -182, behavior: 'smooth' });
+  $('rail-next').onclick = () => $('telegraph').querySelector('.cards').scrollBy({ left: 182, behavior: 'smooth' });
+  $('question').textContent = current().question;
+  $('answer').textContent = current().answer;
+  $('answer').hidden = true;
+  $('reveal').textContent = 'Reveal authored answer';
+  state();
+}
+function switchVariant(step) {
+  const keys = Object.keys(variants);
+  variant = keys[(keys.indexOf(variant) + step + keys.length) % keys.length];
+  writeUrl(); render();
+}
+function resize() {
+  const width = Math.min(Number($('width').value), document.body.clientWidth - (innerWidth <= 600 ? 16 : 44));
+  $('viewport').style.width = `${width}px`;
+  $('viewport').style.height = `${width * 720 / 1280}px`;
+  $('arena').style.transform = `scale(${width / 1280})`;
+  $('scale').textContent = `${Math.round(width)} x ${Math.round(width * 720 / 1280)} displayed / ${Math.round(width / 1280 * 100)}%`;
+}
+$('prev').onclick = () => switchVariant(-1);
+$('next').onclick = () => switchVariant(1);
+$('scene').onchange = event => { sceneKey = event.target.value; writeUrl(); render(); };
+$('width').onchange = resize;
+$('inspect-turn').onclick = inspectTurn;
+$('clear').onclick = clearInspection;
+$('reveal').onclick = () => { $('answer').hidden = !$('answer').hidden; $('reveal').textContent = $('answer').hidden ? 'Reveal authored answer' : 'Hide authored answer'; };
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') clearInspection();
+  if (event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); switchVariant(event.key === 'ArrowLeft' ? -1 : 1); }
+});
+window.addEventListener('resize', resize);
+render(); resize();
+</script>
+</body>
+</html>
