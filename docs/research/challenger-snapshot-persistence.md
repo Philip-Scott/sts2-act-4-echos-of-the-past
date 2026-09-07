@@ -1,7 +1,9 @@
 # Challenger Snapshot persistence seams
 
-Research date: 2026-09-07  
-Ticket: [#4](https://github.com/Philip-Scott/slay-the-spire-the-architect/issues/4)  
+Research date: 2026-09-07
+
+Ticket: [#4](https://github.com/Philip-Scott/slay-the-spire-the-architect/issues/4)
+
 Versions examined: The Architect manifest minimum `0.107.0`; BaseLib `3.4.5`
 (`22757933ba10adc4322a628519a233a567507d87`); game API snapshot
 `d3db818409984371aa5582b94c55877ee2f72e3e`.
