@@ -44,13 +44,15 @@ button[aria-pressed="true"] { background: #554875; border-color: #decaff; }
 .end { position: absolute; right: 32px; bottom: 38px; padding: 13px 25px; border: 2px solid #b7a26d; background: #625638; }
 .telegraph { position: absolute; left: 510px; top: 131px; width: 420px; text-align: center; }
 .sequence-label { margin-bottom: 8px; font-size: 14px; color: #ddd6e7; letter-spacing: 1px; }
-.cards { display: flex; justify-content: center; gap: 8px; align-items: center; }
-.card-slot { flex: 0 0 76px; }
+.cards { display: flex; direction: rtl; justify-content: center; gap: 8px; align-items: center; }
+.card-slot { flex: 0 0 76px; direction: ltr; }
 .mini { position: relative; width: 100%; height: 101px; padding: 5px; border: 2px solid #bbbe93; border-radius: 6px; background: #344d42; text-align: center; font-size: 13px; box-shadow: 0 4px 5px #0007; }
 .mini.attack { border-color: #ecc3a3; }
 .mini.skill { border-color: #b2cbdc; background: #364b59; }
 .mini.power { border-color: #d0b5f1; background: #574a69; }
 .mini.fallback { border: 2px dashed #efd19a; background: #514b40; }
+.card-slot.unplayed .mini { filter: grayscale(1); opacity: .6; border-style: dashed; }
+.card-slot.unplayed .intent-icons { color: #b7bdc9; font-size: 10px; background: transparent; }
 .order { position: absolute; left: -7px; top: -9px; border-radius: 50%; width: 24px; height: 24px; background: #eee2c3; color: #20232b; font-weight: 800; line-height: 24px; }
 .mini .cost { display: block; text-align: right; height: 18px; color: #e9e2af; font-size: 12px; }
 .mini .art { display: block; margin: 1px auto; font-size: 25px; line-height: 27px; font-weight: 800; }
@@ -86,6 +88,17 @@ button[aria-pressed="true"] { background: #554875; border-color: #decaff; }
 .variant-C .sequence-label { margin: 0; }
 .variant-C .inspector { left: 388px; top: 430px; width: 610px; max-height: 188px; overflow: auto; }
 .variant-C .inspector .inspect-list { max-height: 100px; }
+.arena .inspector.card-preview { left: 365px; top: 325px; width: 365px; max-height: none; min-height: 0; padding: 0; border: 0; background: transparent; box-shadow: none; overflow: visible; pointer-events: none; }
+.card-preview.visible { display: flex; align-items: start; gap: 10px; }
+.enlarged-card { width: 180px; min-height: 242px; flex-shrink: 0; border: 4px solid #bbbe93; border-radius: 12px; background: #344d42; padding: 10px; box-shadow: 0 8px 20px #000a; text-align: center; }
+.enlarged-card .card-cost { text-align: left; font-weight: bold; color: #eee2af; }
+.enlarged-card h2 { margin: 0; font-size: 18px; }
+.enlarged-card .card-art { margin: 8px 0; height: 65px; padding-top: 6px; background: #172e27; font-size: 38px; }
+.enlarged-card p { font-size: 15px; margin: 0; }
+.keyword-tooltips { width: 175px; }
+.keyword-tooltips section { padding: 10px; margin-bottom: 8px; border: 1px solid #9d8bad; border-radius: 6px; background: #161b25; box-shadow: 0 4px 12px #0008; }
+.keyword-tooltips h3 { margin: 0 0 4px; font-size: 16px; color: #e0c4ff; }
+.keyword-tooltips p { margin: 0; font-size: 14px; }
 .rail-nav { display: none; }
 .variant-C .rail-nav { display: flex; justify-content: space-between; gap: 8px; margin-top: 3px; font-size: 12px; align-items: center; }
 .rail-nav button { font-size: 12px; padding: 3px 7px; }
@@ -108,10 +121,11 @@ pre { white-space: pre-wrap; background: #1b1f28; padding: 12px; font-size: 12px
     <option value="basic">1 / Three-card baseline</option>
     <option value="multi">2 / Multi-hit and defense</option>
     <option value="status">3 / Order changes damage</option>
-    <option value="fallback">4 / X-cost and unsupported</option>
+    <option value="fallback">4 / X-cost and unplayable</option>
     <option value="overflow">5 / Nine-card stress case</option>
     <option value="quiet">6 / No attacks</option>
     <option value="mixed">7 / Mixed attack and debuff</option>
+    <option value="unsupported">8 / Unsupported mechanic</option>
   </select></label>
   <label>Arena width <select id="width"><option value="1280">1280 px</option><option value="960">960 px</option><option value="720">720 px</option></select></label>
   <span id="scale" class="muted"></span>
@@ -141,7 +155,7 @@ pre { white-space: pre-wrap; background: #1b1f28; padding: 12px; font-size: 12px
   <div id="answer" class="answer" hidden></div>
 </section>
 <p id="variant-notes"></p>
-<p class="muted">Hover or focus a card to inspect; click to pin. Esc clears. Number badges mean left-to-right play order.
+<p class="muted">Hover or focus for the card and its keyword tooltips; click to pin. Esc clears. Number badges mean right-to-left play order. Grayed cards keep their drawn positions but do not play and have no number.
   Sword = attack, shield = Challenger block, up-arrow = Challenger Strength, down-arrow = Weak on player, ? = neutral fallback.
   Attack values are incoming damage before player block, not HP loss. Each icon belongs only to the card above it.</p>
 <details><summary>Relevant prototype state / unapproved assumptions</summary><pre id="state"></pre></details>
@@ -155,30 +169,36 @@ const flurry = () => card('Twin Cut', 'attack', 1, '4 x 2', 'Deal 4 damage twice
 const power = () => card('Sharpen', 'power', 1, '+2 STR', 'Challenger gains 2 Strength before later cards resolve.', [], 0, 'Self +2 Strength');
 const mark = () => card('Crippling Mark', 'skill', 1, '2 WEAK', 'Apply 2 Weak to the player. Does not change this incoming attack preview.', [], 0, 'Player 2 Weak');
 const unknown = () => card('Modded Echo', 'fallback', '?', 'NO EFFECT', 'Unsupported mechanic. Visible neutral fallback: this slot does nothing. Not the original card effect.', [], 0, '1 neutral fallback');
+const unplayed = (c, reason) => ({ ...c, unplayedReason: reason });
 const scenes = {
-  basic: { cards: [strike(), defend(), strike()], question: 'What happens first, how much incoming damage is planned, and who gains block?',
-    answer: 'Strike for 6, Challenger gains 5 block, Strike for 6. Incoming total 12 in two hits; block belongs to the Challenger.' },
+  basic: { cards: [strike(), defend(), strike()], question: 'What does each card do, in order?',
+    answer: 'Strike for 6, Challenger gains 5 block, Strike for 6. Each intent belongs only to the card above it.' },
   multi: { cards: [flurry(), defend(), strike()], question: 'What does each card do, including the number and size of its hits?',
     answer: 'Twin Cut hits twice for 4 each. Defend gives the Challenger 5 block. Strike hits once for 6. The shield belongs to Defend, not to either attack.' },
   status: { cards: [power(), card('Twin Cut', 'attack', 1, '6 x 2', 'Base 4 per hit + 2 Strength from step 1 = 6 per hit. Already included in the displayed attack value.', [6, 6]), mark()],
     question: 'What acts first, are the displayed hits already buffed, and which character receives the debuff?',
     answer: 'Sharpen first gives the Challenger +2 Strength. Twin Cut then hits twice for 6 (already buffed). Crippling Mark applies 2 Weak to the player.' },
-  fallback: { cards: [card('Many Blades', 'attack', 'X', '3 x 2', 'X resolves to 2 remaining energy in this authored example: two hits of 3. This is an illustration, not a settled X-cost policy.', [3, 3]), unknown()],
-    question: 'What value did X resolve to, how many hits are expected, and what does the dashed card do?',
-    answer: 'X = 2 in this example, so Many Blades deals two hits of 3. Modded Echo remains visible in slot 2 but has no effect. Its original behavior is not executed.' },
-  overflow: { cards: [power(), card('Twin Cut', 'attack', 1, '6 x 2', 'Two hits of 6, already including step 1 Strength.', [6, 6]), defend(), mark(), card('Strike', 'attack', 1, '8 ATK', '6 base + 2 Strength = 8 damage.', [8]), defend(), unknown(), card('Many Blades', 'attack', 'X', '5 x 2', 'X = 2 in this example; two hits of 5 including Strength.', [5, 5]), card('Strike', 'attack', 1, '8 ATK', '6 base + 2 Strength = 8 damage.', [8])],
+  fallback: { startEnergy: 3, cards: [
+    unplayed(strike(), 'Drawn first, but not selected to play. The planned X-cost card spends all 3 energy, leaving 0 for this 1-cost card.'),
+    card('Many Blades', 'attack', 'X', '3 x 3', 'First playable card: X equals the Challenger remaining energy, 3. Spend 3 energy and deal three hits of 3. No energy remains.', [3, 3, 3]),
+    unplayed(defend(), 'Drawn third. Cannot play: costs 1 energy, but 0 remains after the planned X-cost card.')
+  ], question: 'Which drawn cards actually play, and what does the numbered card do?',
+    answer: 'Only Many Blades plays, numbered 1 despite being in drawn position 2. X = 3 remaining energy, so it hits three times for 3. Strike and Defend remain gray in their original drawn positions, with no play numbers or active intents.' },
+  overflow: { startEnergy: 9, cards: [power(), card('Twin Cut', 'attack', 1, '6 x 2', 'Two hits of 6, already including step 1 Strength.', [6, 6]), defend(), mark(), card('Strike', 'attack', 1, '8 ATK', '6 base + 2 Strength = 8 damage.', [8]), defend(), unknown(), card('Strike', 'attack', 1, '8 ATK', '6 base + 2 Strength = 8 damage.', [8]), card('Many Blades', 'attack', 'X', '5 x 2', 'Authored stress example: 9 starting energy, seven 1-cost cards, and a neutral fallback that consumes no energy in this fixture. X = 2 remaining energy; two hits of 5 including Strength. Fallback energy policy is not settled here.', [5, 5])],
     question: 'How many cards are planned, how do you see later cards, and what happens in slot 7?',
     answer: 'Nine planned cards. Scroll the row or inspect the full ordered list. Slot 7 is a neutral fallback with no effect. Each later card carries its own intent; there is no aggregate summary.' },
   quiet: { cards: [defend(), power(), mark()], question: 'Will the Challenger attack? Who receives each non-damage effect?',
     answer: 'No attack. Defend gives the Challenger 5 block; Sharpen gives it +2 Strength; Crippling Mark gives the player 2 Weak.' },
   mixed: { cards: [card('Sapping Cut', 'attack', 1, '7 ATK + 1 WEAK', 'Deal 7 damage, then apply 1 Weak to the player. Both icons belong to this card.', [7], 0, 'Player 1 Weak'), defend(), flurry()],
     question: 'Which card applies Weak, and is that in addition to or instead of its attack?',
-    answer: 'Sapping Cut (slot 1) both attacks for 7 and applies 1 Weak to the player. Defend (slot 2) gives the Challenger 5 block. Twin Cut (slot 3) hits twice for 4 each.' }
+    answer: 'Sapping Cut (slot 1) both attacks for 7 and applies 1 Weak to the player. Defend (slot 2) gives the Challenger 5 block. Twin Cut (slot 3) hits twice for 4 each.' },
+  unsupported: { cards: [unknown(), defend()], question: 'How is the unsupported card different from a gray unplayed card?',
+    answer: 'The unsupported card is a visible numbered neutral-fallback slot, with a question-mark intent and NO EFFECT, not silently removed or shown with its original effect. A gray unplayed card has no play number or active intent. Fallback energy handling remains a simulation-design question.' }
 };
 const variants = {
   A: { name: 'Alternate / local peek', note: 'Alternate A / Four miniatures then +N overflow. Per-card intent below each card. Inspection stays near the Challenger but can cover its body.' },
   B: { name: 'Alternate / side dossier', note: 'Alternate B / Five smaller cards with per-card intents. Inspection uses a right-side dossier; compare the cost to Architect visibility.' },
-  C: { name: 'Selected / sliding row', note: 'Revised C / Three-and-a-bit cards in a horizontal rail, each with its own intent directly below. Scroll to see later cards. Inspection opens in the lower drawer. No aggregate summary; no Architect health bar during Phase 1.' }
+  C: { name: 'Selected / sliding row', note: 'Revised C / Play right to left. Three-and-a-bit cards in a horizontal rail, each with its own intent directly below. Scroll left for later cards. Hover shows only the card and its keyword tooltips. No aggregate summary; no Architect health bar during Phase 1.' }
 };
 const params = new URLSearchParams(location.search);
 let variant = variants[params.get('variant')] ? params.get('variant') : 'C';
@@ -187,12 +207,29 @@ let pinned = false;
 let inspected = null;
 const $ = id => document.getElementById(id);
 const glyphs = { attack: '/', skill: '[]', power: '+', fallback: '?' };
+const cardFaces = {
+  Strike: { text: 'Deal 6 damage.', keywords: [] },
+  Defend: { text: 'Gain 5 Block.', keywords: ['Block'] },
+  'Twin Cut': { text: 'Deal 4 damage twice.', keywords: [] },
+  Sharpen: { text: 'Gain 2 Strength.', keywords: ['Strength'] },
+  'Crippling Mark': { text: 'Apply 2 Weak.', keywords: ['Weak'] },
+  'Many Blades': { text: 'Deal 3 damage X times.', keywords: [] },
+  'Sapping Cut': { text: 'Deal 7 damage. Apply 1 Weak.', keywords: ['Weak'] },
+  'Modded Echo': { text: '???', keywords: [] }
+};
+const keywordText = {
+  Block: 'Prevents damage until the start of your next turn.',
+  Strength: 'Increases attack damage.',
+  Weak: 'Attacks deal 25% less damage.'
+};
 function current() { return scenes[sceneKey]; }
+function playOrder(index) { return current().cards.slice(0, index + 1).filter(c => !c.unplayedReason).length; }
+function slotLabel(index) { return current().cards[index].unplayedReason ? `Drawn ${index + 1} / not playing` : `Play ${playOrder(index)}`; }
 function state() {
   $('state').textContent = JSON.stringify({
-    variant, turn: sceneKey, phase: 1, architectHealthVisible: false, cards: current().cards,
+    variant, turn: sceneKey, phase: 1, architectHealthVisible: false, startEnergy: current().startEnergy ?? 3, cards: current().cards,
     inspection: { pinned, selected: inspected },
-    decisions: ['Human selected C.', 'No Architect health bar until Phase 2.', 'Per-card intents directly below each card; no aggregate summary.'],
+    decisions: ['Human selected C.', 'No Architect health bar until Phase 2.', 'Per-card intents directly below each card; no aggregate summary.', 'X uses remaining Challenger energy.', 'Unplayable cards stay gray in drawn positions; only playable cards are numbered.', 'Cards play right to left; overflow initially shows the rightmost cards.', 'Hover shows only the card and its keyword tooltips, not a custom explanation.'],
     assumptions: ['Authored examples, not real card data or energy simulation.', 'Damage includes preceding preview buffs, before player block.', 'Neutral fallback shown as no effect for discussion.', 'Revised presentation awaits human interpretation confirmation.']
   }, null, 2);
 }
@@ -204,10 +241,11 @@ function writeUrl() {
 }
 function clearInspection() {
   pinned = false; inspected = null;
-  $('inspector').classList.remove('visible');
+  $('inspector').classList.remove('visible', 'card-preview');
   state();
 }
 function inspectionShell(title, contents) {
+  $('inspector').classList.remove('card-preview');
   $('inspector').innerHTML = `<button class="close" aria-label="Close inspection">x</button><h2>${title}</h2>${contents}`;
   $('inspector').classList.add('visible');
   $('inspector').querySelector('.close').onclick = clearInspection;
@@ -215,13 +253,15 @@ function inspectionShell(title, contents) {
 function inspectCard(index, pin = false) {
   if (pinned && !pin) return;
   const c = current().cards[index];
+  const face = cardFaces[c.name];
   pinned = pin; inspected = index + 1;
-  inspectionShell(`${index + 1}. ${c.name}`, `<p><b>${c.effect}</b> &nbsp; / &nbsp; Cost ${c.cost}</p><p>${c.description}</p><small>${pin ? 'Pinned. Click another card or close.' : 'Hover preview. Click the card to pin.'}</small>`);
+  $('inspector').innerHTML = `<article class="enlarged-card"><div class="card-cost">${c.cost}</div><h2>${c.name}</h2><div class="card-art" aria-hidden="true">${glyphs[c.type]}</div><p>${face.text}</p></article><div class="keyword-tooltips">${face.keywords.map(keyword => `<section><h3>${keyword}</h3><p>${keywordText[keyword]}</p></section>`).join('')}</div>`;
+  $('inspector').classList.add('visible', 'card-preview');
   state();
 }
 function inspectTurn() {
   pinned = true; inspected = 'full turn';
-  inspectionShell(`Full turn / ${current().cards.length} cards`, `<div class="inspect-list">${current().cards.map((c, i) => `<button class="inspect-item" data-index="${i}">${i + 1}. ${c.name} / ${c.effect}</button>`).join('')}</div><small>Click a row for its effect. Every slot stays in play order.</small>`);
+  inspectionShell(`Full turn / ${current().cards.length} drawn`, `<div class="inspect-list">${current().cards.map((c, i) => `<button class="inspect-item" data-index="${i}">${slotLabel(i)}. ${c.name} / ${c.unplayedReason ? 'NOT PLAYING' : c.effect}</button>`).join('')}</div><small>Drawn positions retained; only playable cards have play numbers.</small>`);
   $('inspector').querySelectorAll('[data-index]').forEach(el => el.onclick = () => inspectCard(Number(el.dataset.index), true));
   state();
 }
@@ -236,6 +276,7 @@ function intentLine(type, text, label) {
   return `<span class="intent-line ${type}" aria-label="${label}"><svg viewBox="0 0 24 24" aria-hidden="true">${paths[type]}</svg>${text}</span>`;
 }
 function perCardIntents(c) {
+  if (c.unplayedReason) return 'UNPLAYED';
   const lines = [];
   if (c.hits.length) {
     const equal = c.hits.every(hit => hit === c.hits[0]);
@@ -249,7 +290,7 @@ function perCardIntents(c) {
   return lines.join('');
 }
 function mini(c, index) {
-  return `<div class="card-slot"><button class="mini inspect-card ${c.type}" data-index="${index}" aria-label="Step ${index + 1}, ${c.name}, inspect"><span class="order">${index + 1}</span><span class="cost">${c.cost}</span><span class="art" aria-hidden="true">${glyphs[c.type]}</span><span class="card-name">${c.name}</span></button><button class="intent-icons inspect-card" data-index="${index}" aria-label="Step ${index + 1}, ${c.effect}, inspect">${perCardIntents(c)}</button></div>`;
+  return `<div class="card-slot ${c.unplayedReason ? 'unplayed' : ''}"><button class="mini inspect-card ${c.type}" data-index="${index}" aria-label="${slotLabel(index)}, ${c.name}, inspect">${c.unplayedReason ? '' : `<span class="order">${playOrder(index)}</span>`}<span class="cost">${c.cost}</span><span class="art" aria-hidden="true">${glyphs[c.type]}</span><span class="card-name">${c.name}</span></button><button class="intent-icons inspect-card" data-index="${index}" aria-label="${slotLabel(index)}, ${c.unplayedReason ? 'Not playing' : c.effect}, inspect">${perCardIntents(c)}</button></div>`;
 }
 function render() {
   clearInspection();
@@ -259,9 +300,9 @@ function render() {
   $('scene').value = sceneKey;
   const cards = current().cards;
   const count = variant === 'A' ? 4 : variant === 'B' ? 5 : cards.length;
-  $('telegraph').innerHTML = `<div class="sequence-label">${cards.length} CARDS / LEFT TO RIGHT</div>
+  $('telegraph').innerHTML = `<div class="sequence-label">PLAY &larr; RIGHT TO LEFT<br>${cards.filter(c => !c.unplayedReason).length} PLAY / ${cards.length} DRAWN / ${current().startEnergy ?? 3} ENERGY</div>
     <div class="cards">${cards.slice(0, count).map(mini).join('')}${cards.length > count ? `<button class="more" aria-label="Inspect all ${cards.length} cards">+${cards.length - count}<small>more</small></button>` : ''}</div>
-    <div class="rail-nav"><button id="rail-prev" aria-label="Earlier cards">&larr;</button><button id="rail-all">Inspect all ${cards.length}</button><button id="rail-next" aria-label="Later cards">&rarr;</button></div>`;
+    <div class="rail-nav"><button id="rail-prev" aria-label="Later cards">&larr; Later</button><button id="rail-all">Inspect all ${cards.length}</button><button id="rail-next" aria-label="Earlier cards">Earlier &rarr;</button></div>`;
   $('telegraph').querySelectorAll('.inspect-card').forEach(el => {
     const index = Number(el.dataset.index);
     el.onmouseenter = () => inspectCard(index);
