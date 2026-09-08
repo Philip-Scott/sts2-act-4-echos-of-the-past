@@ -25,8 +25,10 @@ The Challenger now uses the **native in-process card engine in normal play**,
 restoring the saved deck, upgrades, native enchantments and saved card properties.
 It owns persistent native energy, piles, powers, RNG, orbs and pets without
 joining the human party. There is no worker process or adapter fallback.
-Cards play left to right with deterministic first-valid choices. The preview
-shows current native cards and resources, not a guaranteed damage forecast;
+Cards play left to right with deterministic first-valid choices. The Challenger
+draws its upcoming hand during your turn (five cards by default), then plays
+that hand when you end your turn without drawing a second opening hand. The preview
+shows its actual hand and resources, not a guaranteed damage forecast;
 cards enlarge on hover. Native orb slots appear for Defect and for any other
 character that acquires orb capacity. Enemy pets stay beside their Challenger,
 without moving the human.

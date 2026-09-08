@@ -32,6 +32,7 @@ internal static class NativeMechanicsPlaytest
         actor.Body.RemoveAllPowersInternalExcept();
         OrbCmd.RemoveSlots(actor.Player, actor.State.OrbQueue.Capacity);
         actor.Player.MaxEnergy = 10;
+        actor.State.ResetEnergy();
         void Prepare(params CardModel[] cards)
         {
             foreach (var pile in actor.State.AllPiles)
@@ -41,7 +42,7 @@ internal static class NativeMechanicsPlaytest
                     combat.RemoveCard(card);
                 }
             foreach (var card in cards)
-                actor.State.DrawPile.AddInternal(card);
+                actor.State.Hand.AddInternal(card);
         }
         T Card<T>(bool upgraded = false) where T : CardModel
         {
@@ -53,13 +54,48 @@ internal static class NativeMechanicsPlaytest
             }
             return card;
         }
+        int energyAtTurnEnd = 0;
         async Task Turn()
         {
             var turn = human.PlayerCombatState!.TurnNumber;
-            PlayerCmd.EndTurn(human, false);
-            await NativeDemoPlaytest.PlayerTurn(human, turn + 1);
+            void CaptureEnergy() => energyAtTurnEnd = actor.State.Energy;
+            actor.TurnFinished += CaptureEnergy;
+            try
+            {
+                PlayerCmd.EndTurn(human, false);
+                await NativeDemoPlaytest.PlayerTurn(human, turn + 1);
+            }
+            finally
+            {
+                actor.TurnFinished -= CaptureEnergy;
+            }
             actor.AssertIdentity();
         }
+
+        Prepare(Card<Wound>(), Card<Wound>(), Card<Wound>(), Card<Wound>(), Card<Wound>());
+        for (var i = 0; i < 6; i++)
+            actor.State.DrawPile.AddInternal(Card<Wound>());
+        var visibleHand = actor.State.Hand.Cards.ToArray();
+        void RequirePreparedHand() => Require(actor.State.Hand.Cards.SequenceEqual(visibleHand) &&
+            actor.State.DrawPile.Cards.Count == 6, "enemy turn uses the five visible cards without drawing again");
+        void RequireFiveDiscarded() => Require(actor.State.DiscardPile.Cards.SequenceEqual(visibleHand) &&
+            actor.State.DrawPile.Cards.Count == 6, "enemy turn only consumes its prepared hand");
+        actor.TurnStarting += RequirePreparedHand;
+        actor.TurnFinished += RequireFiveDiscarded;
+        await actor.PrepareTurn();
+        RequirePreparedHand();
+        await Turn();
+        actor.TurnStarting -= RequirePreparedHand;
+        actor.TurnFinished -= RequireFiveDiscarded;
+        Require(actor.HandPrepared && actor.State.Hand.Cards.Count == 5 && actor.State.DrawPile.Cards.Count == 1,
+            "next five-card hand is ready before the human can act");
+        visibleHand = actor.State.Hand.Cards.ToArray();
+        var completedBeforeExtraHumanTurn = actor.CompletedTurns;
+        await PowerCmd.Apply<AmbergrisPower>(context, human.Creature, 1, human.Creature, null);
+        await Turn();
+        Require(actor.CompletedTurns == completedBeforeExtraHumanTurn &&
+            actor.State.Hand.Cards.SequenceEqual(visibleHand) && actor.State.DrawPile.Cards.Count == 1,
+            "extra human turn preserves the prepared hand without drawing again");
 
         var perfected = Card<PerfectedStrike>(true);
         var impervious = Card<Impervious>(true);
@@ -87,7 +123,8 @@ internal static class NativeMechanicsPlaytest
         await Turn();
         Require(actor.Body.GetPowerAmount<PoisonPower>() == 0 && human.Creature.GetPowerAmount<PoisonPower>() > 0,
             "hardcoded enemy-list random targeting hits human, never actor");
-        Require(actor.State.DiscardPile.Cards.OfType<Anger>().Count() == 2, "native Anger creates persistent independent copy");
+        Require(actor.State.DiscardPile.Cards.Concat(actor.State.Hand.Cards).OfType<Anger>().Count() == 2,
+            "native Anger creates persistent independent copy");
         Require(actor.State.ExhaustPile.Cards.OfType<Shiv>().Any() && human.Creature.CurrentHp < hp,
             "native generated Shivs execute in same turn");
         Require(bane.Pile == actor.State.ExhaustPile, "upgraded TrueGrit resolves deterministic NPC hand choice");
@@ -98,7 +135,7 @@ internal static class NativeMechanicsPlaytest
         var actorHp = actor.Body.CurrentHp;
         await Turn();
         Require(actor.Body.CurrentHp < actorHp || actor.Body.Block > 0, "native end-in-hand Burn effect resolves");
-        Require(actor.State.Energy < actor.State.MaxEnergy, "native X-cost consumes private energy");
+        Require(energyAtTurnEnd < actor.State.MaxEnergy, "native X-cost consumes private energy");
 
         actor.Body.RemoveAllPowersInternalExcept();
         human.Creature.RemoveAllPowersInternalExcept();
@@ -227,7 +264,7 @@ internal static class NativeMechanicsPlaytest
         Prepare(excluded, Card<Wound>(), Card<Wound>(), Card<Wound>(), Card<Wound>());
         await Turn();
         Require(actor.UnsupportedReason(excluded)?.Contains("co-op") == true &&
-            excluded.Pile == actor.State.DiscardPile && actor.State.Energy == actor.State.MaxEnergy,
+            excluded.Pile == actor.State.Hand && energyAtTurnEnd == actor.State.MaxEnergy,
             "co-op-only native card visibly unsupported without play, spend or exhaust");
         actor.Player.MaxEnergy = actor.Player.Character.MaxEnergy;
         MainFile.Logger.Info("NATIVE MECHANICS PASSED");

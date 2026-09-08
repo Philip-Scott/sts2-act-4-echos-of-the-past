@@ -32,6 +32,7 @@ public sealed class NativeChallenger
     public int CompletedTurns { get; private set; }
     public bool Executing { get; private set; }
     public bool Cleaned { get; private set; }
+    internal bool HandPrepared { get; private set; }
     public IReadOnlyList<CardModel> Cards { get; }
     public event Action? Changed;
     internal event Action? TurnStarting;
@@ -109,8 +110,22 @@ public sealed class NativeChallenger
             return;
         if (State.Phase != PlayerTurnPhase.None)
             throw new InvalidOperationException("Native Challenger turn was started twice.");
-        TurnStarting?.Invoke();
+        // Extra enemy turns have no intervening human turn to prepare their hand.
+        await PrepareTurn();
         State.Phase = PlayerTurnPhase.Start;
+        TurnStarting?.Invoke();
+        await Hook.AfterPlayerTurnStart(_combat, _context, Player);
+        Trace("turn-start");
+        Changed?.Invoke();
+    }
+
+    internal async Task PrepareTurn()
+    {
+        AssertIdentity();
+        if (!CanAct || HandPrepared)
+            return;
+        if (State.Phase != PlayerTurnPhase.None)
+            throw new InvalidOperationException("Native Challenger hand can only be prepared between turns.");
         _reasons.Clear();
         _endTurnRequested = false;
         if (CompletedTurns > 0)
@@ -134,8 +149,8 @@ public sealed class NativeChallenger
             draw = Math.Min(CardPile.MaxCardsInHand, Math.Max(draw, innate.Length));
         }
         await CardPileCmd.Draw(_context, draw, Player, fromHandDraw: true);
-        await Hook.AfterPlayerTurnStart(_combat, _context, Player);
-        Trace("turn-start");
+        HandPrepared = true;
+        Trace("hand-prepared");
         Changed?.Invoke();
     }
 
@@ -270,6 +285,7 @@ public sealed class NativeChallenger
         if (Cleaned)
             return;
         State.Phase = PlayerTurnPhase.None;
+        HandPrepared = false;
         CompletedTurns++;
         Trace("turn-end");
         TurnFinished?.Invoke();
@@ -281,6 +297,7 @@ public sealed class NativeChallenger
         if (Cleaned || Executing)
             return;
         Cleaned = true;
+        HandPrepared = false;
         ChallengerOrbs.Hide(Body.GetCreatureNode());
         State.Phase = PlayerTurnPhase.None;
         State.AfterCombatEnd();
@@ -345,7 +362,7 @@ public sealed class NativeChallenger
 
     public void Show(ChallengerTelegraph telegraph)
     {
-        var pile = State.Hand.Cards.Count > 0 ? State.Hand : State.DiscardPile.Cards.Count > 0 ? State.DiscardPile : State.DrawPile;
+        var pile = State.Hand;
         var cards = pile.Cards;
         telegraph.ShowPlan(cards.Select(card =>
         {

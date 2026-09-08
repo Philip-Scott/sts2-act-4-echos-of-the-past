@@ -29,11 +29,17 @@ inlining can bypass getter-only detours. The stable Creature backing reference,
 explicit owner/participant reads, and explicit turn-loop phase boundaries are
 essential. Do not replace them with temporary human state swaps.
 
-The real turn loop owns side hooks. Actor energy/draw setup occurs after its
-block clears; orb start effects, pre-play, manual play and post-play occur in its
-move. End-hand effects, Ethereal, retain/discard and orb passives resolve before
+The real turn loop owns side hooks. Actor energy and hand draw are prepared at
+the start of the human turn, including the opening turn, so the human can inspect
+the actual upcoming hand. The base draw is five, with native draw modifiers,
+Innate, retention and the hand limit preserved. Extra human turns do not draw
+another Challenger hand. After its block clears on the enemy turn, the actor
+uses that prepared hand without resetting energy or drawing again; native
+player-start hooks still run then. Orb start effects, pre-play, manual play and
+post-play occur in its move. End-hand effects, Ethereal, retain/discard and orb passives resolve before
 side-end completion. Native extra-turn hooks run additional actor turns before
-the human side resumes. Powers and card-local mutations persist between turns.
+the human side resumes, preparing their own hands because no human turn
+intervenes. Powers and card-local mutations persist between turns.
 
 The Challenger retains its monster lifecycle listener. Death adds the Architect
 before removing owned pets and actor state, preserving continuous combat and
@@ -55,8 +61,9 @@ replacement remain in the existing lifecycle/persistence implementation.
 - A manual turn stops and reports a 100-play safety limit. More than 20
   consecutive extra turns is an explicit error, not an endless loop.
 
-The telegraph shows current native hand, or the last discard/draw pile when the
-hand is empty, plus energy and pile counts. Native cards enlarge on hover.
+The telegraph shows only the current native hand, plus energy and pile counts.
+An empty hand stays empty in the preview; neither the draw pile nor the discard
+pile is presented as playable cards. Native cards enlarge on hover.
 This is a state preview, **not an exact future-damage forecast**.
 
 The actual native `NOrbManager` renders slots, passive/evoke effects and native

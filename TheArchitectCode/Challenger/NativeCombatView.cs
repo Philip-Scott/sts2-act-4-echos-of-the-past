@@ -123,6 +123,8 @@ internal static class NativeCombatCallSites
             AccessTools.Method(typeof(NativeCombatCallSites), nameof(IsPartyPlayer)),
         [AccessTools.Method(typeof(Hook), nameof(Hook.AfterBlockCleared))] =
             AccessTools.Method(typeof(NativeTurnPhases), nameof(NativeTurnPhases.AfterBlockCleared)),
+        [AccessTools.Method(typeof(Hook), nameof(Hook.AfterSideTurnStart))] =
+            AccessTools.Method(typeof(NativeTurnPhases), nameof(NativeTurnPhases.AfterSideTurnStart)),
         [AccessTools.Method(typeof(Hook), nameof(Hook.BeforeSideTurnEnd))] =
             AccessTools.Method(typeof(NativeTurnPhases), nameof(NativeTurnPhases.BeforeSideTurnEnd)),
         [AccessTools.Method(typeof(Hook), nameof(Hook.AfterSideTurnEnd))] =

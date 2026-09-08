@@ -106,6 +106,8 @@ internal static class NativeDemoPlaytest
         var monster = (CorruptedChallenger)combat.Enemies.Single().Monster!;
         var actor = monster.Native ?? throw new InvalidOperationException("Native actor not bound.");
         actor.AssertIdentity();
+        Require(actor.HandPrepared && actor.State.Hand.Cards.Count > 0,
+            "opening Challenger hand is already drawn during the first human turn");
         Require(actor.Player.Character.Id.ToString() == expected.Snapshot.CharacterId &&
             actor.Player.Deck.Cards.Count == expected.Snapshot.Deck.Length, "saved character and entire deck restored");
         Require(actor.Player.Deck.Cards.Select(c => (Id: (ModelId?)c.Id, c.CurrentUpgradeLevel))
@@ -150,9 +152,9 @@ internal static class NativeDemoPlaytest
                     pile.RemoveInternal(card);
                     combat.RemoveCard(card);
                 }
-            actor.State.DrawPile.AddInternal(combat.CreateCard<TwinStrike>(actor.Player));
+            actor.State.Hand.AddInternal(combat.CreateCard<TwinStrike>(actor.Player));
             for (var i = 0; i < 4; i++)
-                actor.State.DrawPile.AddInternal(combat.CreateCard<Wound>(actor.Player));
+                actor.State.Hand.AddInternal(combat.CreateCard<Wound>(actor.Player));
             await CreatureCmd.Damage(context, human.Creature, human.Creature.CurrentHp - 1,
                 ValueProp.Unblockable | ValueProp.Unpowered, human.Creature);
             MainFile.Logger.Info("NATIVE loss probe: first hit of native TwinStrike is lethal; remaining hit must not re-target.");
@@ -174,7 +176,8 @@ internal static class NativeDemoPlaytest
         actor = ((CorruptedChallenger)combat.Enemies.Single(c => c.Monster is CorruptedChallenger).Monster!).Native!;
         actor.TurnStarting += () => rngBefore = AllRng(human);
         actor.TurnFinished += () => Require(rngBefore == AllRng(human), "reloaded actor turn left human run/player RNG unchanged");
-        Require(actor.CompletedTurns == 0 && actor.Player.Deck.Cards.Count == expected.Snapshot.Deck.Length &&
+        Require(actor.CompletedTurns == 0 && actor.HandPrepared &&
+            actor.Player.Deck.Cards.Count == expected.Snapshot.Deck.Length &&
             ArchitectRun.Get(run).EntrySnapshot!.Snapshot!.ContentHash == expected.Snapshot.ContentHash,
             "native room-boundary reload reconstructed the same saved deck without fixture or old actor state");
         if (!CommandLineHelper.HasArg("architect-native-nondefect"))
@@ -230,7 +233,7 @@ internal static class NativeDemoPlaytest
         player.PlayerCombatState is { Phase: PlayerTurnPhase.Play } state && state.TurnNumber == turn &&
         CombatManager.Instance.IsPartOfPlayerTurn(player) && !CombatManager.Instance.IsStarting &&
         player.Creature.CombatState is { CurrentSide: CombatSide.Player } combat &&
-        NativeChallenger.In(combat).All(actor => actor.State.Phase == PlayerTurnPhase.None));
+        NativeChallenger.In(combat).All(actor => actor.State.Phase == PlayerTurnPhase.None && actor.HandPrepared));
     private static void Require(bool condition, string description)
     {
         if (!condition)

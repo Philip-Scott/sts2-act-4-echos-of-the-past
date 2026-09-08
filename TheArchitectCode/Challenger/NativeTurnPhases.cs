@@ -8,6 +8,14 @@ namespace TheArchitect.TheArchitectCode.Challenger;
 // tiered inlining cannot bypass actor setup/cleanup by inlining a Hook wrapper.
 internal static class NativeTurnPhases
 {
+    internal static async Task AfterSideTurnStart(ICombatState combatState, CombatSide side, IReadOnlyList<Creature> participants)
+    {
+        await Hook.AfterSideTurnStart(combatState, side, participants);
+        if (side == CombatSide.Player)
+            foreach (var actor in NativeChallenger.In(combatState))
+                await actor.PrepareTurn();
+    }
+
     internal static async Task AfterBlockCleared(ICombatState combatState, Creature creature)
     {
         await Hook.AfterBlockCleared(combatState, creature);
