@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../Sts2PathDiscovery.props" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Alchyr.Sts2.BaseLib" Version="3.4.5" />
+    <Reference Include="sts2" HintPath="$(Sts2DataDir)/sts2.dll" />
+    <Reference Include="GodotSharp" HintPath="$(Sts2DataDir)/GodotSharp.dll" />
+    <Reference Include="0Harmony" HintPath="$(Sts2DataDir)/0Harmony.dll" />
+    <Compile Include="../../TheArchitectCode/Powers/ArchitectInvinciblePower.cs" Link="ArchitectInvinciblePower.cs" />
+    <Compile Include="../../TheArchitectCode/Powers/ArchitectBeatOfDeathPower.cs" Link="ArchitectBeatOfDeathPower.cs" />
+  </ItemGroup>
+</Project>

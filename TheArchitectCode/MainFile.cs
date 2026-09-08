@@ -16,7 +16,9 @@ public partial class MainFile : Node
 
     public static void Initialize()
     {
+        Playtest.NativeDemoSafety.Initialize();
         var assembly = Assembly.GetExecutingAssembly();
+        Persistence.ArchitectRun.Register();
 
         //If you want to use scripts defined in your mod for Godot scenes, uncomment the following line.
         //Godot.Bridge.ScriptManagerBridge.LookupScriptsInAssembly(assembly);
@@ -24,5 +26,7 @@ public partial class MainFile : Node
         Harmony harmony = new(ModId);
 
         harmony.PatchAll(assembly);
+        Challenger.NativeCombatCallSites.Install(harmony);
+        Logger.Info("The Architect 0.1.0 initialized for Slay the Spire 2 public-beta 0.111.0.");
     }
 }

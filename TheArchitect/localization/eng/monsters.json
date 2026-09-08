@@ -1,0 +1,19 @@
+{
+  "THEARCHITECT-CORRUPTED_CHALLENGER.name": "Corrupted Challenger",
+  "THEARCHITECT-CORRUPTED_CHALLENGER.moves.CHALLENGER_PLAN.title": "Echoes of the Past",
+  "THEARCHITECT-ARCHITECT_BOSS.name": "The Architect",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.REWRITE_MOVE.title": "Rewrite",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.COMPILE_MOVE.title": "Compile",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.COMPILE_SECOND_MOVE.title": "Compile",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.EXECUTE_MOVE.title": "Execute",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.EXECUTE_SECOND_MOVE.title": "Execute",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.ITERATE_MOVE.title": "Iterate",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.REWRITE_MOVE.description": "Apply [blue]2[/blue] Vulnerable, [blue]2[/blue] Weak, then [blue]2[/blue] Frail. Insert one Dazed, Slimed, Wound, Burn, and Void at independently random positions in your current draw pile.",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.COMPILE_MOVE.description": "Compile: Deal [blue]{Damage}[/blue] damage [blue]{Hits}[/blue] times.",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.EXECUTE_MOVE.description": "Execute: Deal [blue]{Damage}[/blue] damage in one hit.",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.ITERATE_MOVE.description1": "Remove all pending Strength Down. Gain [blue]{Strength}[/blue] Strength (normalize negative Strength to +2; otherwise gain 2). Then gain [blue]2[/blue] Artifact.",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.ITERATE_MOVE.description2": "Remove all pending Strength Down. Gain [blue]{Strength}[/blue] Strength (normalize negative Strength to +2; otherwise gain 2). Then increase Beat of Death by [blue]1[/blue].",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.ITERATE_MOVE.description3": "Remove all pending Strength Down. Gain [blue]{Strength}[/blue] Strength (normalize negative Strength to +2; otherwise gain 2). Then gain Painful Stabs: each unblocked attack hit adds [blue]1[/blue] Wound to your discard pile.",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.ITERATE_MOVE.description4": "Remove all pending Strength Down. Gain [blue]{Strength}[/blue] Strength (normalize negative Strength to +2; otherwise gain 2). Then gain an additional [blue]10[/blue] Strength.",
+  "THEARCHITECT-ARCHITECT_BOSS.moves.ITERATE_MOVE.description5": "Remove all pending Strength Down. Gain [blue]{Strength}[/blue] Strength (normalize negative Strength to +2; otherwise gain 2). Then gain an additional [blue]50[/blue] Strength."
+}

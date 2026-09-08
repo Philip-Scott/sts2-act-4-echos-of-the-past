@@ -1,0 +1,259 @@
+using System.IO;
+using System.Text.Json;
+using Godot;
+using HarmonyLib;
+using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.DevConsole;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.GameActions;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.Acts;
+using MegaCrit.Sts2.Core.Models.Cards;
+using MegaCrit.Sts2.Core.Models.Characters;
+using MegaCrit.Sts2.Core.Models.Powers;
+using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Nodes.Orbs;
+using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
+using MegaCrit.Sts2.Core.Nodes.Screens.Map;
+using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
+using MegaCrit.Sts2.Core.Runs;
+using MegaCrit.Sts2.Core.Saves;
+using MegaCrit.Sts2.Core.Saves.Runs;
+using MegaCrit.Sts2.Core.ValueProps;
+using TheArchitect.TheArchitectCode.Challenger;
+using TheArchitect.TheArchitectCode.Monsters;
+using TheArchitect.TheArchitectCode.Persistence;
+
+namespace TheArchitect.TheArchitectCode.Playtest;
+
+[HarmonyPatch(typeof(NGame), "LaunchMainMenu")]
+internal static class NativeDemoPlaytest
+{
+    private static bool _started;
+    private static void Postfix(NGame __instance, Task __result)
+    {
+        if (_started || !NativeDemoSafety.Enabled)
+            return;
+        _started = true;
+        TaskHelper.RunSafely(RunSmoke(__instance, __result));
+    }
+
+    private static async Task RunSmoke(NGame game, Task menuReady)
+    {
+        try
+        {
+            await Demonstrate(game, menuReady);
+        }
+        catch (Exception exception)
+        {
+            MainFile.Logger.Error($"NATIVE SMOKE FAILED: {exception}");
+            game.GetTree().Quit(1);
+            throw;
+        }
+    }
+
+    private static async Task Demonstrate(NGame game, Task menuReady)
+    {
+        await menuReady;
+        await Task.Delay(2000);
+        game.GetWindow().Title = "The Architect - ISOLATED NATIVE INTEGRATION (automatic)";
+        var run = await game.StartNewSingleplayerRun(ModelDb.Character<Ironclad>(), true,
+            [ModelDb.Act<Overgrowth>(), ModelDb.Act<Hive>(), ModelDb.Act<Glory>()],
+            [], "ARCHITECT-NATIVE-INTEGRATION", GameMode.Standard);
+        Require(RunManager.Instance.ShouldSave, "disposable native save path enabled");
+        var input = Path.Combine(NativeDemoSafety.RuntimePath, "snapshot-input.json");
+        var destination = ProjectSettings.GlobalizePath(SaveManager.Instance.GetProfileScopedPath("TheArchitect/challenger_snapshot.json"));
+        Require(destination.StartsWith(NativeDemoSafety.RuntimePath + "/", StringComparison.Ordinal),
+            "snapshot destination is disposable");
+        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+        File.Copy(input, destination, overwrite: true);
+        if (CommandLineHelper.HasArg("architect-native-nondefect"))
+        {
+            CardModel[] probe = [ModelDb.Card<Zap>().ToMutable(), ModelDb.Card<Coolheaded>().ToMutable(),
+                ModelDb.Card<Defragment>().ToMutable(), ModelDb.Card<Capacitor>().ToMutable(), ModelDb.Card<Dualcast>().ToMutable()];
+            var cards = probe.Select(c => JsonSerializer.SerializeToElement(c.ToSerializable(),
+                JsonSerializationUtility.GetTypeInfo<SerializableCard>())).ToArray();
+            var character = ModelDb.Character<Ironclad>().Id.ToString();
+            ChallengerStore.Commit("non-defect-probe", "Probe", new ChallengerSnapshot(character, 80, cards,
+                ChallengerSnapshot.Hash(character, 80, cards)));
+        }
+        var expected = ChallengerStore.Load() ?? throw new InvalidOperationException("Snapshot input not loaded.");
+        await Task.Delay(1500);
+        var result = new DevConsole(shouldAllowDebugCommands: true).ProcessCommand("architect");
+        if (!result.success || result.task == null)
+            throw new InvalidOperationException($"Architect entry failed: {result.msg}");
+        await result.task;
+        Require(ArchitectRun.Get(run).EntrySnapshot?.Snapshot?.ContentHash == expected.Snapshot!.ContentHash,
+            "normal encounter entry captured the real saved snapshot");
+        var human = run.Players.Single();
+        await WaitFor(() => NMapScreen.Instance?.IsOpen == true);
+        await Capture("map");
+        await RunManager.Instance.EnterMapCoord(run.Map.StartingMapPoint.coord);
+        await Task.Delay(500);
+        await Capture("rest");
+        await RunManager.Instance.EnterMapCoord(run.Map.StartingMapPoint.Children.Single().coord);
+        await Task.Delay(500);
+        await Capture("shop");
+        await RunManager.Instance.EnterMapCoord(run.Map.BossMapPoint.coord);
+        await PlayerTurn(human, 1);
+        var combat = human.Creature.CombatState!;
+        var monster = (CorruptedChallenger)combat.Enemies.Single().Monster!;
+        var actor = monster.Native ?? throw new InvalidOperationException("Native actor not bound.");
+        actor.AssertIdentity();
+        Require(actor.Player.Character.Id.ToString() == expected.Snapshot.CharacterId &&
+            actor.Player.Deck.Cards.Count == expected.Snapshot.Deck.Length, "saved character and entire deck restored");
+        Require(actor.Player.Deck.Cards.Select(c => (Id: (ModelId?)c.Id, c.CurrentUpgradeLevel))
+            .SequenceEqual(expected.Snapshot.RestoreDeck().Select(c => (c.Id, c.CurrentUpgradeLevel))),
+            "all saved card IDs and upgrades restored");
+        Require(combat.Players.Count == 1 && run.Players.Count == 1, "actor not enrolled in party or co-op scaling");
+        Require(actor.Body.GetCreatureNode()?.OrbManager is { } manager &&
+            manager.GetNode<Control>("%Orbs").GetChildCount() == actor.State.OrbQueue.Capacity,
+            "native orb manager and initial slots attached for the saved character");
+        var rngBefore = "";
+        actor.TurnStarting += () => rngBefore = AllRng(human);
+        actor.TurnFinished += () => Require(rngBefore == AllRng(human), "actor turn left human run/player RNG unchanged");
+        var context = new ThrowingPlayerChoiceContext();
+        var damageDealt = human.ExtraFields.DamageDealt;
+        await HumanPlay<Neutralize>(human, actor.Body);
+        Require(human.ExtraFields.DamageDealt == damageDealt + 3, "human damage metric preserved");
+        await Capture("opening");
+        for (var turn = 1; turn <= 5; turn++)
+        {
+            PlayerCmd.EndTurn(human, false);
+            await PlayerTurn(human, turn + 1);
+            Require(actor.CompletedTurns == turn, "native turn and side-end cleanup completed");
+            var orbNodes = actor.Body.GetCreatureNode()!.OrbManager!.GetNode<Control>("%Orbs").GetChildren().OfType<NOrb>().ToArray();
+            Require(orbNodes.Length >= actor.State.OrbQueue.Capacity &&
+                actor.State.OrbQueue.Orbs.All(orb => orbNodes.Any(node => node.Model == orb)),
+                "native orb slots and live orb models are rendered");
+            actor.AssertIdentity();
+            await Capture($"turn-{turn}");
+            await CreatureCmd.Heal(human.Creature, human.Creature.MaxHp);
+        }
+        Require(actor.Player.RunState.Rng.Shuffle.ToSerializable().counter > 0, "private shuffle RNG advanced");
+        Require(ArchitectRun.Get(run).EntrySnapshot!.Snapshot!.ContentHash == expected.Snapshot.ContentHash,
+            "native execution preserved the raw captured deck");
+        if (CommandLineHelper.HasArg("architect-native-loss"))
+        {
+            actor.Body.RemoveAllPowersInternalExcept();
+            human.Creature.RemoveAllPowersInternalExcept();
+            OrbCmd.RemoveSlots(actor.Player, actor.State.OrbQueue.Capacity);
+            foreach (var pile in actor.State.AllPiles)
+                foreach (var card in pile.Cards.ToArray())
+                {
+                    pile.RemoveInternal(card);
+                    combat.RemoveCard(card);
+                }
+            actor.State.DrawPile.AddInternal(combat.CreateCard<TwinStrike>(actor.Player));
+            for (var i = 0; i < 4; i++)
+                actor.State.DrawPile.AddInternal(combat.CreateCard<Wound>(actor.Player));
+            await CreatureCmd.Damage(context, human.Creature, human.Creature.CurrentHp - 1,
+                ValueProp.Unblockable | ValueProp.Unpowered, human.Creature);
+            MainFile.Logger.Info("NATIVE loss probe: first hit of native TwinStrike is lethal; remaining hit must not re-target.");
+            PlayerCmd.EndTurn(human, false);
+            await Finish(game, run, actor, expected.Revision, "ArchitectLoss");
+            return;
+        }
+        await SaveManager.Instance.SaveRun(null);
+        var saved = SaveManager.Instance.LoadRunSave().SaveData ?? throw new InvalidOperationException("Disposable room save missing.");
+        var oldActor = actor;
+        await game.ReturnToMainMenu();
+        Require(oldActor.Cleaned, "actor cleaned on save-and-quit");
+        run = RunState.FromSerializable(saved);
+        await RunManager.Instance.SetUpSavedSingleplayer(run, saved);
+        await game.LoadRun(run, saved.PreFinishedRoom);
+        human = run.Players.Single();
+        await PlayerTurn(human, 1);
+        combat = human.Creature.CombatState!;
+        actor = ((CorruptedChallenger)combat.Enemies.Single(c => c.Monster is CorruptedChallenger).Monster!).Native!;
+        actor.TurnStarting += () => rngBefore = AllRng(human);
+        actor.TurnFinished += () => Require(rngBefore == AllRng(human), "reloaded actor turn left human run/player RNG unchanged");
+        Require(actor.CompletedTurns == 0 && actor.Player.Deck.Cards.Count == expected.Snapshot.Deck.Length &&
+            ArchitectRun.Get(run).EntrySnapshot!.Snapshot!.ContentHash == expected.Snapshot.ContentHash,
+            "native room-boundary reload reconstructed the same saved deck without fixture or old actor state");
+        if (!CommandLineHelper.HasArg("architect-native-nondefect"))
+            await NativeMechanicsPlaytest.Run(human, actor);
+        var hand = human.PlayerCombatState!.Hand.Cards.ToArray();
+        var energy = human.PlayerCombatState.Energy;
+        var before = human.Creature.CurrentHp;
+        await CreatureCmd.Damage(context, actor.Body, actor.Body.CurrentHp,
+            ValueProp.Unblockable | ValueProp.Unpowered, human.Creature);
+        Require(combat.Players.Count == 1 && run.Players.Count == 1 &&
+            human.Creature.CurrentHp == before && human.PlayerCombatState.Energy == energy &&
+            human.PlayerCombatState.Hand.Cards.SequenceEqual(hand), "continuous handoff preserved human state");
+        Require(actor.Cleaned, "dead actor unsubscribed and cleared native piles");
+        var boss = combat.Enemies.Single(c => c.Monster is ArchitectBoss);
+        await Capture("architect");
+        await CreatureCmd.Kill(boss, true);
+        await CombatManager.Instance.CheckWinCondition();
+        await Finish(game, run, actor, expected.Revision, "ArchitectWin");
+    }
+
+    private static async Task Finish(NGame game, RunState run, NativeChallenger actor, long initialRevision, string outcome)
+    {
+        await WaitFor(() => NOverlayStack.Instance?.Peek() is NGameOverScreen);
+        Require(ArchitectRun.Get(run).Outcome == outcome, $"native outcome preserved: {outcome}");
+        Require(actor.Cleaned, "actor cleaned after terminal outcome");
+        var committed = ChallengerStore.Load() ?? throw new InvalidOperationException("Terminal snapshot missing.");
+        Require(committed.Revision == initialRevision + 1 && committed.Outcome == outcome &&
+            committed.TerminalRunId == ArchitectRun.Get(run).Id, "terminal snapshot committed exactly once");
+        Require(ChallengerStore.Commit(committed.TerminalRunId!, outcome, committed.Snapshot!) == committed.Revision,
+            "terminal commit deduplicated");
+        await Task.Delay(1500);
+        await Capture("result");
+        MainFile.Logger.Info($"NATIVE SMOKE PASSED ({outcome}): production actor with real snapshot and native terminal persistence.");
+        game.GetTree().Quit();
+    }
+
+    internal static async Task HumanPlay<T>(Player human, Creature target) where T : CardModel
+    {
+        var card = human.Creature.CombatState!.CreateCard<T>(human);
+        await CardPileCmd.Add(card, PileType.Hand, skipVisuals: true);
+        var action = new PlayCardAction(card, target);
+        RunManager.Instance.ActionQueueSynchronizer.RequestEnqueue(action);
+        await action.CompletionTask;
+        if (action.Exception != null)
+            throw new InvalidOperationException("Native human card action failed.", action.Exception);
+    }
+
+    internal static string RngSnapshot(Player player) => JsonSerializer.Serialize(player.RunState.Rng.ToSerializable(),
+        JsonSerializationUtility.GetTypeInfo<SerializableRunRngSet>());
+    private static string AllRng(Player player) => RngSnapshot(player) +
+        JsonSerializer.Serialize(player.PlayerRng.ToSerializable(), new JsonSerializerOptions { IncludeFields = true });
+    internal static Task PlayerTurn(Player player, int turn) => WaitFor(() =>
+        player.PlayerCombatState is { Phase: PlayerTurnPhase.Play } state && state.TurnNumber == turn &&
+        CombatManager.Instance.IsPartOfPlayerTurn(player) && !CombatManager.Instance.IsStarting &&
+        player.Creature.CombatState is { CurrentSide: CombatSide.Player } combat &&
+        NativeChallenger.In(combat).All(actor => actor.State.Phase == PlayerTurnPhase.None));
+    private static void Require(bool condition, string description)
+    {
+        if (!condition)
+            throw new InvalidOperationException("NATIVE ASSERTION FAILED: " + description);
+        MainFile.Logger.Info("NATIVE ASSERT: " + description);
+    }
+    private static async Task WaitFor(Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(60);
+        while (!condition())
+        {
+            if (DateTime.UtcNow > deadline)
+                throw new TimeoutException("Native smoke timed out waiting for game progression.");
+            await NGame.Instance!.AwaitProcessFrame();
+        }
+    }
+    internal static async Task Capture(string stage)
+    {
+        var game = NGame.Instance ?? throw new InvalidOperationException("Smoke game missing.");
+        await game.AwaitProcessFrame();
+        await game.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        var error = game.GetViewport().GetTexture().GetImage().SavePng(Path.Combine(NativeDemoSafety.RuntimePath, stage + ".png"));
+        if (error != Error.Ok)
+            throw new InvalidOperationException($"Smoke capture {stage}: {error}");
+    }
+}

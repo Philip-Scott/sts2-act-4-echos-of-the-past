@@ -1,0 +1,9 @@
+{
+  "schema_version": 8,
+  "fullscreen": false,
+  "window_size": {"x": 1280, "y": 720},
+  "language": "eng",
+  "skip_intro_logo": true,
+  "seen_ea_disclaimer": true,
+  "mod_settings": {"mods_enabled": true, "mod_list": []}
+}

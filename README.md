@@ -5,12 +5,76 @@ A mod that adds an Act 4 to Slay the Spire 2, in which you fight against a bound
 The project was scaffolded from the [Slay the Spire 2 Content mod template](https://github.com/Alchyr/ModTemplate-StS2)
 and depends on BaseLib.
 
+## Playable beta slice
+
+This development build targets Steam's **public-beta**, game **v0.111.0**
+(Steam build `24724944`, game commit `41cef1ea`), with **BaseLib 3.4.5**.
+It is single-player only. Disable other fourth-act mods, including Act4Heart,
+before playing; multiplayer runs retain the vanilla route.
+
+After Act 3, the run continues to **Act 4 — The Architect** with a fixed
+Rest Site → Shop → boss route. The first visit fights the Architect; later
+visits first fight a corrupted version of the previous completed character.
+The compact map fits all three nodes without scrolling, using neutral-ink
+icons and an original Architect boss silhouette. Rest and Shop share the
+supplied tower-approach illustration; the boss fight retains the
+native Architect workshop interior. Native campfire, merchant, and room
+interactions remain intact.
+
+The Challenger now uses the **native in-process card engine in normal play**,
+restoring the saved deck, upgrades, native enchantments and saved card properties.
+It owns persistent native energy, piles, powers, RNG, orbs and pets without
+joining the human party. There is no worker process or adapter fallback.
+Cards play left to right with deterministic first-valid choices. The preview
+shows current native cards and resources, not a guaranteed damage forecast;
+cards enlarge on hover. Native orb slots appear for Defect and for any other
+character that acquires orb capacity. Enemy pets stay beside their Challenger,
+without moving the human.
+
+Co-op-only cards and third-party card/modifier effects are visibly
+**Unsupported** and remain unplayed; the original saved JSON is preserved.
+Missing saved models block entry with an actionable error rather than silently
+dropping cards. This is not a claim that every vanilla card combination has been
+audited. See [native Challenger behavior and boundaries](TheArchitectCode/Challenger/README.md).
+Terminal outcomes open the native victory screen directly.
+
+For fast feedback, start a disposable modded single-player run, open the
+developer console with the **backtick (`)** key, and enter `architect`. This skips to the Act 4
+map using your current deck, HP, and gold; it does not grant a late-game build.
+Normal completion of this run can replace your profile's Challenger.
+Use `architect`, not `act 4`: the vanilla `act` command can only visit acts
+already appended to the current run.
+
+An alternative **unsaved** developer launch uses the game's bootstrap mode:
+`--bootstrap --architect-playtest`. Add `--architect-repeat` to use a copy of
+the test character's deck for the Challenger phase. This does not replace the
+profile's Challenger or record run history.
+
+Developer checks: `dotnet run --project tests/Challenger/Challenger.Tests.csproj`
+and `dotnet run --project tests/Architect/Architect.Tests.csproj` retain the
+legacy planner and persistence/Architect regressions. They are not substitutes
+for native runtime coverage. The Linux `scripts/native-demo.sh` launcher exercises
+the production actor from normal startup using a disposable copy of a supplied
+snapshot; its name is historical. See its documented invocation and isolation
+requirements in the native Challenger README. **Changing XDG_DATA_HOME alone
+does not isolate Steam Cloud or real saves.**
+
+Challengers are stored locally in the active **modded** profile's
+`TheArchitect/challenger_snapshot.json`, with an atomic replacement and backup.
+They are not synchronized through Steam Cloud. Keep the same character/content
+mods enabled for the next visit; an unavailable character produces a First Visit.
+
+This is an early playtest build, not completion of every item in #2. Full
+crash-transaction recovery between snapshot capture and base-game progression/history
+is still tracked in #12. Avoid force-closing the game during the result transition.
+The beta game's normal combat saves restart the encounter rather than resuming mid-turn.
+
 ## Requirements
 
 - .NET SDK 9.0 or newer (the mod targets `net9.0`)
 - Slay the Spire 2 installed through Steam (or a copy of `sts2.dll` and `0Harmony.dll`)
 - Docker, if you prefer building in the provided container instead of installing the SDK locally
-- MegaDot / Godot 4.5.1 mono — only needed to export the `.pck` when publishing
+- MegaDot / Godot 4.5.1 mono — only needed for a full Godot export when publishing
   (the game will not load a `.pck` exported with a newer Godot version)
 
 ## Setup
@@ -39,9 +103,12 @@ scripts/build.sh
 ./scripts/build.ps1
 ```
 
-This copies `TheArchitect.dll`, `TheArchitect.pdb` and `TheArchitect.json` into the game's
-`mods/TheArchitect/` folder. Add `--publish` (`-Publish` in PowerShell) to also export the Godot
-`.pck` containing the assets in `TheArchitect/`; that requires a Godot/MegaDot 4.5.1 mono executable,
+This copies `TheArchitect.dll`, `TheArchitect.pdb`, `TheArchitect.json`, and an automatically
+packed `TheArchitect.pck` into the game's `mods/TheArchitect/` folder.
+Install the matching BaseLib runtime (`BaseLib.dll`, `BaseLib.json`, `BaseLib.pck`)
+in `mods/BaseLib/` as well. Restart the game after rebuilding.
+Add `--publish` (`-Publish` in PowerShell) to run a full Godot
+export of the assets in `TheArchitect/`; that requires a Godot/MegaDot 4.5.1 mono executable,
 taken from `GodotPath` in `Directory.Build.props` or from `--godot`.
 
 Both scripts accept the same options — run them with `--help` / `Get-Help` for the full list:
@@ -55,7 +122,9 @@ Both scripts accept the same options — run them with `--help` / `Get-Help` for
 | `--godot` | `GODOT_BIN` | Godot/MegaDot 4.5.1 mono executable |
 | `--publish` | — | Also export the `.pck` |
 
-Plain `dotnet build` / `dotnet publish` still work if you prefer.
+Plain `dotnet build` / `dotnet publish` still work if you prefer, and also default
+to copying into the live game. For development, use
+`scripts/build.sh --mods-path artifacts/mods`; install only with the game closed.
 
 ### Building in Docker
 

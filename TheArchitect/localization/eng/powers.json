@@ -1,3 +1,8 @@
 {
-  
+  "THEARCHITECT-ARCHITECT_BEAT_OF_DEATH_POWER.title": "Beat of Death",
+  "THEARCHITECT-ARCHITECT_BEAT_OF_DEATH_POWER.description": "Whenever you play a card, take [blue]{Amount}[/blue] damage.",
+  "THEARCHITECT-ARCHITECT_BEAT_OF_DEATH_POWER.smartDescription": "Whenever you play a card, take [blue]{Amount}[/blue] damage.",
+  "THEARCHITECT-ARCHITECT_INVINCIBLE_POWER.title": "Invincible",
+  "THEARCHITECT-ARCHITECT_INVINCIBLE_POWER.description": "Can lose at most [blue]{Amount}[/blue] HP each turn. [blue]{Remaining}[/blue] HP loss remaining. Resets at the start of this creature's turn.",
+  "THEARCHITECT-ARCHITECT_INVINCIBLE_POWER.smartDescription": "Can lose at most [blue]{Amount}[/blue] HP each turn. [blue]{Remaining}[/blue] HP loss remaining. Resets at the start of this creature's turn."
 }

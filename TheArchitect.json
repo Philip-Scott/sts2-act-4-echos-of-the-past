@@ -3,8 +3,8 @@
   "name": "The Architect",
   "author": "Philip-Scott",
   "description": "Adds an Act 4 to Slay the Spire 2, in which you fight against a bound version of your past self.",
-  "version": "v0.0.0",
-  "min_game_version": "0.107.0",
+  "version": "v0.2.0",
+  "min_game_version": "0.111.0",
   "has_pck": true,
   "has_dll": true,
   "dependencies": [
