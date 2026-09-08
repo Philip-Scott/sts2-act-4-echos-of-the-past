@@ -1,0 +1,472 @@
+<!doctype html>
+<!-- THROWAWAY: Which corruption treatment preserves character identity without looking like a tint?
+     Three real WebGL fragment-shader variants at ?variant=A|B|C. Original stand-in art, not game assets.
+     No web app exists in this Godot mod. From the repo root:
+     python3 -m http.server 8873 --bind 127.0.0.1 --directory TheArchitectCode/Prototypes
+     Keep on this prototype branch. No production hooks, dependencies, uploads, or saved state. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corruption study / The Architect</title>
+<style>
+* { box-sizing: border-box; }
+:root { color-scheme: dark; font: 14px/1.5 system-ui, sans-serif; color: #e9e5ef; background: #101015; }
+body { margin: 0; padding: 28px 32px 100px; }
+button, select, input { font: inherit; accent-color: #c5a2f2; }
+button, select, .upload { color: #e9e5ef; background: #24222c; border: 1px solid #45404f; border-radius: 7px; padding: 8px 12px; cursor: pointer; }
+button:hover, .upload:hover { background: #36303f; }
+:focus-visible { outline: 2px solid #d4b5fb; outline-offset: 4px; }
+button[aria-pressed="true"] { background: #413050; border-color: #bd96e4; }
+h1 { font: 400 clamp(28px, 3vw, 42px)/1.1 Georgia, serif; letter-spacing: -.8px; margin: 8px 0; }
+h2 { font: 400 28px/1.15 Georgia, serif; margin: 10px 0; }
+p { margin: 8px 0 16px; }
+.eyebrow { text-transform: uppercase; letter-spacing: 2px; font-size: 10px; color: #c2a5df; }
+.muted { color: #aca6b7; }
+header { display: flex; justify-content: space-between; align-items: center; gap: 20px; max-width: 1560px; margin: auto auto 24px; }
+.badge { border: 1px solid #484050; border-radius: 20px; padding: 6px 12px; font-size: 11px; color: #c5b4d5; white-space: nowrap; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 285px; gap: 24px; max-width: 1560px; margin: auto; }
+.stage { position: relative; aspect-ratio: 1120 / 720; overflow: hidden; border: 1px solid #3e3648; border-radius: 12px; background: radial-gradient(ellipse at 65% 42%, #3c2948, transparent 55%), linear-gradient(#191821 60%, #28232e 60.2%, #17161e); }
+.stage[data-background="stone"] { background: radial-gradient(ellipse at 60% 40%, #a69d94, #645f65 60%, #4e4d56 60.2%, #737077); }
+.stage[data-background="black"] { background: #08090d; }
+.stage::before { content: ""; position: absolute; inset: 7% 16% 39%; border: 14px solid #90819312; border-bottom: 0; border-radius: 200px 200px 0 0; pointer-events: none; }
+canvas { position: absolute; width: 100%; height: 100%; display: block; }
+.stage-label { position: absolute; top: 4%; text-align: center; width: 50%; pointer-events: none; }
+.stage-label span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #b9adc4; }
+.stage-label strong { font-weight: 500; font-size: clamp(12px, 1.4vw, 17px); }
+.stage-label.right { left: 50%; }
+.divider { position: absolute; left: 50%; top: 11%; height: 48%; border-left: 1px solid #a293ad24; pointer-events: none; }
+.hp { position: absolute; top: 61%; width: 25%; text-align: center; font-size: 11px; color: #c6bdcc; pointer-events: none; }
+.hp::after { content: ""; display: block; height: 5px; border: 1px solid #ca9f9955; border-radius: 5px; background: linear-gradient(90deg, #a85665 78%, #342431 78%); margin-top: 4px; }
+.hp.left { left: 12.5%; } .hp.right { left: 62.5%; }
+.gallery { position: absolute; display: grid; grid-template-columns: repeat(5, 1fr); inset: 72% 0 0; border-top: 1px solid #a293ad24; }
+.gallery button { padding: 0 2px 8px; display: flex; align-items: end; justify-content: center; background: transparent; border: 0; border-radius: 0; color: #b9adca; font-size: clamp(9px, 1vw, 12px); }
+.gallery button[aria-pressed="true"] { background: #c6a1fb09; box-shadow: inset 0 -2px #b998e1; color: #eee1ff; }
+.gallery button:hover { background: #c6a1fb12; }
+.gallery-title { position: absolute; top: 68%; left: 18px; color: #a99bb7; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; }
+.caption { margin-top: 12px; font-size: 12px; color: #9d96a7; }
+aside { border-left: 1px solid #35303d; padding-left: 24px; }
+aside p { font-size: 13px; color: #b7adbf; }
+.tech { font-size: 11px; color: #bba9cc; padding: 10px 12px; border: 1px solid #37303f; border-radius: 7px; margin: 16px 0 22px; }
+.control { display: block; margin: 17px 0; }
+.control > span { display: flex; justify-content: space-between; font-size: 12px; color: #c8bdcf; margin-bottom: 7px; }
+.control select, input[type="range"] { width: 100%; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin: 14px 0; }
+.row label { font-size: 12px; }
+.upload { display: inline-block; font-size: 12px; }
+#upload { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.upload:focus-within { outline: 2px solid #d4b5fb; outline-offset: 3px; }
+#reset { font-size: 11px; padding: 6px 8px; }
+#upload-status { font-size: 11px; overflow-wrap: anywhere; color: #a99bb7; }
+details { border-top: 1px solid #36303e; padding-top: 14px; font-size: 11px; color: #a99bb7; }
+summary { cursor: pointer; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 10px; }
+.switcher { position: fixed; z-index: 2; bottom: 22px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 5px; padding: 7px; background: #201c29f5; border: 1px solid #766087; border-radius: 14px; box-shadow: 0 10px 45px #0009; }
+.switcher button { border: 0; background: transparent; }
+.switcher .choice { font-size: 12px; padding: 10px 16px; white-space: nowrap; }
+.switcher button[aria-pressed="true"] { background: #574168; color: #fff1ff; }
+#error { position: absolute; z-index: 1; inset: 20% 10% auto; padding: 20px; background: #401f29; border: 1px solid #cf7886; }
+[hidden] { display: none !important; }
+@media (max-width: 900px) {
+  body { padding: 18px 14px 100px; }
+  main { grid-template-columns: 1fr; } aside { border-left: 0; padding-left: 0; }
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+  .switcher .choice { padding: 10px 8px; font-size: 11px; }
+  header .badge { display: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="eyebrow">The Architect / Material exploration 01</div><h1>A familiar face. Something wrong.</h1><div class="muted">Corrupted Challenger / three directions beyond a purple tint</div></div>
+  <span class="badge">THROWAWAY PROTOTYPE</span>
+</header>
+<main>
+  <section aria-label="Live shader comparison">
+    <div class="stage" id="stage" data-background="workshop">
+      <canvas id="preview" width="1120" height="720" aria-label="Animated comparison and five character silhouettes"></canvas>
+      <div class="stage-label"><span>Reference</span><strong id="reference-label">Current purple tint</strong></div>
+      <div class="stage-label right"><span id="variant-number">Direction A</span><strong id="stage-name">Voidfire</strong></div>
+      <div class="divider"></div>
+      <div class="hp left">Corrupted Challenger</div><div class="hp right">Corrupted Challenger</div>
+      <div class="gallery-title">Same material / five different silhouettes</div>
+      <div class="gallery" id="gallery" aria-label="Choose character"></div>
+      <div id="error" role="alert" hidden></div>
+    </div>
+    <p class="caption">Original geometric stand-ins, not game art. Real GPU shaders on flattened RGBA sprites; the idle motion is procedural, not Spine animation. Character cards switch the large comparison.</p>
+  </section>
+  <aside>
+    <div class="eyebrow" id="direction">01 / silhouette + embers</div>
+    <h2 id="effect-name">Voidfire</h2>
+    <p id="description"></p>
+    <div class="tech" id="tech"></div>
+    <div class="controls">
+      <label class="control"><span>Character</span><select id="character"></select></label>
+      <label class="control"><span>Corruption <output id="strength-value">75%</output></span><input id="strength" type="range" min="0" max="100" value="75"></label>
+      <label class="control"><span>Motion speed <output id="speed-value">1.0x</output></span><input id="speed" type="range" min="0" max="200" value="100"></label>
+      <label class="control"><span>Sprite size <output id="size-value">100%</output></span><input id="size" type="range" min="70" max="110" value="100"></label>
+      <label class="control"><span>Arena lighting</span><select id="background"><option value="workshop">Dark workshop</option><option value="stone">Light stone</option><option value="black">Near black</option></select></label>
+      <label class="control"><span>Reference</span><select id="reference"><option value="tint">Current tint</option><option value="original">Original colors</option></select></label>
+    </div>
+    <div class="row"><button id="pause" aria-pressed="false">Pause motion</button><label><input id="flip" type="checkbox" checked> Face left</label></div>
+    <div class="row"><label class="upload">Load your sprite<input id="upload" type="file" accept="image/png,image/webp"></label><button id="reset" hidden>Remove sprite</button></div>
+    <p id="upload-status" role="status">Transparent PNG / WebP. Stays in this browser; never sent to a server. Upload adds a sixth character.</p>
+    <details><summary>Live state / implementation notes</summary><pre id="state"></pre><p id="port-notes"></p><p>Health and telegraph UI are outside the material. In-game feasibility, Spine slot seams, render-target bounds and cost are not validated by this lab.</p></details>
+  </aside>
+</main>
+<nav class="switcher" aria-label="Prototype variant">
+  <button id="previous" aria-label="Previous variant">&larr;</button>
+  <button class="choice" data-variant="A" aria-pressed="true">A / Voidfire</button>
+  <button class="choice" data-variant="B" aria-pressed="false">B / Fractured Echo</button>
+  <button class="choice" data-variant="C" aria-pressed="false">C / Binding</button>
+  <button id="next" aria-label="Next variant">&rarr;</button>
+</nav>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const variants = {
+  A: { name: "Voidfire", direction: "01 / silhouette + embers", shader: 1,
+    description: "A cold flame escapes the body. The face and costume keep their colors while a ragged violet edge and rising embers betray the corruption.",
+    tech: "Alpha-contour shader + procedural flame field. No costume-specific masks.",
+    port: "Candidate: capture only the animated body to a padded SubViewport, then apply a canvas_item shader to the composed texture. A single final silhouette avoids glowing every Spine attachment seam. Rising embers could become GPUParticles2D." },
+  B: { name: "Fractured Echo", direction: "02 / time displacement", shader: 2,
+    description: "The body cannot quite stay in one place. Spectral copies drift out of alignment and thin slices slip sideways, like a memory being rewritten.",
+    tech: "Offset sprite samples + moving slice displacement. No full-screen distortion.",
+    port: "Candidate: a composed-body shader with offset samples and a slow, bounded displacement. These are spatial copies of the current frame, not cached previous frames. Keep attacks readable and provide a reduced-motion setting." },
+  C: { name: "Architect's Binding", direction: "03 / orbiting restraints", shader: 3,
+    description: "The character is held inside a moving instrument. Gold-violet seals pass behind and in front of the body, with a bright sigil beneath their feet.",
+    tech: "Procedural rings + orbiting seals. Primarily an overlay option, not a recolor.",
+    port: "Candidate: back/front Node2D effect layers and a ground sigil, sized from composed character bounds. Can avoid a body render target entirely; use Line2D or shader quads plus particles. Layer around the body, never around health or intents." }
+};
+const names = ["Ironclad", "Silent", "Regent", "Necrobinder", "Defect"];
+const params = new URLSearchParams(location.search);
+let variant = Object.hasOwn(variants, params.get("variant")) ? params.get("variant") : "A";
+let selected = 0, time = 0, last = 0, paused = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let uploadName = null, uploadGeneration = 0;
+const canvas = $("preview"), gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: false });
+
+function fail(message) { $("error").hidden = false; $("error").textContent = message; }
+function shader(type, source) {
+  const result = gl.createShader(type);
+  gl.shaderSource(result, source); gl.compileShader(result);
+  if (!gl.getShaderParameter(result, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(result));
+  return result;
+}
+const vertex = `
+attribute vec2 position;
+varying vec2 uv;
+void main() { uv = position * .5 + .5; gl_Position = vec4(position, 0., 1.); }
+`;
+const fragment = `
+precision mediump float;
+varying vec2 uv;
+uniform sampler2D sprite;
+uniform float clock, strength, scale, facing;
+uniform int effect;
+const vec3 violet = vec3(.64, .28, 1.);
+const vec3 ice = vec3(.40, .90, 1.);
+const vec3 gold = vec3(1., .72, .35);
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f);
+  return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);
+}
+vec4 sampleBody(vec2 p) {
+  p.x = (p.x-.5)*facing+.5;
+  if (p.x<0. || p.x>1. || p.y<0. || p.y>1.) return vec4(0);
+  return texture2D(sprite,p);
+}
+vec4 light(vec3 color, float alpha) { alpha=clamp(alpha,0.,1.); return vec4(color*alpha,alpha); }
+vec4 over(vec4 top, vec4 bottom) { return top+bottom*(1.-top.a); }
+float ellipse(vec2 p, vec2 center, vec2 radius, float width) {
+  float d=abs(length((p-center)/radius)-1.);
+  return 1.-smoothstep(width,width+.025,d);
+}
+void main() {
+  vec2 p=(uv-vec2(.5,.14))/scale+vec2(.5,.14);
+  vec2 q=p; q.y-=sin(clock*1.8)*.004;
+  float s=strength;
+  vec4 base=sampleBody(q), aura=vec4(0), front=vec4(0);
+  vec3 color=base.rgb;
+  if(effect==0) color*=vec3(.70,.40,.90);
+  if(effect==1) {
+    float edge=0., fire=0.;
+    float n=noise(vec2(q.x*26.,q.y*12.-clock*1.6));
+    for(int i=0;i<12;i++) {
+      float angle=float(i)*.523599;
+      vec2 dir=vec2(cos(angle),sin(angle));
+      edge=max(edge,sampleBody(q+dir*.008).a);
+      fire+=sampleBody(q+dir*(.018+n*.02)-vec2(0.,n*.06)).a/12.;
+    }
+    float flame=clamp(fire*2.,0.,1.)*(.3+n*.7)*(1.-base.a);
+    aura=light(mix(violet,ice,n*.5),flame*s*.85);
+    front=light(mix(violet,vec3(.92,.75,1.),.65),(edge-base.a)*s*.9);
+    float veins=pow(noise(q*vec2(35.,20.)+vec2(0.,clock*.22)),9.)*s;
+    color=mix(color,color*.65+violet*.18,s*.42)+veins*violet*.55;
+    for(int i=0;i<18;i++) {
+      float id=float(i);
+      float life=fract(clock*(.10+hash(vec2(id,3.))*.12)+hash(vec2(id,6.)));
+      vec2 ember=vec2(.22+hash(vec2(id,1.))*.56+sin(clock+id)*.02,.15+life*.72);
+      float dotLight=(1.-smoothstep(.001,.005,length(p-ember)))*sin(life*3.14159);
+      front=over(light(mix(violet,ice,hash(vec2(id,8.))),dotLight*s*.8),front);
+    }
+  }
+  if(effect==2) {
+    float drift=(.025+.022*sin(clock*.85))*s;
+    vec4 echo1=sampleBody(q+vec2(drift,.008));
+    vec4 echo2=sampleBody(q-vec2(drift*1.5,.014));
+    aura=over(light(ice,echo1.a*s*.36),light(violet,echo2.a*s*.45));
+    float band=1.-smoothstep(.009,.018,abs(q.y-(.20+fract(clock*.075)*.6)));
+    vec2 slipped=q+vec2(band*sin(clock*2.)*.033*s,0.);
+    base=sampleBody(slipped); color=base.rgb;
+    float cracks=pow(.5+.5*sin(q.y*170.+noise(vec2(q.y*8.,clock*.3))*8.),26.);
+    color=mix(color,vec3(dot(color,vec3(.3,.59,.11))),s*.2)+ice*cracks*s*.12;
+    front=light(ice,base.a*band*s*.32);
+  }
+  if(effect==3) {
+    float breath=.5+.5*sin(clock*1.1);
+    vec2 center=vec2(.5,.43);
+    vec2 r=p-center;
+    float tilt=.35*sin(clock*.35);
+    vec2 tilted=vec2(r.x*cos(tilt)-r.y*sin(tilt),r.x*sin(tilt)+r.y*cos(tilt));
+    float ring=ellipse(tilted,vec2(0),vec2(.27,.14),.015);
+    float ring2=ellipse(p,vec2(.5,.49),vec2(.19,.285),.012);
+    float ground=ellipse(p,vec2(.5,.205),vec2(.27,.032),.025);
+    float spokes=pow(.5+.5*cos(atan((p.y-.205)*8.,p.x-.5)*12.+clock*.4),18.);
+    ground+=ellipse(p,vec2(.5,.205),vec2(.235,.025),.018)*spokes;
+    aura=light(mix(violet,gold,.55),clamp((ring+ring2)*.5+ground*.75,0.,1.)*s);
+    front=light(mix(gold,violet,.25),(ring*step(tilted.y,0.)*.78+ring2*step(p.x,.5)*.32)*s);
+    for(int i=0;i<6;i++) {
+      float a=clock*.45+float(i)*1.0472;
+      vec2 orb=vec2(cos(a)*.27,sin(a)*.14);
+      vec2 rotated=vec2(orb.x*cos(tilt)+orb.y*sin(tilt),-orb.x*sin(tilt)+orb.y*cos(tilt))+center;
+      vec2 d=abs(p-rotated);
+      float seal=1.-smoothstep(.006,.011,abs(d.x+d.y-.015));
+      vec4 mark=light(gold,seal*s*(.7+.3*breath));
+      if(orb.y<0.) front=over(mark,front); else aura=over(mark,aura);
+    }
+    color=mix(color,color*.82+violet*.08,s*.35);
+  }
+  gl_FragColor=over(front,over(vec4(color*base.a,base.a),aura));
+}
+`;
+let program, uniforms, textures = [];
+
+// Deliberately original, simplified silhouettes: armor, cloak, crown, tall robe, mechanical body.
+function standIn(index) {
+  const c=document.createElement("canvas"); c.width=512; c.height=512;
+  const ctx=c.getContext("2d");
+  ctx.lineJoin="round"; ctx.lineCap="round";
+  const path=(d,fill,stroke="#17141e",width=4)=>{
+    const p=new Path2D(d); ctx.fillStyle=fill; ctx.fill(p);
+    if(stroke) { ctx.strokeStyle=stroke; ctx.lineWidth=width; ctx.stroke(p); }
+  };
+  const oval=(x,y,rx,ry,fill)=>{
+    ctx.beginPath(); ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2); ctx.fillStyle=fill; ctx.fill();
+  };
+  if(index===0) {
+    path("M245 167 Q201 161 183 207 L148 391 221 367 274 390 282 214Z","#853c43");
+    path("M226 298 L249 300 244 395 214 405 201 402 221 380Z","#4a4551");
+    path("M266 293 L286 299 307 391 299 405 271 405 276 379Z","#625666");
+    path("M223 186 L280 184 303 253 280 307 220 299 203 242Z","#9a7d6b");
+    path("M221 207 L279 200 288 251 220 258Z","#aaa09a");
+    path("M211 187 L232 189 224 224 186 230 189 208Z","#b2a8a0");
+    path("M288 195 L314 216 314 264 298 276 285 230Z","#bd967b");
+    path("M300 267 L321 265 339 357 325 367Z","#b2b9c2");
+    path("M291 275 L333 266 335 276 294 286Z","#c0a675");
+    path("M235 155 L239 125 273 119 286 143 274 178 248 183Z","#bfb1a4");
+    path("M240 141 L270 136 275 152 247 160Z","#3e343c");
+    path("M251 146 L269 142 267 149 253 152Z","#f3c177",null);
+    path("M247 127 L237 99 257 111 268 121 M275 127 L293 110 286 141","#cbb8a0");
+    path("M212 270 L288 272 285 289 216 286Z","#52424c");
+  } else if(index===1) {
+    path("M252 126 Q197 132 190 217 L162 389 210 376 230 403 255 376 282 392 313 379 290 201Z","#416456");
+    path("M244 171 L222 241 197 372 223 351 247 267 275 379 293 380 272 212Z","#2d403b");
+    path("M219 175 L241 134 278 143 294 185 265 208Z","#638571");
+    path("M239 161 L270 155 279 170 267 194 242 187Z","#d6cfac");
+    path("M242 170 L250 168 251 176 245 178Z","#292c31");
+    path("M264 166 L271 166 269 174 263 176Z","#292c31");
+    path("M219 219 L204 266 182 280 188 292 221 277 237 237Z","#829580");
+    path("M181 282 L171 283 151 341 187 302Z","#c1d5c3");
+    path("M279 220 L306 253 330 249 337 263 299 274 264 243Z","#829580");
+    path("M330 253 L352 249 365 212 340 242Z","#d3d8c0");
+    path("M212 372 L232 368 223 409 195 409Z","#43434b");
+    path("M266 372 L284 377 292 406 268 408Z","#43434b");
+  } else if(index===2) {
+    path("M219 178 L280 178 310 253 338 385 284 368 238 395 184 377 200 246Z","#6864a0");
+    path("M221 208 L207 357 240 384 270 358 277 204Z","#d2b39a");
+    path("M215 217 L239 233 248 326 215 352 202 314Z","#977a83");
+    path("M276 202 L293 287 281 341 262 285 260 226Z","#bcb3c9");
+    path("M230 354 L248 355 244 405 215 405Z","#514763");
+    path("M265 353 L283 350 298 400 269 405Z","#514763");
+    oval(252,155,24,29,"#b7a4bd");
+    path("M226 146 L220 104 239 120 252 90 265 119 287 104 278 147Z","#dabb72");
+    path("M234 158 L248 160 M259 160 L269 157","transparent","#695079",3);
+    path("M222 192 L189 232 168 215 161 229 190 254 236 218Z","#c7b2be");
+    path("M276 194 L307 207 325 186 336 196 311 232 276 223Z","#c7b2be");
+    oval(343,161,12,12,"#efcf89");
+    path("M343 141 L347 156 362 161 347 165 343 181 339 165 323 161 339 157Z","#ffe6a8",null);
+  } else if(index===3) {
+    path("M236 161 L274 162 284 267 307 401 273 388 252 407 233 393 201 405 220 268Z","#54496b");
+    path("M245 193 L252 218 229 381 254 369 280 389 268 230 267 190Z","#a184a0");
+    path("M244 181 L252 194 246 208 234 196Z","#a3d4ca");
+    oval(256,139,20,28,"#c4c7bc");
+    path("M232 141 Q224 110 251 103 Q284 99 287 143 L274 168 272 121 245 127 235 168Z","#b9d7ce");
+    path("M247 139 L253 138 253 146 247 146 M263 137 L269 138 268 145 262 145","#4a4960",null);
+    path("M233 185 L213 257 183 263 181 275 225 275 249 215Z","#b6b9b1");
+    path("M272 185 L293 241 311 228 319 239 291 263 264 220Z","#aeb3b2");
+    path("M319 165 L326 165 334 400 327 402Z","#697c7f");
+    path("M321 169 Q286 131 299 115 Q321 97 343 120 L349 158 333 178Z","#7eaaa0");
+    oval(321,141,13,18,"#c5e9d0");
+    path("M308 134 L319 141 314 148 M330 134 L325 143 331 148","transparent","#50646b",3);
+  } else {
+    path("M222 272 L245 278 231 329 227 391 204 399 209 333Z","#577b97");
+    path("M261 279 L282 270 295 324 280 394 257 400 270 326Z","#678aa2");
+    path("M203 389 L230 387 234 407 192 407Z","#c6a97b");
+    path("M258 390 L282 389 295 405 254 409Z","#c6a97b");
+    path("M216 174 L275 174 294 229 271 285 226 286 205 238Z","#799ba7");
+    path("M231 190 L268 186 277 236 255 262 229 246Z","#b7ba9f");
+    oval(251,223,15,22,"#35465e"); oval(251,223,8,14,"#97e8ee");
+    path("M210 181 L223 195 205 239 196 282 181 277 181 232Z","#a2a596");
+    path("M279 178 L301 193 317 239 307 279 292 276 301 238 272 208Z","#8badaf");
+    oval(189,284,12,14,"#c8b895"); oval(302,281,12,14,"#c8b895");
+    path("M233 164 L225 130 244 111 274 119 280 146 260 175Z","#c1b38e");
+    path("M235 138 L271 136 268 149 240 154Z","#3c4f60");
+    path("M243 141 L264 140 262 146 245 147Z","#a2f0ee",null);
+    path("M239 117 L240 96 248 92 250 113Z","#769fa8");
+  }
+  return c;
+}
+
+function texture(source) {
+  const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  return t;
+}
+function updateState() {
+  $("strength-value").textContent=$("strength").value+"%";
+  $("speed-value").textContent=(Number($("speed").value)/100).toFixed(1)+"x";
+  $("size-value").textContent=$("size").value+"%";
+  $("pause").textContent=paused ? "Resume motion" : "Pause motion";
+  $("pause").setAttribute("aria-pressed",String(paused));
+  $("reference-label").textContent=$("reference").value==="tint" ? "Current purple tint" : "Original colors";
+  $("state").textContent=JSON.stringify({
+    variant, effect: variants[variant].name, character: names[selected] ?? "Uploaded sprite",
+    strength: Number($("strength").value)/100, speed: Number($("speed").value)/100,
+    size: Number($("size").value)/100, paused, faceLeft: $("flip").checked,
+    background: $("background").value, reference: $("reference").value,
+    source: selected===5 ? uploadName : "Original stand-in", gallery: "Five built-in stand-ins",
+    renderer: "WebGL / flattened RGBA", gameplayIntegration: false
+  },null,2);
+}
+function chooseCharacter(index) {
+  selected=index; $("character").value=String(index);
+  [...$("gallery").children].forEach((b,i)=>b.setAttribute("aria-pressed",String(i===index)));
+  updateState();
+}
+function chooseVariant(key, writeUrl=true) {
+  variant=key; const v=variants[key];
+  $("effect-name").textContent=v.name; $("stage-name").textContent=v.name;
+  $("variant-number").textContent="Direction "+key; $("direction").textContent=v.direction;
+  $("description").textContent=v.description; $("tech").textContent=v.tech; $("port-notes").textContent=v.port;
+  document.querySelectorAll("[data-variant]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.variant===key)));
+  if(writeUrl) { const url=new URL(location.href); url.searchParams.set("variant",key); history.replaceState(null,"",url); }
+  updateState();
+}
+function cycle(delta) { chooseVariant(["A","B","C"][(["A","B","C"].indexOf(variant)+delta+3)%3]); }
+names.forEach((name,i)=>{
+  $("character").add(new Option(name,String(i)));
+  const b=document.createElement("button"); b.textContent=name; b.setAttribute("aria-pressed",String(i===0));
+  b.onclick=()=>chooseCharacter(i); $("gallery").append(b);
+});
+$("character").onchange=()=>chooseCharacter(Number($("character").value));
+document.querySelectorAll("[data-variant]").forEach(b=>b.onclick=()=>chooseVariant(b.dataset.variant));
+$("previous").onclick=()=>cycle(-1); $("next").onclick=()=>cycle(1);
+document.addEventListener("keydown",e=>{
+  if(e.target.closest("input,textarea,select,button,[contenteditable]") || e.altKey || e.ctrlKey || e.metaKey) return;
+  if(e.key==="ArrowLeft" || e.key==="ArrowRight") { e.preventDefault(); cycle(e.key==="ArrowLeft"?-1:1); }
+});
+window.addEventListener("popstate",()=>{
+  const key=new URLSearchParams(location.search).get("variant"); chooseVariant(Object.hasOwn(variants,key)?key:"A",false);
+});
+["strength","speed","size","reference","flip"].forEach(id=>$(id).addEventListener("input",updateState));
+$("background").onchange=()=>{ $("stage").dataset.background=$("background").value; updateState(); };
+$("pause").onclick=()=>{ paused=!paused; updateState(); };
+$("upload").onchange=async()=>{
+  const generation=++uploadGeneration;
+  const file=$("upload").files[0]; if(!file) return;
+  if(!["image/png","image/webp"].includes(file.type) || file.size>12*1024*1024) {
+    $("upload-status").textContent="Choose a PNG or WebP under 12 MB."; return;
+  }
+  let image;
+  try { image=await createImageBitmap(file); }
+  catch(error) { $("upload-status").textContent="Could not decode this image: "+error.message; return; }
+  if(generation!==uploadGeneration) { image.close(); return; }
+  if(image.width>8192 || image.height>8192) { image.close(); $("upload-status").textContent="Image dimensions must be at most 8192 x 8192."; return; }
+  const c=document.createElement("canvas"); c.width=512; c.height=512; const ctx=c.getContext("2d");
+  const ratio=Math.min(310/image.width,310/image.height);
+  ctx.drawImage(image,(512-image.width*ratio)/2,410-image.height*ratio,image.width*ratio,image.height*ratio);
+  image.close();
+  if(textures[5]) gl.deleteTexture(textures[5]);
+  textures[5]=texture(c); uploadName=file.name;
+  if($("character").options.length===5) $("character").add(new Option("Uploaded sprite","5"));
+  $("reset").hidden=false; $("upload-status").textContent=file.name+" / local only. Transparent backgrounds give a silhouette; opaque images get rectangular effects.";
+  chooseCharacter(5);
+};
+$("reset").onclick=()=>{
+  ++uploadGeneration;
+  if(textures[5]) gl.deleteTexture(textures[5]);
+  textures.length=5; uploadName=null; $("character").options[5]?.remove(); $("upload").value="";
+  $("reset").hidden=true; $("upload-status").textContent="Sprite removed. Transparent PNG / WebP stays in your browser.";
+  chooseCharacter(0);
+};
+function draw(index,effect,x,y,size) {
+  gl.viewport(x,y,size,size);
+  gl.bindTexture(gl.TEXTURE_2D,textures[index]);
+  gl.uniform1i(uniforms.effect,effect);
+  gl.uniform1f(uniforms.scale,Number($("size").value)/100);
+  gl.drawArrays(gl.TRIANGLES,0,6);
+}
+function frame(now) {
+  if(gl.isContextLost()) return;
+  const dt=last ? Math.min((now-last)/1000,.05) : 0; last=now;
+  if(!paused) time+=dt*Number($("speed").value)/100;
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform1f(uniforms.clock,time); gl.uniform1f(uniforms.strength,Number($("strength").value)/100);
+  gl.uniform1f(uniforms.facing,$("flip").checked?-1:1);
+  // Fixed study coordinates keep all slots comparable, independent of browser panel width.
+  draw(selected,$("reference").value==="tint"?0:-1,30,205,500);
+  draw(selected,variants[variant].shader,590,205,500);
+  for(let i=0;i<5;i++) draw(i,variants[variant].shader,12+i*224,10,200);
+  requestAnimationFrame(frame);
+}
+chooseVariant(variant);
+if(!gl) { fail("WebGL is unavailable. Enable hardware acceleration or open this page in a WebGL-capable browser."); $("upload").disabled=true; }
+else {
+  try {
+    program=gl.createProgram();
+    const vs=shader(gl.VERTEX_SHADER,vertex), fs=shader(gl.FRAGMENT_SHADER,fragment);
+    gl.attachShader(program,vs); gl.attachShader(program,fs); gl.linkProgram(program);
+    gl.deleteShader(vs); gl.deleteShader(fs);
+    if(!gl.getProgramParameter(program,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
+    gl.useProgram(program);
+    const buffer=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
+    const position=gl.getAttribLocation(program,"position"); gl.enableVertexAttribArray(position);
+    gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
+    uniforms=Object.fromEntries(["sprite","clock","strength","scale","facing","effect"].map(n=>[n,gl.getUniformLocation(program,n)]));
+    gl.uniform1i(uniforms.sprite,0);
+    textures=names.map((_,i)=>texture(standIn(i)));
+    gl.clearColor(0,0,0,0);
+    requestAnimationFrame(frame);
+  } catch(error) { fail("The shader could not start: "+error.message); $("upload").disabled=true; }
+}
+canvas.addEventListener("webglcontextlost",event=>{ event.preventDefault(); fail("Graphics context lost. Reload this prototype to restart it."); $("upload").disabled=true; });
+</script>
+</body>
+</html>

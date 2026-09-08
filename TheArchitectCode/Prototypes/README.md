@@ -1,4 +1,41 @@
-# Corrupted Challenger telegraph prototype
+# Corrupted Challenger prototypes
+
+## Corruption effect lab (unselected)
+
+Run from the repository root:
+
+```sh
+python3 -m http.server 8873 --bind 127.0.0.1 --directory TheArchitectCode/Prototypes
+```
+
+Open <http://127.0.0.1:8873/corruption-effects.html?variant=A>.
+This throwaway WebGL study compares three material directions against the
+existing `(0.70, 0.40, 0.90)` tint, or against original sprite colors:
+
+- **A / Voidfire:** irregular silhouette flame, bright contour, rising embers.
+- **B / Fractured Echo:** displaced spectral copies and a slowly moving slice.
+- **C / Architect's Binding:** back/front orbiting seals and a ground sigil.
+
+Use the bottom switcher or left/right arrow keys outside controls. Each direction
+has the same five original character stand-ins, character selection, intensity,
+speed, size, lighting, facing, and pause controls. Reduced-motion preferences
+start the animation paused. A transparent PNG/WebP can be loaded as a sixth
+character for the main comparison; the five-character gallery stays unchanged.
+Images remain in browser memory and are not transmitted or persisted.
+Live state and Godot implementation considerations are in the expandable panel.
+
+These are real fragment shaders over flattened RGBA sprites, not actual game
+assets or Spine animations. They do not establish in-game rendering cost or
+compatibility with arbitrary character rigs. Silhouette effects would likely
+need a padded composed-body render target to avoid Spine attachment seams;
+Binding can instead use body-relative back/front effect nodes. Keep health,
+intents, orbs and pets outside the body effect.
+
+No direction has been approved. Production `CorruptedChallenger` is unchanged.
+Keep this study on `philip-scott-corrupted-effect-redesign`; only integrate a
+chosen treatment after evaluating it on animated game characters.
+
+## Corrupted Challenger telegraph prototype
 
 Approved by the human on 2026-09-07 for
 [Prototype the Corrupted Challenger telegraph](https://github.com/Philip-Scott/slay-the-spire-the-architect/issues/5),
