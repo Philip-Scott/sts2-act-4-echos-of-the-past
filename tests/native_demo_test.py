@@ -81,7 +81,8 @@ class NativeDemoTests(unittest.TestCase):
                  patch.object(demo.subprocess, "Popen", return_value=process), \
                  patch.object(demo.signal, "signal"), patch("builtins.print"):
                 result = demo.launch(SimpleNamespace(game=str(game), label="test", scenario="default",
-                                                     cache_from=None, cold=True, render_threads=4))
+                                                     cache_from=None, cold=True, render_threads=4,
+                                                     shared_visible=False, render_device="/dev/dri/renderD128"))
             self.assertEqual(result, 0)
             run = next((root / "runs").iterdir())
             (mods / "TheArchitect/TheArchitect.dll").write_text("rebuilt")
@@ -104,6 +105,42 @@ class NativeDemoTests(unittest.TestCase):
             demo.perform({"action": "pointer", "x": 10, "y": 20}, Path("/run-test"), {})
             self.assertEqual(execute.call_args.args[0],
                              ["xdotool", "mousemove", "10", "20"])
+
+    def test_shared_display_mounts_only_selected_gpu_and_socket(self):
+        run = demo.RUNS / "run-visible"
+        with patch.object(demo, "tool", side_effect=lambda name: "/usr/bin/" + name):
+            command = demo.sandbox_command(Path("/game"), run, None, shared_display=":2",
+                                           render_device="/dev/dri/renderD128")
+        self.assertIn("/tmp/.X11-unix/X2", command)
+        self.assertIn("/dev/dri/renderD128", command)
+        self.assertIn("DISPLAY", command)
+        self.assertIn("--unshare-pid", command)
+        self.assertIn("--unshare-net", command)
+        self.assertNotIn("LIBGL_ALWAYS_SOFTWARE", command)
+        self.assertNotIn(str(run / "Xvfb"), command)
+        self.assertNotIn("/dev/input", command)
+        self.assertNotIn("/dev/dri/card0", command)
+        for display in ("host:0", "localhost:10", "", ":0;command"):
+            with self.assertRaises(ValueError):
+                demo.local_display_socket(display)
+
+    def test_shared_display_rejects_desktop_input_and_uses_native_capture(self):
+        metadata = {"display_mode": "shared-visible"}
+        with tempfile.TemporaryDirectory() as temporary, patch.object(demo.subprocess, "run") as execute:
+            run = Path(temporary)
+            (run / "captures").mkdir()
+            for action in ("pointer", "key", "click"):
+                with self.assertRaisesRegex(ValueError, "Desktop input controls are disabled"):
+                    demo.perform({"action": action}, run, metadata)
+            with patch.object(demo.time, "time_ns", return_value=123):
+                def complete(_delay):
+                    self.assertEqual((run / "capture-request").read_text(), "capture-123")
+                    (run / "captures/capture-123.png").write_bytes(b"png")
+                    (run / "captures/capture-123.ready").write_text("ok")
+                with patch.object(demo.time, "sleep", side_effect=complete):
+                    response = demo.perform({"action": "capture"}, run, metadata)
+            self.assertEqual(response, {"capture": str(run / "captures/capture-123.png")})
+            execute.assert_not_called()
 
     def test_stop_does_not_signal_a_pid_from_metadata(self):
         with patch.object(demo.subprocess, "run") as execute:

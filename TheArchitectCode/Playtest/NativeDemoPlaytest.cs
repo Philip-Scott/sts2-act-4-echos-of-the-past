@@ -66,8 +66,14 @@ internal static class NativeDemoPlaytest
     private static async Task Demonstrate(NGame game, Task menuReady)
     {
         await menuReady;
+        if (NativeDemoSafety.SharedVisible)
+        {
+            game.GetWindow().Unfocusable = true;
+            game.GetViewport().GuiDisableInput = true;
+            game.AddChild(new NativeDemoObserver());
+        }
         await Task.Delay(2000);
-        game.GetWindow().Title = "The Architect - ISOLATED NATIVE INTEGRATION (automatic)";
+        game.GetWindow().Title = $"The Architect - NATIVE {Path.GetFileName(NativeDemoSafety.RuntimePath)}";
         var run = await game.StartNewSingleplayerRun(ModelDb.Character<Ironclad>(), true,
             [ModelDb.Act<Overgrowth>(), ModelDb.Act<Hive>(), ModelDb.Act<Glory>()],
             [], "ARCHITECT-NATIVE-INTEGRATION", GameMode.Standard);
@@ -124,7 +130,8 @@ internal static class NativeDemoPlaytest
             "native orb manager and initial slots attached for the saved character");
         await InspectChallengerDisplay(game, actor);
         game.GetViewport().GuiReleaseFocus();
-        Input.WarpMouse(game.GetViewportRect().Size / 2f);
+        if (!NativeDemoSafety.SharedVisible)
+            Input.WarpMouse(game.GetViewportRect().Size / 2f);
         await Task.Delay(2500);
         await Capture("challenger-display");
         var rngBefore = "";
@@ -297,6 +304,19 @@ internal static class NativeDemoPlaytest
             NCapstoneContainer.Instance!.Close();
             await game.AwaitProcessFrame();
         }
+        if (NativeDemoSafety.SharedVisible)
+        {
+            game.GetViewport().GuiReleaseFocus();
+            var clear = telegraph.FindChildren("*", "Button", true, false).OfType<Button>()
+                .Single(button => button.Text == "Clear");
+            clear.EmitSignal(Button.SignalName.Pressed);
+            await game.AwaitProcessFrame();
+            var hoverContainer = game.HoverTipsContainer
+                ?? throw new InvalidOperationException("Native hover container missing.");
+            Require(hoverContainer.GetChildren().OfType<Control>()
+                .All(control => control.Name != "ChallengerCardPreview" || !control.Visible),
+                "shared-visible preview dismissed without moving the desktop pointer");
+        }
     }
 
     private static async Task Finish(NGame game, RunState run, NativeChallenger actor, long initialRevision, string outcome)
@@ -359,5 +379,7 @@ internal static class NativeDemoPlaytest
         var error = game.GetViewport().GetTexture().GetImage().SavePng(Path.Combine(NativeDemoSafety.RuntimePath, stage + ".png"));
         if (error != Error.Ok)
             throw new InvalidOperationException($"Smoke capture {stage}: {error}");
+        NativeDemoObserver.RecordCapture(stage);
+        MainFile.Logger.Info($"NATIVE CAPTURE stage={stage} focused={game.GetWindow().HasFocus()} frames={Engine.GetProcessFrames()}");
     }
 }

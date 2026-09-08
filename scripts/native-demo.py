@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Worktree-local native playtests on a private X11 server, never the host display."""
+"""Worktree-local native playtests with private or explicitly shared-visible X11."""
 
 import argparse
 import hashlib
@@ -104,7 +104,14 @@ def seed_shader_cache(run, game, requested=None, cold=False):
     return None
 
 
-def sandbox_command(game, run, xvfb, render_threads=4):
+def local_display_socket(display):
+    match = re.fullmatch(r":([0-9]+)(?:\.[0-9]+)?", display)
+    if not match:
+        raise ValueError("--shared-visible requires a local DISPLAY such as :0 (no TCP).")
+    return Path("/tmp/.X11-unix") / ("X" + match.group(1))
+
+
+def sandbox_command(game, run, xvfb, render_threads=4, shared_display=None, render_device=None):
     # Hide host homes, Steam/desktop sockets, and sibling run control sockets.
     command = [tool("bwrap"), "--die-with-parent", "--unshare-pid", "--unshare-net",
                "--unshare-ipc", "--unshare-uts", "--ro-bind", "/", "/"]
@@ -118,19 +125,28 @@ def sandbox_command(game, run, xvfb, render_threads=4):
                "--bind", str(run), str(run),
                "--ro-bind", str(run / "mods"), str(run / "mods"),
                "--ro-bind", str(run / "mods"), str(game / "mods"),
-               "--ro-bind", xvfb, str(run / "Xvfb"),
                "--dev", "/dev", "--proc", "/proc", "--clearenv"]
+    if shared_display:
+        display_socket = str(local_display_socket(shared_display))
+        command += ["--ro-bind", display_socket, display_socket,
+                    "--ro-bind", str(run / "Xauthority"), str(run / "Xauthority"),
+                    "--dev-bind", render_device, render_device]
+    else:
+        command += ["--ro-bind", xvfb, str(run / "Xvfb")]
     environment = {
         "PATH": "/usr/bin:/bin", "LANG": "C.UTF-8", "HOME": str(run / "home"),
         "XDG_DATA_HOME": str(run / "xdg"), "XDG_CONFIG_HOME": str(run / "config"),
         "XDG_CACHE_HOME": str(run / "cache"), "XDG_RUNTIME_DIR": str(run / "tmp"),
-        "TMPDIR": str(run / "tmp"), "LIBGL_ALWAYS_SOFTWARE": "1",
+        "TMPDIR": str(run / "tmp"),
         "__GLX_VENDOR_LIBRARY_NAME": "mesa",
         "__EGL_VENDOR_LIBRARY_FILENAMES": "/usr/share/glvnd/egl_vendor.d/50_mesa.json",
-        "LP_NUM_THREADS": str(render_threads),
         "ALSA_CONFIG_PATH": str(ROOT / "scripts/native-demo-alsa.conf"),
         "ARCHITECT_NATIVE_RUNTIME": str(run),
     }
+    if shared_display:
+        environment.update(DISPLAY=shared_display, XAUTHORITY=str(run / "Xauthority"))
+    else:
+        environment.update(LIBGL_ALWAYS_SOFTWARE="1", LP_NUM_THREADS=str(render_threads))
     for key, value in environment.items():
         command += ["--setenv", key, value]
     return command + ["--chdir", str(run), tool("python3"), str(Path(__file__).resolve()),
@@ -142,8 +158,20 @@ def launch(args):
     if not os.environ.get("ARCHITECT_SNAPSHOT_INPUT"):
         raise ValueError("Set ARCHITECT_SNAPSHOT_INPUT to the captured snapshot to copy (never modified).")
     snapshot = required_file(os.environ["ARCHITECT_SNAPSHOT_INPUT"])
-    xvfb = tool(os.environ.get("ARCHITECT_XVFB", "Xvfb"))
-    for name in ("bwrap", "xauth", "xdpyinfo", "xdotool", "magick"):
+    shared_display = os.environ.get("DISPLAY", "") if args.shared_visible else None
+    if args.shared_visible:
+        if not local_display_socket(shared_display).is_socket():
+            raise ValueError("Host X11 socket is unavailable; set DISPLAY to a running local X11 server.")
+        if not os.environ.get("XAUTHORITY"):
+            raise ValueError("Set XAUTHORITY to the host X11 authorization file for --shared-visible.")
+        authority = required_file(os.environ["XAUTHORITY"])
+        if not re.fullmatch(r"/dev/dri/renderD[0-9]+", args.render_device) or not Path(args.render_device).is_char_device():
+            raise ValueError("--render-device must name an available /dev/dri/renderD* GPU render node.")
+        if args.cache_from:
+            raise ValueError("--cache-from currently supports private software displays only; omit it for shared-visible.")
+    xvfb = None if args.shared_visible else tool(os.environ.get("ARCHITECT_XVFB", "Xvfb"))
+    for name in (("bwrap", "xdpyinfo") if args.shared_visible else
+                 ("bwrap", "xauth", "xdpyinfo", "xdotool", "magick")):
         tool(name)
     required_file("/usr/share/glvnd/egl_vendor.d/50_mesa.json")
     mods = Path(os.environ.get("ARCHITECT_MODS_INPUT", ROOT / "artifacts/mods")).resolve()
@@ -153,7 +181,10 @@ def launch(args):
                                dir=RUNS))
     metadata = {"id": run.name, "worktree": str(ROOT), "game": str(game),
                 "label": args.label, "scenario": args.scenario, "state": "preparing",
-                "render_threads": args.render_threads}
+                "render_threads": None if args.shared_visible else args.render_threads,
+                "display_mode": "shared-visible" if args.shared_visible else "virtual",
+                "host_display": shared_display,
+                "render_device": args.render_device if args.shared_visible else None}
     write_json(run / "run.json", metadata)
     process = None
     try:
@@ -174,7 +205,11 @@ def launch(args):
             (run / directory).mkdir(mode=0o700)
         (run / "Xvfb").touch()
         (run / "tmp/.X11-unix").mkdir(mode=0o700)
-        metadata["cache_source"] = seed_shader_cache(run, game, args.cache_from, args.cold)
+        if args.shared_visible:
+            shutil.copyfile(authority, run / "Xauthority")
+            os.chmod(run / "Xauthority", 0o600)
+        metadata["cache_source"] = seed_shader_cache(run, game, args.cache_from,
+                                                    args.cold or args.shared_visible)
         settings = run / "xdg/SlayTheSpire2/default/1"
         settings.mkdir(parents=True)
         shutil.copyfile(ROOT / "scripts/native-demo-settings.json", settings / "settings.save")
@@ -184,8 +219,11 @@ def launch(args):
                         state="starting", started_at=time.time())
         write_json(run / "run.json", metadata)
         print(f"Isolated native demo: {run.name}\nArtifacts: {run}", flush=True)
+        if args.shared_visible:
+            print("Shared desktop: windows may affect focus at startup. External input controls are disabled.", flush=True)
         with (run / "launcher.log").open("w") as log:
-            process = subprocess.Popen(sandbox_command(game, run, xvfb, args.render_threads), stdout=log,
+            process = subprocess.Popen(sandbox_command(game, run, xvfb, args.render_threads,
+                                                      shared_display, args.render_device), stdout=log,
                                        stderr=subprocess.STDOUT)
             def interrupt(signum, _frame):
                 stop_child(process)
@@ -238,15 +276,32 @@ def perform(request, run, metadata):
     if not isinstance(request, dict):
         raise ValueError("Control message must be an object.")
     action = request.get("action")
+    shared_visible = metadata.get("display_mode") == "shared-visible"
+    if shared_visible and action in ("pointer", "key", "click"):
+        raise ValueError("Desktop input controls are disabled in shared-visible mode; use in-process native tests.")
     if action == "status" or action == "stop":
         result = {**metadata, "state": "stopping" if action == "stop" else "running"}
-        if action == "status":
+        if action == "status" and shared_visible:
+            receipt = run / "telemetry.json"
+            result["telemetry"] = json.loads(receipt.read_text()) if receipt.exists() else None
+        elif action == "status":
             result["pointer"] = subprocess.run(["xdotool", "getmouselocation", "--shell"],
                                               check=True, capture_output=True, text=True,
                                               timeout=5).stdout.strip()
         return result
     if action == "capture":
-        name = f"capture-{time.time_ns()}.png"
+        name = f"capture-{time.time_ns()}"
+        if shared_visible:
+            temporary = run / "capture-request.tmp"
+            temporary.write_text(name)
+            temporary.replace(run / "capture-request")
+            deadline = time.monotonic() + 15
+            while not (run / "captures" / (name + ".ready")).exists():
+                if time.monotonic() > deadline:
+                    raise ValueError("Native viewport capture timed out; rebuild the mod and inspect game.log.")
+                time.sleep(0.05)
+            return {"capture": str(run / "captures" / (name + ".png"))}
+        name += ".png"
         subprocess.run(["magick", "import", "-window", "root", str(run / "captures" / name)],
                        check=True, timeout=15, stdout=subprocess.DEVNULL)
         return {"capture": str(run / "captures" / name)}
@@ -273,29 +328,34 @@ def perform(request, run, metadata):
 
 def serve(args):
     run, metadata = owned_run(args.run)
-    # This entry point must never start a server on the host's display.
+    # A host display is permitted only by the explicit shared-visible launch mode.
     if os.environ.get("ARCHITECT_NATIVE_RUNTIME") != str(run) or Path("/proc/1/comm").read_text().strip() != "bwrap":
         raise ValueError("_serve is internal; use run to enter the private PID/display sandbox.")
     os.chdir(run)
-    os.environ["DISPLAY"] = ":0"
-    os.environ["XAUTHORITY"] = str(run / "Xauthority")
-    subprocess.run(["xauth", "-f", os.environ["XAUTHORITY"], "add", ":0", ".",
-                    os.urandom(16).hex()], check=True)
+    shared_visible = metadata.get("display_mode") == "shared-visible"
+    if not shared_visible:
+        os.environ["DISPLAY"] = ":0"
+        os.environ["XAUTHORITY"] = str(run / "Xauthority")
+        subprocess.run(["xauth", "-f", os.environ["XAUTHORITY"], "add", ":0", ".",
+                        os.urandom(16).hex()], check=True)
+    elif os.environ.get("DISPLAY") != metadata["host_display"]:
+        raise ValueError("Shared-visible display does not match its launch receipt.")
     xvfb = game = None
     def interrupt(signum, _frame):
         raise SystemExit(128 + signum)
     signal.signal(signal.SIGTERM, interrupt)
     signal.signal(signal.SIGINT, interrupt)
     try:
-        with (run / "display.log").open("w") as display_log:
-            xvfb = subprocess.Popen([str(run / "Xvfb"), ":0", "-screen", "0", "1280x720x24",
-                                     "-nolisten", "tcp", "-auth", os.environ["XAUTHORITY"],
-                                     "-noreset"], stdout=display_log, stderr=subprocess.STDOUT)
+        if not shared_visible:
+            with (run / "display.log").open("w") as display_log:
+                xvfb = subprocess.Popen([str(run / "Xvfb"), ":0", "-screen", "0", "1280x720x24",
+                                         "-nolisten", "tcp", "-auth", os.environ["XAUTHORITY"],
+                                         "-noreset"], stdout=display_log, stderr=subprocess.STDOUT)
         deadline = time.monotonic() + 15
         while subprocess.run(["xdpyinfo"], stdout=subprocess.DEVNULL,
                              stderr=subprocess.DEVNULL, timeout=2).returncode:
-            if xvfb.poll() is not None or time.monotonic() > deadline:
-                raise ValueError(f"Private Xvfb did not start; inspect {run}/display.log.")
+            if (xvfb is not None and xvfb.poll() is not None) or time.monotonic() > deadline:
+                raise ValueError(f"X11 display is unavailable; inspect {run}/launcher.log and display.log.")
             time.sleep(0.1)
         command = [str(Path(metadata["game"]) / "SlayTheSpire2"),
                    "--display-driver", "x11", "--rendering-method", "gl_compatibility",
@@ -305,9 +365,12 @@ def serve(args):
                    "--architect-native-test"]
         if metadata["scenario"] != "default":
             command.append("--architect-native-" + metadata["scenario"])
+        if shared_visible:
+            command.append("--architect-shared-visible")
         game = subprocess.Popen(command, cwd=metadata["game"])
-        metadata.update(state="running", display=":0 (private namespace)", game_pid=game.pid,
-                        display_pid=xvfb.pid, window=focus_game(game),
+        metadata.update(state="running", display=metadata["host_display"] if shared_visible else ":0 (private namespace)",
+                        game_pid=game.pid, display_pid=xvfb.pid if xvfb else None,
+                        window=None if shared_visible else focus_game(game),
                         namespaces={name: os.readlink(f"/proc/self/ns/{name}")
                                     for name in ("pid", "net", "ipc", "mnt")})
         write_json(run / "run.json", metadata)
@@ -319,7 +382,7 @@ def serve(args):
             server.listen(4)
             server.settimeout(0.25)
             while game.poll() is None:
-                if xvfb.poll() is not None:
+                if xvfb is not None and xvfb.poll() is not None:
                     raise ValueError("Private display exited; see display.log.")
                 try:
                     connection, _ = server.accept()
@@ -384,8 +447,12 @@ def main():
     run = commands.add_parser("run", help="Run in foreground; Ctrl-C stops only this instance.")
     run.add_argument("game")
     run.add_argument("--label", default="native")
+    run.add_argument("--shared-visible", action="store_true",
+                     help="Opt in to GPU windows on the shared desktop; no external input automation.")
+    run.add_argument("--render-device", default="/dev/dri/renderD128",
+                     help="Mesa GPU render node for --shared-visible (default: /dev/dri/renderD128).")
     run.add_argument("--render-threads", type=int, choices=range(1, 17), default=4,
-                     help="Mesa software-renderer threads per instance (default: 4).")
+                     help="Private-display software-renderer threads per instance (default: 4).")
     cache = run.add_mutually_exclusive_group()
     cache.add_argument("--cache-from", help="Copy shader caches from this completed run ID.")
     cache.add_argument("--cold", action="store_true", help="Do not seed shader caches from a completed run.")

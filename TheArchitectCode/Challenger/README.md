@@ -253,10 +253,69 @@ its opening capture; launcher success or an image is not a passing native
 regression. The timing runs were otherwise explicitly stopped, not certified
 as completed gameplay checks. **This is a safe concurrent automation mode, not
 yet a fast replacement for visible GPU-accelerated iteration.** An accelerated
-private display is a potential follow-up; do not work around this limitation
-by sharing desktop input or weakening native preloading/assertion timeouts.
+private display is a potential follow-up. The explicit shared-visible option
+below is another tradeoff for in-process automation; it is not input-isolated.
+Neither mode weakens native preloading/assertion timeouts.
 
-### Opt-in visible window
+### Faster shared-visible GPU automation
+
+For native tests that issue their actions **inside the game**, multiple visible
+GPU-rendered windows can run together without desktop mouse automation:
+
+```sh
+scripts/build.sh --mods-path artifacts/mods
+export ARCHITECT_SNAPSHOT_INPUT=/absolute/path/to/challenger_snapshot.json
+# DISPLAY and XAUTHORITY must describe your existing local X11 desktop.
+bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --shared-visible --label agent-A --nondefect
+# Run another invocation in a separate terminal / attached agent command:
+bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --shared-visible --label agent-B --poison
+```
+
+This mode keeps the same frozen mod bundle, copied snapshot, private HOME/XDG,
+read-only game, Steam-off/network isolation, PID namespace, run IDs and owned
+teardown. It explicitly exposes the selected host X11 socket and authorization,
+plus one GPU render node (`--render-device /dev/dri/renderD128` by default).
+No host input devices, audio devices or GPU display-control (`card*`) nodes are
+mounted. The tested device is the Intel P630 using Mesa; NVIDIA-only support is
+not established. Python, bwrap, xdpyinfo and Mesa are required, but Xvfb,
+ImageMagick and xdotool are not required for this mode. Software-renderer thread
+limits and copied software shader caches do not apply.
+
+**Rebuild the mod before using this mode.** The native test gate disables GUI
+input, requests a non-focusable window and disables background FPS limiting in
+its memory-only settings. It replaces the test-only pointer warp with the
+existing in-process Clear action after native pile browsing, and releases only
+Godot's internal GUI focus. No production UI or normal-game settings change.
+Window titles contain their unique run IDs. Namespace-local PIDs can repeat,
+so desktop windows are never identified or controlled by those PIDs.
+
+Use `status`, `capture` and `stop` with the exact run ID as above. `capture`
+requests a PNG from that game's own viewport on its render thread: it does not
+capture the desktop, raise a window, move a pointer, or depend on which window
+is on top. `pointer`, `key` and `click` deliberately **fail** in shared-visible
+mode. A test-only observer writes `telemetry.json` with stage, frame counts,
+unfocused-frame counts, focus state, title and observed desktop pointer
+coordinates. Native stage captures also log focus and frame counts.
+
+On the tested Bazzite/Intel desktop, two simultaneous instances reached
+`challenger-display.png` at **39.8-39.9 seconds**, and `opening.png` at
+**41.2-41.3 seconds** (versus 173 seconds with the four-thread software display).
+The unfocused instance completed native pile checks and turns, remained
+capturable after its peer was stopped, and passed the full poison/native
+regression. A separate 60-second hands-off observation covered startup, pile
+checks and combat with no desktop pointer movement; its non-Defect scenario
+also completed successfully. This confirms concurrent **in-process** automation
+on this machine, not arbitrary desktop automation or every window manager.
+
+Desktop focus is still shared: startup, the window manager, closing windows,
+or a human clicking them can change focus even with the non-focusable hint.
+Other mods may have their own global cursor behavior. Do not treat this mode as
+a security boundary or promise of an undisturbed desktop. Coordinate when a
+human/another agent needs focus-sensitive desktop work, and use the private
+display for mouse/keyboard automation. Minimized-window progression and other
+GPU/desktop combinations have not been established.
+
+### Legacy exclusive visible window
 
 The legacy command remains available for a human-reserved X11 window:
 
