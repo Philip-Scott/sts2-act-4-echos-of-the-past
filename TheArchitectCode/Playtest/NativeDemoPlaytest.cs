@@ -152,6 +152,7 @@ internal static class NativeDemoPlaytest
                 actor.State.OrbQueue.Orbs.All(orb => orbNodes.Any(node => node.Model == orb)),
                 "native orb slots and live orb models are rendered");
             actor.AssertIdentity();
+            AssertChallengerHandPosition(actor);
             if (turn == 1)
                 await InspectChallengerDisplay(game, actor);
             await Capture($"turn-{turn}");
@@ -253,6 +254,7 @@ internal static class NativeDemoPlaytest
     private static async Task InspectChallengerDisplay(NGame game, NativeChallenger actor)
     {
         await game.AwaitProcessFrame();
+        AssertChallengerHandPosition(actor);
         var telegraph = actor.Body.GetCreatureNode()!.GetNode<ChallengerTelegraph>("ChallengerTelegraph");
         Require((Control)telegraph is not PanelContainer, "Challenger hand has no background panel");
         foreach (var (character, name) in new (CharacterModel, string)[]
@@ -317,6 +319,16 @@ internal static class NativeDemoPlaytest
                 .All(control => control.Name != "ChallengerCardPreview" || !control.Visible),
                 "shared-visible preview dismissed without moving the desktop pointer");
         }
+    }
+
+    private static void AssertChallengerHandPosition(NativeChallenger actor)
+    {
+        var node = actor.Body.GetCreatureNode()!;
+        var telegraph = node.GetNode<ChallengerTelegraph>("ChallengerTelegraph");
+        var expectedX = Mathf.Clamp(node.Visuals.IntentPosition.GlobalPosition.X - telegraph.Size.X / 2f,
+            16f, Mathf.Max(16f, telegraph.GetViewportRect().Size.X - telegraph.Size.X - 16f));
+        Require(Mathf.IsEqualApprox(telegraph.GlobalPosition.X, expectedX),
+            "Challenger hand stays anchored above its owner regardless of orb positions");
     }
 
     private static async Task Finish(NGame game, RunState run, NativeChallenger actor, long initialRevision, string outcome)

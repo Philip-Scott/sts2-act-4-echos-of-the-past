@@ -399,14 +399,6 @@ public partial class ChallengerTelegraph : VBoxContainer
         GlobalPosition = new Vector2(
             Mathf.Clamp(above.X - width / 2f, 16f, Mathf.Max(16f, viewport.X - width - 16f)),
             Mathf.Clamp(above.Y - Size.Y + (_nativeDisplay ? 24f : -24f), 12f, Mathf.Max(12f, viewport.Y - Size.Y - 12f)));
-        if (_nativeDisplay && _anchor.OrbManager is { } manager)
-        {
-            var slots = manager.GetNode<Control>("%Orbs").GetChildren().OfType<Control>()
-                .Where(slot => slot.Visible).Select(slot => slot.GetGlobalRect().Grow(12f)).ToArray();
-            if (slots.Any(slot => slot.Intersects(GetGlobalRect())))
-                GlobalPosition = new Vector2(Mathf.Max(12f, slots.Min(slot => slot.Position.X) -
-                    GetGlobalRect().Size.X - 16f), GlobalPosition.Y);
-        }
         if (!IsVisibleInTree() || NCapstoneContainer.Instance?.InUse == true || NHoverTipSet.shouldBlockHoverTips)
             ClearInspection();
         else
