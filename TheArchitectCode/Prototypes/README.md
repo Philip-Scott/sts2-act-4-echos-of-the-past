@@ -1,6 +1,6 @@
 # Corrupted Challenger prototypes
 
-## Corruption effect lab (unselected)
+## Corruption effect lab (B + C combination)
 
 Run from the repository root:
 
@@ -8,13 +8,15 @@ Run from the repository root:
 python3 -m http.server 8873 --bind 127.0.0.1 --directory TheArchitectCode/Prototypes
 ```
 
-Open <http://127.0.0.1:8873/corruption-effects.html?variant=A>.
-This throwaway WebGL study compares three material directions against the
+Open <http://127.0.0.1:8873/corruption-effects.html?variant=D>.
+This throwaway WebGL study compares four material directions against the
 existing `(0.70, 0.40, 0.90)` tint, or against original sprite colors:
 
 - **A / Voidfire:** irregular silhouette flame, bright contour, rising embers.
 - **B / Fractured Echo:** displaced spectral copies and a slowly moving slice.
 - **C / Architect's Binding:** back/front orbiting seals and a ground sigil.
+- **D / Bound Echo (default):** B's spectral copies and moving slice inside C's
+  orbiting seals and ground sigil. The restraints do not inherit the body's glitch.
 
 Use the bottom switcher or left/right arrow keys outside controls. Each direction
 has the same five original character stand-ins, character selection, intensity,
@@ -31,7 +33,10 @@ need a padded composed-body render target to avoid Spine attachment seams;
 Binding can instead use body-relative back/front effect nodes. Keep health,
 intents, orbs and pets outside the body effect.
 
-No direction has been approved. Production `CorruptedChallenger` is unchanged.
+The human requested combining B + C on 2026-09-08. D captures that direction,
+while A/B/C remain available for comparison. This is not approval of the final
+combined appearance or in-game implementation. Production `CorruptedChallenger`
+is unchanged.
 Keep this study on `philip-scott-corrupted-effect-redesign`; only integrate a
 chosen treatment after evaluating it on animated game characters.
 

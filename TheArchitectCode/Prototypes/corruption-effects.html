@@ -1,6 +1,7 @@
 <!doctype html>
 <!-- THROWAWAY: Which corruption treatment preserves character identity without looking like a tint?
-     Three real WebGL fragment-shader variants at ?variant=A|B|C. Original stand-in art, not game assets.
+     Four real WebGL fragment-shader variants at ?variant=A|B|C|D; D combines B + C.
+     Original stand-in art, not game assets.
      No web app exists in this Godot mod. From the repo root:
      python3 -m http.server 8873 --bind 127.0.0.1 --directory TheArchitectCode/Prototypes
      Keep on this prototype branch. No production hooks, dependencies, uploads, or saved state. -->
@@ -61,9 +62,9 @@ aside p { font-size: 13px; color: #b7adbf; }
 details { border-top: 1px solid #36303e; padding-top: 14px; font-size: 11px; color: #a99bb7; }
 summary { cursor: pointer; }
 pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 10px; }
-.switcher { position: fixed; z-index: 2; bottom: 22px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 5px; padding: 7px; background: #201c29f5; border: 1px solid #766087; border-radius: 14px; box-shadow: 0 10px 45px #0009; }
+.switcher { position: fixed; z-index: 2; bottom: 22px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 5px; padding: 7px; width: max-content; max-width: calc(100vw - 24px); background: #201c29f5; border: 1px solid #766087; border-radius: 14px; box-shadow: 0 10px 45px #0009; }
 .switcher button { border: 0; background: transparent; }
-.switcher .choice { font-size: 12px; padding: 10px 16px; white-space: nowrap; }
+.switcher .choice { font-size: 12px; padding: 10px 16px; }
 .switcher button[aria-pressed="true"] { background: #574168; color: #fff1ff; }
 #error { position: absolute; z-index: 1; inset: 20% 10% auto; padding: 20px; background: #401f29; border: 1px solid #cf7886; }
 [hidden] { display: none !important; }
@@ -78,7 +79,7 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 10px; }
 </head>
 <body>
 <header>
-  <div><div class="eyebrow">The Architect / Material exploration 01</div><h1>A familiar face. Something wrong.</h1><div class="muted">Corrupted Challenger / three directions beyond a purple tint</div></div>
+  <div><div class="eyebrow">The Architect / Material exploration 01</div><h1>A familiar face. Something wrong.</h1><div class="muted">Corrupted Challenger / Bound Echo: Fractured Echo + Architect's Binding</div></div>
   <span class="badge">THROWAWAY PROTOTYPE</span>
 </header>
 <main>
@@ -86,7 +87,7 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 10px; }
     <div class="stage" id="stage" data-background="workshop">
       <canvas id="preview" width="1120" height="720" aria-label="Animated comparison and five character silhouettes"></canvas>
       <div class="stage-label"><span>Reference</span><strong id="reference-label">Current purple tint</strong></div>
-      <div class="stage-label right"><span id="variant-number">Direction A</span><strong id="stage-name">Voidfire</strong></div>
+      <div class="stage-label right"><span id="variant-number">Direction D</span><strong id="stage-name">Bound Echo</strong></div>
       <div class="divider"></div>
       <div class="hp left">Corrupted Challenger</div><div class="hp right">Corrupted Challenger</div>
       <div class="gallery-title">Same material / five different silhouettes</div>
@@ -96,8 +97,8 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 10px; }
     <p class="caption">Original geometric stand-ins, not game art. Real GPU shaders on flattened RGBA sprites; the idle motion is procedural, not Spine animation. Character cards switch the large comparison.</p>
   </section>
   <aside>
-    <div class="eyebrow" id="direction">01 / silhouette + embers</div>
-    <h2 id="effect-name">Voidfire</h2>
+    <div class="eyebrow" id="direction">04 / fractured echo + binding</div>
+    <h2 id="effect-name">Bound Echo</h2>
     <p id="description"></p>
     <div class="tech" id="tech"></div>
     <div class="controls">
@@ -116,9 +117,10 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 10px; }
 </main>
 <nav class="switcher" aria-label="Prototype variant">
   <button id="previous" aria-label="Previous variant">&larr;</button>
-  <button class="choice" data-variant="A" aria-pressed="true">A / Voidfire</button>
+  <button class="choice" data-variant="A" aria-pressed="false">A / Voidfire</button>
   <button class="choice" data-variant="B" aria-pressed="false">B / Fractured Echo</button>
   <button class="choice" data-variant="C" aria-pressed="false">C / Binding</button>
+  <button class="choice" data-variant="D" aria-pressed="true">D / Bound Echo</button>
   <button id="next" aria-label="Next variant">&rarr;</button>
 </nav>
 <script>
@@ -136,11 +138,16 @@ const variants = {
   C: { name: "Architect's Binding", direction: "03 / orbiting restraints", shader: 3,
     description: "The character is held inside a moving instrument. Gold-violet seals pass behind and in front of the body, with a bright sigil beneath their feet.",
     tech: "Procedural rings + orbiting seals. Primarily an overlay option, not a recolor.",
-    port: "Candidate: back/front Node2D effect layers and a ground sigil, sized from composed character bounds. Can avoid a body render target entirely; use Line2D or shader quads plus particles. Layer around the body, never around health or intents." }
+    port: "Candidate: back/front Node2D effect layers and a ground sigil, sized from composed character bounds. Can avoid a body render target entirely; use Line2D or shader quads plus particles. Layer around the body, never around health or intents." },
+  D: { name: "Bound Echo", direction: "04 / fractured echo + binding", shader: 4,
+    description: "A fractured memory held captive. Cyan-violet afterimages slip outside the body while the Architect's gold seals stay anchored around it. The body glitches; the restraints do not.",
+    tech: "B's displaced echoes and moving slice + C's back/front seals and ground sigil.",
+    port: "Selected combination to explore: apply B to a padded composed-body texture, then layer C's body-relative restraints behind and in front. Do not feed the rings into the echo shader: they should remain stable while the character fractures. Keep the ground sigil, health and intents undistorted. Animated in-game evaluation is still required." }
 };
+const variantKeys = Object.keys(variants);
 const names = ["Ironclad", "Silent", "Regent", "Necrobinder", "Defect"];
 const params = new URLSearchParams(location.search);
-let variant = Object.hasOwn(variants, params.get("variant")) ? params.get("variant") : "A";
+let variant = Object.hasOwn(variants, params.get("variant")) ? params.get("variant") : "D";
 let selected = 0, time = 0, last = 0, paused = matchMedia("(prefers-reduced-motion: reduce)").matches;
 let uploadName = null, uploadGeneration = 0;
 const canvas = $("preview"), gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: false });
@@ -211,7 +218,7 @@ void main() {
       front=over(light(mix(violet,ice,hash(vec2(id,8.))),dotLight*s*.8),front);
     }
   }
-  if(effect==2) {
+  if(effect==2 || effect==4) {
     float drift=(.025+.022*sin(clock*.85))*s;
     vec4 echo1=sampleBody(q+vec2(drift,.008));
     vec4 echo2=sampleBody(q-vec2(drift*1.5,.014));
@@ -223,7 +230,7 @@ void main() {
     color=mix(color,vec3(dot(color,vec3(.3,.59,.11))),s*.2)+ice*cracks*s*.12;
     front=light(ice,base.a*band*s*.32);
   }
-  if(effect==3) {
+  if(effect==3 || effect==4) {
     float breath=.5+.5*sin(clock*1.1);
     vec2 center=vec2(.5,.43);
     vec2 r=p-center;
@@ -234,8 +241,8 @@ void main() {
     float ground=ellipse(p,vec2(.5,.205),vec2(.27,.032),.025);
     float spokes=pow(.5+.5*cos(atan((p.y-.205)*8.,p.x-.5)*12.+clock*.4),18.);
     ground+=ellipse(p,vec2(.5,.205),vec2(.235,.025),.018)*spokes;
-    aura=light(mix(violet,gold,.55),clamp((ring+ring2)*.5+ground*.75,0.,1.)*s);
-    front=light(mix(gold,violet,.25),(ring*step(tilted.y,0.)*.78+ring2*step(p.x,.5)*.32)*s);
+    aura=over(light(mix(violet,gold,.55),clamp((ring+ring2)*.5+ground*.75,0.,1.)*s),aura);
+    front=over(light(mix(gold,violet,.25),(ring*step(tilted.y,0.)*.78+ring2*step(p.x,.5)*.32)*s),front);
     for(int i=0;i<6;i++) {
       float a=clock*.45+float(i)*1.0472;
       vec2 orb=vec2(cos(a)*.27,sin(a)*.14);
@@ -245,7 +252,7 @@ void main() {
       vec4 mark=light(gold,seal*s*(.7+.3*breath));
       if(orb.y<0.) front=over(mark,front); else aura=over(mark,aura);
     }
-    color=mix(color,color*.82+violet*.08,s*.35);
+    if(effect==3) color=mix(color,color*.82+violet*.08,s*.35);
   }
   gl_FragColor=over(front,over(vec4(color*base.a,base.a),aura));
 }
@@ -378,7 +385,7 @@ function chooseVariant(key, writeUrl=true) {
   if(writeUrl) { const url=new URL(location.href); url.searchParams.set("variant",key); history.replaceState(null,"",url); }
   updateState();
 }
-function cycle(delta) { chooseVariant(["A","B","C"][(["A","B","C"].indexOf(variant)+delta+3)%3]); }
+function cycle(delta) { chooseVariant(variantKeys[(variantKeys.indexOf(variant)+delta+variantKeys.length)%variantKeys.length]); }
 names.forEach((name,i)=>{
   $("character").add(new Option(name,String(i)));
   const b=document.createElement("button"); b.textContent=name; b.setAttribute("aria-pressed",String(i===0));
@@ -392,7 +399,7 @@ document.addEventListener("keydown",e=>{
   if(e.key==="ArrowLeft" || e.key==="ArrowRight") { e.preventDefault(); cycle(e.key==="ArrowLeft"?-1:1); }
 });
 window.addEventListener("popstate",()=>{
-  const key=new URLSearchParams(location.search).get("variant"); chooseVariant(Object.hasOwn(variants,key)?key:"A",false);
+  const key=new URLSearchParams(location.search).get("variant"); chooseVariant(Object.hasOwn(variants,key)?key:"D",false);
 });
 ["strength","speed","size","reference","flip"].forEach(id=>$(id).addEventListener("input",updateState));
 $("background").onchange=()=>{ $("stage").dataset.background=$("background").value; updateState(); };
