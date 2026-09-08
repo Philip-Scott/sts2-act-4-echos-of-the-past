@@ -58,7 +58,12 @@ legacy planner and persistence/Architect regressions. They are not substitutes
 for native runtime coverage. The Linux `scripts/native-demo.sh` launcher exercises
 the production actor from normal startup using a disposable copy of a supplied
 snapshot; its name is historical. See its documented invocation and isolation
-requirements in the native Challenger README. **Changing XDG_DATA_HOME alone
+requirements in the native Challenger README. On Linux, `native-demo.sh run`
+uses a private virtual display per instance, so worktrees can run and capture
+concurrently without sharing desktop input. Installed game assets are shared
+read-only; only each run's small mod bundle, disposable snapshot and optional
+shader caches are copied.
+**Changing XDG_DATA_HOME alone
 does not isolate Steam Cloud or real saves.**
 
 Challengers are stored locally in the active **modded** profile's
