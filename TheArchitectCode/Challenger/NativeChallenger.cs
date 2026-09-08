@@ -294,11 +294,14 @@ public sealed class NativeChallenger
 
     public void Cleanup()
     {
-        if (Cleaned || Executing)
+        if (Cleaned)
+            return;
+        // A lethal native card may defer state cleanup, but its orb UI must stop immediately.
+        ChallengerOrbs.Hide(Body);
+        if (Executing)
             return;
         Cleaned = true;
         HandPrepared = false;
-        ChallengerOrbs.Hide(Body.GetCreatureNode());
         State.Phase = PlayerTurnPhase.None;
         State.AfterCombatEnd();
         Changed = null;

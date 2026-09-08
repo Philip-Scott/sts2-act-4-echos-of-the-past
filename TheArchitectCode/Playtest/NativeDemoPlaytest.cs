@@ -15,6 +15,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Acts;
 using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Models.Characters;
+using MegaCrit.Sts2.Core.Models.Orbs;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
@@ -182,14 +183,47 @@ internal static class NativeDemoPlaytest
             "native room-boundary reload reconstructed the same saved deck without fixture or old actor state");
         if (!CommandLineHelper.HasArg("architect-native-nondefect"))
             await NativeMechanicsPlaytest.Run(human, actor);
+        OrbCmd.RemoveSlots(actor.Player, actor.State.OrbQueue.Capacity);
+        await OrbCmd.AddSlots(actor.Player, 2);
+        await OrbCmd.Channel<LightningOrb>(context, actor.Player);
+        await OrbCmd.Channel<LightningOrb>(context, actor.Player);
+        var actorNode = actor.Body.GetCreatureNode()!;
+        var orbManager = actorNode.OrbManager!;
+        Require(actor.State.OrbQueue.Orbs.Count == 2 && orbManager.Visible,
+            "handoff starts with two live lightning orbs");
+        var observedOrbCleanup = false;
+        void AfterActorRemoved(ICombatState _)
+        {
+            if (actor.Body.CombatState != null)
+                return;
+            Require(actor.Body.GetCreatureNode() == null && GodotObject.IsInstanceValid(orbManager),
+                "death removed the room lookup while the orb UI still exists");
+            Require(!orbManager.Visible && orbManager.DefaultFocusOwner == actorNode.Hitbox,
+                "dead actor orb UI was hidden and emptied before deferred refresh");
+            orbManager.UpdateVisuals(OrbEvokeType.None);
+            observedOrbCleanup = true;
+        }
+        combat.CreaturesChanged += AfterActorRemoved;
         var hand = human.PlayerCombatState!.Hand.Cards.ToArray();
         var energy = human.PlayerCombatState.Energy;
         var before = human.Creature.CurrentHp;
-        await CreatureCmd.Damage(context, actor.Body, actor.Body.CurrentHp,
-            ValueProp.Unblockable | ValueProp.Unpowered, human.Creature);
-        Require(combat.Players.Count == 1 && run.Players.Count == 1 &&
-            human.Creature.CurrentHp == before && human.PlayerCombatState.Energy == energy &&
-            human.PlayerCombatState.Hand.Cards.SequenceEqual(hand), "continuous handoff preserved human state");
+        if (CommandLineHelper.HasArg("architect-native-poison"))
+        {
+            await PowerCmd.Apply<PoisonPower>(context, actor.Body, actor.Body.CurrentHp, human.Creature, null);
+            var nextTurn = human.PlayerCombatState.TurnNumber + 1;
+            PlayerCmd.EndTurn(human, false);
+            await PlayerTurn(human, nextTurn);
+        }
+        else
+        {
+            await CreatureCmd.Damage(context, actor.Body, actor.Body.CurrentHp,
+                ValueProp.Unblockable | ValueProp.Unpowered, human.Creature);
+            Require(human.Creature.CurrentHp == before && human.PlayerCombatState.Energy == energy &&
+                human.PlayerCombatState.Hand.Cards.SequenceEqual(hand), "continuous handoff preserved human state");
+        }
+        combat.CreaturesChanged -= AfterActorRemoved;
+        Require(observedOrbCleanup && combat.Players.Count == 1 && run.Players.Count == 1,
+            "orb cleanup survived handoff without enrolling the actor in the party");
         Require(actor.Cleaned, "dead actor unsubscribed and cleared native piles");
         var boss = combat.Enemies.Single(c => c.Monster is ArchitectBoss);
         await Capture("architect");

@@ -1,5 +1,7 @@
+using System.Runtime.CompilerServices;
 using Godot;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.Orbs;
 
@@ -7,6 +9,8 @@ namespace TheArchitect.TheArchitectCode.UI;
 
 internal static class ChallengerOrbs
 {
+    private static readonly ConditionalWeakTable<Creature, NOrbManager> Managers = new();
+
     internal static void Attach(NCreature node)
     {
         if (node.OrbManager != null)
@@ -19,14 +23,20 @@ internal static class ChallengerOrbs
         manager.AddSlotAnim(node.Entity.Player!.PlayerCombatState!.OrbQueue.Capacity);
         AccessTools.Method(typeof(NCreature), "SetOrbManagerPosition").Invoke(node, []);
         node.UpdateNavigation();
+        Managers.Add(node.Entity, manager);
     }
 
-    internal static void Hide(NCreature? node)
+    internal static void Hide(Creature creature)
     {
-        if (GodotObject.IsInstanceValid(node) && GodotObject.IsInstanceValid(node!.OrbManager))
+        // Death removes the node from the room lookup before actor cleanup runs.
+        if (Managers.TryGetValue(creature, out var manager))
         {
-            node.OrbManager!.ClearOrbs();
-            node.OrbManager.Hide();
+            Managers.Remove(creature);
+            if (GodotObject.IsInstanceValid(manager))
+            {
+                manager.ClearOrbs();
+                manager.Hide();
+            }
         }
     }
 }

@@ -107,6 +107,7 @@ export ARCHITECT_SNAPSHOT_INPUT=/absolute/path/to/challenger_snapshot.json
 bash scripts/native-demo.sh --exclusive-window "/absolute/path/to/Slay the Spire 2"
 bash scripts/native-demo.sh --exclusive-window "/absolute/path/to/Slay the Spire 2" --loss
 bash scripts/native-demo.sh --exclusive-window "/absolute/path/to/Slay the Spire 2" --nondefect
+bash scripts/native-demo.sh --exclusive-window "/absolute/path/to/Slay the Spire 2" --poison
 ```
 
 The script's historical name does not enable a fixture engine. Its explicit
@@ -116,6 +117,10 @@ entry, then exercises native reload and targeted mechanics in that disposable
 combat. The loss scenario follows saved-deck turns with a lethal multi-hit probe.
 The non-Defect scenario writes an explicitly labelled disposable Ironclad orb
 deck through the normal snapshot format, exercising zero-to-first-slot capacity.
+Winning scenarios transition with two live lightning orbs and verify that the
+dead actor's orb UI is cleared even after its creature node leaves the room lookup.
+The poison scenario kills the Challenger at enemy turn start instead of using
+direct damage, then waits for the next player turn to cover deferred UI refreshes.
 
 The launcher requires Linux `bwrap`, X11 and authorization, installed game and
 BaseLib, and an exclusive window with no existing game process. It refuses

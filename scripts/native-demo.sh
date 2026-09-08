@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Run only in an explicitly reserved game window. The installed mod directory is never modified.
 if [[ "${1:-}" != "--exclusive-window" || $# -lt 2 || $# -gt 3 ]]; then
-    echo "Usage: bash scripts/native-demo.sh --exclusive-window /absolute/path/to/game [--loss|--nondefect]" >&2
+    echo "Usage: bash scripts/native-demo.sh --exclusive-window /absolute/path/to/game [--loss|--nondefect|--poison]" >&2
     exit 2
 fi
 scenario=()
@@ -11,6 +11,8 @@ if [[ "${3:-}" == "--loss" ]]; then
     scenario=(--architect-native-loss)
 elif [[ "${3:-}" == "--nondefect" ]]; then
     scenario=(--architect-native-nondefect)
+elif [[ "${3:-}" == "--poison" ]]; then
+    scenario=(--architect-native-poison)
 elif [[ -n "${3:-}" ]]; then
     echo "Unknown demo scenario: $3" >&2
     exit 2
