@@ -376,8 +376,7 @@ public sealed class NativeChallenger
                 new Dictionary<string, decimal>(), NativeCurrentState: true,
                 Status: unsupported ?? _reasons.GetValueOrDefault(card));
         }).ToArray(), false);
-        telegraph.SetNativeHeading($"Challenger {pile.Type.ToString().ToLowerInvariant()} | E{State.Energy}/{State.MaxEnergy} | " +
-            $"draw {State.DrawPile.Cards.Count} disc {State.DiscardPile.Cards.Count} exh {State.ExhaustPile.Cards.Count}");
+        telegraph.SetNativeState(State);
     }
 
     private void Trace(string stage) => MainFile.Logger.Info(

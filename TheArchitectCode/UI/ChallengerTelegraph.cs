@@ -2,6 +2,7 @@ using Godot;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.MonsterMoves.Intents;
@@ -9,6 +10,8 @@ using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.HoverTips;
+using MegaCrit.Sts2.Core.Nodes.Screens;
+using MegaCrit.Sts2.Core.Nodes.Screens.Capstones;
 using MegaCrit.Sts2.addons.mega_text;
 
 namespace TheArchitect.TheArchitectCode.UI;
@@ -22,14 +25,21 @@ public sealed record ChallengerTelegraphCard(
     bool NativeCurrentState = false,
     string? Status = null);
 
-public partial class ChallengerTelegraph : PanelContainer
+public partial class ChallengerTelegraph : VBoxContainer
 {
+    private static readonly Vector2 CardFaceSize = new(120, 160);
     private NCreature _anchor = null!;
     private Creature _creature = null!;
     private Control? _pinned;
     private ScrollContainer _scroll = null!;
     private HBoxContainer _row = null!;
     private Label _heading = null!;
+    private HBoxContainer _resources = null!;
+    private Label _energy = null!;
+    private Button _draw = null!;
+    private Button _discard = null!;
+    private Button _exhaust = null!;
+    private PlayerCombatState? _nativeState;
     private Action _refreshPlan = null!;
     private readonly List<CardCell> _cells = [];
     private CardCell? _inspected;
@@ -63,13 +73,22 @@ public partial class ChallengerTelegraph : PanelContainer
 
     public override void _Ready()
     {
-        var column = new VBoxContainer();
-        AddChild(column);
         var toolbar = new HBoxContainer();
-        column.AddChild(toolbar);
         _heading = new Label { Text = "Challenger · play →", ClipText = true, SizeFlagsHorizontal = SizeFlags.ExpandFill };
         _heading.AddThemeFontSizeOverride("font_size", 16);
         toolbar.AddChild(_heading);
+        _resources = new HBoxContainer { Visible = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        toolbar.AddChild(_resources);
+        _energy = new Label
+        {
+            Name = "Energy",
+            TooltipText = "Current / maximum energy",
+            CustomMinimumSize = new Vector2(100, 0)
+        };
+        _resources.AddChild(_energy);
+        _draw = AddPileButton("Draw", () => _nativeState!.DrawPile);
+        _discard = AddPileButton("Discard", () => _nativeState!.DiscardPile);
+        _exhaust = AddPileButton("Exhaust", () => _nativeState!.ExhaustPile);
         var previous = new Button { Text = "‹", FocusMode = FocusModeEnum.All };
         var next = new Button { Text = "›", FocusMode = FocusModeEnum.All };
         var clear = new Button { Text = "Clear", FocusMode = FocusModeEnum.All };
@@ -84,9 +103,10 @@ public partial class ChallengerTelegraph : PanelContainer
             HorizontalScrollMode = ScrollContainer.ScrollMode.Auto,
             VerticalScrollMode = ScrollContainer.ScrollMode.Disabled,
             FollowFocus = true,
-            CustomMinimumSize = new Vector2(0, 174)
+            CustomMinimumSize = new Vector2(0, CardFaceSize.Y)
         };
-        column.AddChild(_scroll);
+        AddChild(_scroll);
+        AddChild(toolbar);
         _row = new HBoxContainer();
         _row.AddThemeConstantOverride("separation", 8);
         _scroll.AddChild(_row);
@@ -120,7 +140,7 @@ public partial class ChallengerTelegraph : PanelContainer
             child.QueueFree();
         }
         if (cards.Count == 0)
-            _row.AddChild(new Label { Text = "No cards", CustomMinimumSize = new Vector2(100, 150) });
+            _row.AddChild(new Label { Text = "No cards", CustomMinimumSize = CardFaceSize });
         foreach (var card in cards)
             AddCard(card);
         _scroll.ScrollHorizontal = scroll;
@@ -131,11 +151,34 @@ public partial class ChallengerTelegraph : PanelContainer
         }
     }
 
-    public void SetNativeHeading(string text)
+    private Button AddPileButton(string name, Func<CardPile> getPile)
+    {
+        var button = new Button
+        {
+            Name = name + "Pile",
+            FocusMode = FocusModeEnum.All,
+            TooltipText = $"View the Corrupted character's {name.ToLowerInvariant()} pile"
+        };
+        button.Pressed += () =>
+        {
+            ClearInspection();
+            NCardPileScreen.ShowScreen(getPile(), []);
+        };
+        _resources.AddChild(button);
+        return button;
+    }
+
+    public void SetNativeState(PlayerCombatState state)
     {
         _nativeDisplay = true;
-        _heading.Text = text;
-        _heading.TooltipText = "Current native cards, energy and piles; not a future damage forecast.\n" +
+        _nativeState = state;
+        _heading.Hide();
+        _resources.Show();
+        _energy.Text = $"Energy {state.Energy}/{state.MaxEnergy}";
+        _draw.Text = $"Draw {state.DrawPile.Cards.Count}";
+        _discard.Text = $"Discard {state.DiscardPile.Cards.Count}";
+        _exhaust.Text = $"Exhaust {state.ExhaustPile.Cards.Count}";
+        _energy.TooltipText = "Current / maximum energy; not a future damage forecast.\n" +
             "Plays left to right, reconsidering after each card. Choices select the first valid option.\n" +
             "Attack intent: any Attack in your CURRENT hand when the Challenger checks, regardless of cost.\n" +
             "Co-op-only cards and third-party card/modifier effects are preserved but unsupported.";
@@ -143,12 +186,12 @@ public partial class ChallengerTelegraph : PanelContainer
 
     private void AddCard(ChallengerTelegraphCard entry)
     {
-        var cell = new VBoxContainer { CustomMinimumSize = new Vector2(96, 150) };
+        var cell = new VBoxContainer { CustomMinimumSize = CardFaceSize };
         _row.AddChild(cell);
         var face = new Button
         {
             Name = "ChallengerCard",
-            CustomMinimumSize = new Vector2(96, 128),
+            CustomMinimumSize = CardFaceSize,
             ClipContents = true,
             FocusMode = FocusModeEnum.All,
             Flat = true
@@ -166,8 +209,8 @@ public partial class ChallengerTelegraph : PanelContainer
                 miniature.SetForceUnpoweredPreview(true);
                 face.AddChild(miniature);
                 binding.Miniature = miniature;
-                miniature.Scale = Vector2.One * 0.29f;
-                miniature.Position = new Vector2(48, 64);
+                miniature.Scale = Vector2.One * 0.36f;
+                miniature.Position = CardFaceSize / 2f;
                 IgnoreMouse(miniature);
                 if (!entry.PlayOrder.HasValue && !entry.NativeCurrentState)
                     miniature.Modulate = new Color(0.42f, 0.42f, 0.42f, 0.65f);
@@ -201,6 +244,7 @@ public partial class ChallengerTelegraph : PanelContainer
     private void UpdateCell(CardCell cell)
     {
         cell.Face.TooltipText = cell.Entry.Status ?? "";
+        cell.Intents.Visible = cell.Entry.Unsupported || cell.Entry.Intents.Count > 0;
         if (cell.Miniature != null)
             UpdateCardText(cell.Miniature, cell.Entry);
         foreach (var child in cell.Intents.GetChildren())
@@ -265,7 +309,8 @@ public partial class ChallengerTelegraph : PanelContainer
     private void Inspect(CardCell cell)
     {
         if ((_pinned != null && _pinned != cell.Face) || _inspected == cell || cell.Entry.Card == null ||
-            NHoverTipSet.shouldBlockHoverTips || NGame.Instance?.HoverTipsContainer is not { } hoverContainer)
+            NCapstoneContainer.Instance?.InUse == true || NHoverTipSet.shouldBlockHoverTips ||
+            NGame.Instance?.HoverTipsContainer is not { } hoverContainer)
             return;
         ClearPreview();
         _enlarged = NCard.Create(cell.Entry.Card);
@@ -347,13 +392,13 @@ public partial class ChallengerTelegraph : PanelContainer
         }
         _refreshPlan();
         var viewport = GetViewportRect().Size;
-        var width = Mathf.Min(560f, Mathf.Max(220f, viewport.X - 32f));
-        CustomMinimumSize = new Vector2(width, 206);
-        Size = new Vector2(width, 206);
+        var width = Mathf.Min(680f, Mathf.Max(220f, viewport.X - 32f));
+        CustomMinimumSize = new Vector2(width, 248);
+        Size = new Vector2(width, 248);
         var above = _anchor.Visuals.IntentPosition.GlobalPosition;
         GlobalPosition = new Vector2(
             Mathf.Clamp(above.X - width / 2f, 16f, Mathf.Max(16f, viewport.X - width - 16f)),
-            Mathf.Clamp(above.Y - Size.Y - (_nativeDisplay ? 100f : 24f), 12f, Mathf.Max(12f, viewport.Y - Size.Y - 12f)));
+            Mathf.Clamp(above.Y - Size.Y + (_nativeDisplay ? 24f : -24f), 12f, Mathf.Max(12f, viewport.Y - Size.Y - 12f)));
         if (_nativeDisplay && _anchor.OrbManager is { } manager)
         {
             var slots = manager.GetNode<Control>("%Orbs").GetChildren().OfType<Control>()
@@ -362,7 +407,7 @@ public partial class ChallengerTelegraph : PanelContainer
                 GlobalPosition = new Vector2(Mathf.Max(12f, slots.Min(slot => slot.Position.X) -
                     GetGlobalRect().Size.X - 16f), GlobalPosition.Y);
         }
-        if (!IsVisibleInTree() || NHoverTipSet.shouldBlockHoverTips)
+        if (!IsVisibleInTree() || NCapstoneContainer.Instance?.InUse == true || NHoverTipSet.shouldBlockHoverTips)
             ClearInspection();
         else
             PositionPreview();

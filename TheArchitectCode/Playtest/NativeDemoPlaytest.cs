@@ -18,8 +18,11 @@ using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Models.Orbs;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Orbs;
+using MegaCrit.Sts2.Core.Nodes.Screens;
+using MegaCrit.Sts2.Core.Nodes.Screens.Capstones;
 using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
@@ -30,6 +33,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 using TheArchitect.TheArchitectCode.Challenger;
 using TheArchitect.TheArchitectCode.Monsters;
 using TheArchitect.TheArchitectCode.Persistence;
+using TheArchitect.TheArchitectCode.UI;
 
 namespace TheArchitect.TheArchitectCode.Playtest;
 
@@ -118,6 +122,11 @@ internal static class NativeDemoPlaytest
         Require(actor.Body.GetCreatureNode()?.OrbManager is { } manager &&
             manager.GetNode<Control>("%Orbs").GetChildCount() == actor.State.OrbQueue.Capacity,
             "native orb manager and initial slots attached for the saved character");
+        await InspectChallengerDisplay(game, actor);
+        game.GetViewport().GuiReleaseFocus();
+        Input.WarpMouse(game.GetViewportRect().Size / 2f);
+        await Task.Delay(2500);
+        await Capture("challenger-display");
         var rngBefore = "";
         actor.TurnStarting += () => rngBefore = AllRng(human);
         actor.TurnFinished += () => Require(rngBefore == AllRng(human), "actor turn left human run/player RNG unchanged");
@@ -136,6 +145,8 @@ internal static class NativeDemoPlaytest
                 actor.State.OrbQueue.Orbs.All(orb => orbNodes.Any(node => node.Model == orb)),
                 "native orb slots and live orb models are rendered");
             actor.AssertIdentity();
+            if (turn == 1)
+                await InspectChallengerDisplay(game, actor);
             await Capture($"turn-{turn}");
             await CreatureCmd.Heal(human.Creature, human.Creature.MaxHp);
         }
@@ -230,6 +241,62 @@ internal static class NativeDemoPlaytest
         await CreatureCmd.Kill(boss, true);
         await CombatManager.Instance.CheckWinCondition();
         await Finish(game, run, actor, expected.Revision, "ArchitectWin");
+    }
+
+    private static async Task InspectChallengerDisplay(NGame game, NativeChallenger actor)
+    {
+        await game.AwaitProcessFrame();
+        var telegraph = actor.Body.GetCreatureNode()!.GetNode<ChallengerTelegraph>("ChallengerTelegraph");
+        Require((Control)telegraph is not PanelContainer, "Challenger hand has no background panel");
+        foreach (var (character, name) in new (CharacterModel, string)[]
+        {
+            (ModelDb.Character<Ironclad>(), "Corrupted Ironclad"),
+            (ModelDb.Character<Silent>(), "Corrupted Silent"),
+            (ModelDb.Character<Defect>(), "Corrupted Defect"),
+            (ModelDb.Character<Necrobinder>(), "Corrupted Necrobinder"),
+            (ModelDb.Character<Regent>(), "Corrupted Regent")
+        })
+        {
+            var model = (CorruptedChallenger)ArchitectModels.Challenger.ToMutable();
+            model.Configure(character, 80, Array.Empty<JsonElement>(), "name-check");
+            Require(model.Title.GetFormattedText() == name, $"enemy name is exactly {name}");
+        }
+        var energy = (Label)telegraph.FindChild("Energy", true, false);
+        Require(energy.Text == $"Energy {actor.State.Energy}/{actor.State.MaxEnergy}",
+            "current and maximum native energy are displayed");
+        var face = telegraph.FindChild("ChallengerCard", true, false) as Button;
+        Require((face != null) == (actor.State.Hand.Cards.Count > 0), "only hand cards appear in the telegraph");
+        if (face != null)
+        {
+            var miniature = face.GetChildren().OfType<NCard>().Single();
+            Require(face.Size.X >= 120 && face.Size.Y >= 160 &&
+                miniature.Scale.IsEqualApprox(Vector2.One * 0.36f) &&
+                miniature.GetCurrentSize().X <= face.Size.X && miniature.GetCurrentSize().Y <= face.Size.Y,
+                "larger hand cards fit their clickable faces");
+        }
+        var hand = actor.State.Hand.Cards.ToArray();
+        var rng = AllRng(actor.Player);
+        foreach (var (name, pile) in new[]
+        {
+            ("Draw", actor.State.DrawPile),
+            ("Discard", actor.State.DiscardPile),
+            ("Exhaust", actor.State.ExhaustPile)
+        })
+        {
+            var button = (Button)telegraph.FindChild(name + "Pile", true, false);
+            Require(button.Text == $"{name} {pile.Cards.Count}" &&
+                (face == null || button.GetGlobalRect().Position.Y >= face.GetGlobalRect().End.Y),
+                $"{name} count is displayed below the hand");
+            var cards = pile.Cards.ToArray();
+            button.EmitSignal(Button.SignalName.Pressed);
+            await game.AwaitProcessFrame();
+            Require(NCapstoneContainer.Instance?.CurrentCapstoneScreen is NCardPileScreen screen &&
+                ReferenceEquals(screen.Pile, pile), $"{name} button opens the Challenger's native pile browser");
+            Require(pile.Cards.SequenceEqual(cards) && actor.State.Hand.Cards.SequenceEqual(hand) &&
+                AllRng(actor.Player) == rng, $"{name} browsing preserves cards, pile order and RNG");
+            NCapstoneContainer.Instance!.Close();
+            await game.AwaitProcessFrame();
+        }
     }
 
     private static async Task Finish(NGame game, RunState run, NativeChallenger actor, long initialRevision, string outcome)

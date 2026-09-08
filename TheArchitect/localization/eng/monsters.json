@@ -1,5 +1,11 @@
 {
   "THEARCHITECT-CORRUPTED_CHALLENGER.name": "Corrupted Challenger",
+  "THEARCHITECT-CORRUPTED_CHALLENGER.characterName": "Corrupted {Character}",
+  "THEARCHITECT-CORRUPTED_CHALLENGER.characters.IRONCLAD": "Corrupted Ironclad",
+  "THEARCHITECT-CORRUPTED_CHALLENGER.characters.SILENT": "Corrupted Silent",
+  "THEARCHITECT-CORRUPTED_CHALLENGER.characters.DEFECT": "Corrupted Defect",
+  "THEARCHITECT-CORRUPTED_CHALLENGER.characters.NECROBINDER": "Corrupted Necrobinder",
+  "THEARCHITECT-CORRUPTED_CHALLENGER.characters.REGENT": "Corrupted Regent",
   "THEARCHITECT-CORRUPTED_CHALLENGER.moves.CHALLENGER_PLAN.title": "Echoes of the Past",
   "THEARCHITECT-ARCHITECT_BOSS.name": "The Architect",
   "THEARCHITECT-ARCHITECT_BOSS.moves.REWRITE_MOVE.title": "Rewrite",
