@@ -15,6 +15,8 @@ before playing; multiplayer runs retain the vanilla route.
 After Act 3, the run continues to **Act 4 — The Architect** with a fixed
 Rest Site → Shop → boss route. The first visit fights the Architect; later
 visits first fight a corrupted version of the previous completed character.
+The Corrupted Player starts at twice that character's saved maximum HP, or
+2.5 times at Ascension 8 (Tough Enemies) and above in the current run (rounded up).
 The compact map fits all three nodes without scrolling, using neutral-ink
 icons and an original Architect boss silhouette. Rest and Shop share the
 supplied tower-approach illustration; the boss fight retains the

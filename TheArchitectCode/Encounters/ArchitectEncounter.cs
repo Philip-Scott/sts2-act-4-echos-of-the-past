@@ -47,7 +47,7 @@ public sealed class ArchitectEncounter : CustomEncounterModel
             return [(ArchitectModels.Boss.ToMutable(), null)];
         }
         var corruptedPlayer = (CorruptedPlayer)ArchitectModels.CorruptedPlayer.ToMutable();
-        corruptedPlayer.Configure(character, snapshot.MaxHp, snapshot.Deck,
+        corruptedPlayer.Configure(character, CorruptedPlayerHealth.CalculateMaxHp(snapshot.MaxHp, run.AscensionLevel), snapshot.Deck,
             $"{run.Rng.StringSeed}|{envelope.Revision}|{snapshot.ContentHash}|{Id}");
         return [(corruptedPlayer, null)];
     }
