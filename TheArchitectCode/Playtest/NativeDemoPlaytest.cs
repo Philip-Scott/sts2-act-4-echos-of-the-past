@@ -103,7 +103,10 @@ internal static class NativeDemoPlaytest
         Require(destination.StartsWith(NativeDemoSafety.RuntimePath + "/", StringComparison.Ordinal),
             "snapshot destination is disposable");
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-        File.Copy(input, destination, overwrite: true);
+        if (CommandLineHelper.HasArg("architect-native-attack-vfx"))
+            NativeAttackVfxPlaytest.PrepareSnapshot();
+        else
+            File.Copy(input, destination, overwrite: true);
         if (CommandLineHelper.HasArg("architect-native-nondefect"))
         {
             CardModel[] probe = [ModelDb.Card<Zap>().ToMutable(), ModelDb.Card<Coolheaded>().ToMutable(),
@@ -115,6 +118,11 @@ internal static class NativeDemoPlaytest
                 CorruptedPlayerSnapshot.Hash(character, 80, cards)));
         }
         var expected = CorruptedPlayerStore.Load() ?? throw new InvalidOperationException("Snapshot input not loaded.");
+        if (CommandLineHelper.HasArg("architect-native-attack-vfx"))
+        {
+            await NativeAttackVfxPlaytest.Run(game, run, expected);
+            return;
+        }
         await Task.Delay(1500);
         var result = new DevConsole(shouldAllowDebugCommands: true).ProcessCommand("architect");
         if (!result.success || result.task == null)

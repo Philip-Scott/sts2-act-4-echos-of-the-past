@@ -81,6 +81,12 @@ slots. Corrupted Player-owned Osty uses the enemy container and mirrored owner-r
 position, with native health, hitbox, summon/revive and scaling behavior. Ordinary
 human pet layout is unchanged.
 
+Directional card effects face the human party from the Corrupted Player's side.
+Dagger throws and impacts, scratches, and stabs translate native player-facing
+flags at card call sites without changing monster effects. Sweeping Beam mirrors
+its emitter; Defect beams use the mirrored eye offset. Hyperbeam and Shiv retain
+their native target-derived rotation rather than being flipped a second time.
+
 ## Explicit boundaries
 
 Co-op-only native cards and third-party card/enchantment/modifier effects are
@@ -120,6 +126,8 @@ bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --nondefect
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --poison
 # Focused hand/hover modifier coverage, including native damage after preview:
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --previews
+# Directional attack effects in both directions; generates its own disposable snapshot:
+bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --attack-vfx
 ```
 
 The script's historical name does not enable a fixture engine. Its explicit

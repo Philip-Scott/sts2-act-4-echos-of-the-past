@@ -93,9 +93,16 @@ class NativeDemoTests(unittest.TestCase):
                     saved_result = demo.launch(SimpleNamespace(game=str(game), label="saved", scenario="saved-run",
                                                                cache_from=None, cold=True, render_threads=4,
                                                                shared_visible=False, render_device="/dev/dri/renderD128"))
+                    vfx_result = demo.launch(SimpleNamespace(game=str(game), label="vfx", scenario="attack-vfx",
+                                                             cache_from=None, cold=True, render_threads=4,
+                                                             shared_visible=False, render_device="/dev/dri/renderD128"))
             self.assertEqual(result, 0)
             self.assertEqual(ancient_result, 0)
             self.assertEqual(saved_result, 0)
+            self.assertEqual(vfx_result, 0)
+            vfx = next((root / "runs").glob("run-*-vfx-*"))
+            self.assertFalse((vfx / "snapshot-input.json").exists())
+            self.assertIsNone(json.loads((vfx / "run.json").read_text())["snapshot_sha256"])
             run = next((root / "runs").glob("run-*-test-*"))
             ancient = next((root / "runs").glob("run-*-ancient-*"))
             self.assertFalse((ancient / "snapshot-input.json").exists())
