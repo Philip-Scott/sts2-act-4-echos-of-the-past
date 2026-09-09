@@ -24,7 +24,7 @@ product decisions.
   only `CustomPotionModel.cs`, the project, and manifest. The Ancient, event,
   save, and reward sources cited here are pinned to the package commit. [B0]
 - Earlier [act-lifecycle](act-lifecycle-hooks.md) and
-  [snapshot](challenger-snapshot-persistence.md) notes include older snapshots
+  [snapshot](corrupted-player-snapshot-persistence.md) notes include older snapshots
   or third-party evidence. They are context, **not proof of current native
   behavior**. The [installed-beta note](beta-lifecycle-integration.md) names the
   same game build; relevant native members were rechecked here. [R]
