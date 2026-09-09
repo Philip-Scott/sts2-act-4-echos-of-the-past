@@ -385,7 +385,7 @@ public sealed class NativeCorruptedPlayer
                 new Dictionary<string, decimal>(), NativeCurrentState: true,
                 Status: unsupported ?? _reasons.GetValueOrDefault(card));
         }).ToArray(), false);
-        telegraph.SetNativeState(State);
+        telegraph.SetNativePlayer(Player);
     }
 
     private void Trace(string stage) => MainFile.Logger.Info(

@@ -19,6 +19,7 @@ using MegaCrit.Sts2.Core.Models.Orbs;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards;
+using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Orbs;
 using MegaCrit.Sts2.Core.Nodes.Screens;
@@ -279,6 +280,10 @@ internal static class NativeDemoPlaytest
         AssertCorruptedPlayerHandPosition(actor);
         var telegraph = actor.Body.GetCreatureNode()!.GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph");
         Require((Control)telegraph is not PanelContainer, "Corrupted Player hand has no background panel");
+        Require(telegraph.GetNode<ScrollContainer>("HandScroll").GetThemeStylebox("panel") is StyleBoxEmpty,
+            "hand scroll area has no inherited translucent overlay");
+        Require(!telegraph.FindChildren("*", "Button", true, false).OfType<Button>()
+            .Any(button => button.Text == "Clear"), "hover previews do not need a Clear button");
         foreach (var (character, name) in new (CharacterModel, string)[]
         {
             (ModelDb.Character<Ironclad>(), "Corrupted Ironclad"),
@@ -292,9 +297,12 @@ internal static class NativeDemoPlaytest
             model.Configure(character, 80, Array.Empty<JsonElement>(), "name-check");
             Require(model.Title.GetFormattedText() == name, $"enemy name is exactly {name}");
         }
-        var energy = (Label)telegraph.FindChild("Energy", true, false);
-        Require(energy.Text == $"Energy {actor.State.Energy}/{actor.State.MaxEnergy}",
-            "current and maximum native energy are displayed");
+        var energySlot = (Control)telegraph.FindChild("Energy", true, false);
+        var energy = energySlot.GetChildren().OfType<NEnergyCounter>().Single();
+        Require(energy.SceneFilePath == actor.Player.Character.EnergyCounterPath &&
+            energy.Scale.IsEqualApprox(Vector2.One * 0.5f) &&
+            energy.GetNode<Label>("Label").Text == $"{actor.State.Energy}/{actor.State.MaxEnergy}",
+            "half-size native character energy orb displays current and maximum enemy energy");
         var face = telegraph.FindChild("CorruptedPlayerCard", true, false) as Button;
         Require((face != null) == (actor.State.Hand.Cards.Count > 0), "only hand cards appear in the telegraph");
         if (face != null)
@@ -304,6 +312,28 @@ internal static class NativeDemoPlaytest
                 miniature.Scale.IsEqualApprox(Vector2.One * 0.36f) &&
                 miniature.GetCurrentSize().X <= face.Size.X && miniature.GetCurrentSize().Y <= face.Size.Y,
                 "larger hand cards fit their clickable faces");
+            var hoverContainer = game.HoverTipsContainer
+                ?? throw new InvalidOperationException("Native hover container missing.");
+            bool HasPreview() => hoverContainer.GetChildren().OfType<Control>()
+                .Any(control => control.Name == "CorruptedPlayerCardPreview" && control.Visible);
+            game.GetViewport().GuiReleaseFocus();
+            face.EmitSignal(Control.SignalName.MouseEntered);
+            await game.AwaitProcessFrame();
+            Require(HasPreview(), "hovering a Corrupted Player card shows its enlarged preview");
+            await Capture("corrupted-player-hover");
+            face.EmitSignal(Button.SignalName.Pressed);
+            face.EmitSignal(Control.SignalName.MouseExited);
+            await game.AwaitProcessFrame();
+            Require(!HasPreview(), "leaving a clicked card dismisses its preview instead of pinning it");
+            face.EmitSignal(Button.SignalName.Pressed);
+            await game.AwaitProcessFrame();
+            Require(!HasPreview(), "clicking alone does not open a persistent card preview");
+            face.GrabFocus();
+            await game.AwaitProcessFrame();
+            Require(HasPreview(), "keyboard or controller focus still previews a Corrupted Player card");
+            game.GetViewport().GuiReleaseFocus();
+            await game.AwaitProcessFrame();
+            Require(!HasPreview(), "leaving keyboard or controller focus dismisses the preview");
         }
         var hand = actor.State.Hand.Cards.ToArray();
         var rng = AllRng(actor.Player);
@@ -315,9 +345,22 @@ internal static class NativeDemoPlaytest
         })
         {
             var button = (Button)telegraph.FindChild(name + "Pile", true, false);
-            Require(button.Text == $"{name} {pile.Cards.Count}" &&
+            var visuals = button.GetNode<Control>("Visuals");
+            Require(button.Text.Length == 0 &&
+                visuals.GetNode<Label>("CountContainer/Count").Text == pile.Cards.Count.ToString() &&
+                visuals.GetNode<TextureRect>("Icon").Texture != null &&
+                visuals.Scale.IsEqualApprox(Vector2.One * 0.75f) &&
                 (face == null || button.GetGlobalRect().Position.Y >= face.GetGlobalRect().End.Y),
-                $"{name} count is displayed below the hand");
+                $"{name} uses compact native pile artwork and count below the hand");
+            Require(visuals.GetNodeOrNull("HotkeyIcon") == null &&
+                !telegraph.FindChildren("*", "NCombatCardPile", true, false).Any(),
+                $"{name} visual reuse does not register the human player's pile hotkeys");
+            var badgeNode = visuals.GetNode<Control>("CountContainer");
+            var badge = badgeNode.GetGlobalTransform() * new Rect2(Vector2.Zero, badgeNode.Size);
+            var hitbox = button.GetGlobalTransform() * new Rect2(Vector2.Zero, button.Size);
+            Require(badge.Position.X >= hitbox.Position.X - 0.1f && badge.End.X <= hitbox.End.X + 0.1f &&
+                badge.Position.Y >= hitbox.Position.Y - 0.1f && badge.End.Y <= hitbox.End.Y + 0.1f,
+                $"{name} scaled badge {badge} fits inside its clickable area {hitbox}");
             var cards = pile.Cards.ToArray();
             button.EmitSignal(Button.SignalName.Pressed);
             await game.AwaitProcessFrame();
@@ -327,19 +370,6 @@ internal static class NativeDemoPlaytest
                 AllRng(actor.Player) == rng, $"{name} browsing preserves cards, pile order and RNG");
             NCapstoneContainer.Instance!.Close();
             await game.AwaitProcessFrame();
-        }
-        if (NativeDemoSafety.SharedVisible)
-        {
-            game.GetViewport().GuiReleaseFocus();
-            var clear = telegraph.FindChildren("*", "Button", true, false).OfType<Button>()
-                .Single(button => button.Text == "Clear");
-            clear.EmitSignal(Button.SignalName.Pressed);
-            await game.AwaitProcessFrame();
-            var hoverContainer = game.HoverTipsContainer
-                ?? throw new InvalidOperationException("Native hover container missing.");
-            Require(hoverContainer.GetChildren().OfType<Control>()
-                .All(control => control.Name != "CorruptedPlayerCardPreview" || !control.Visible),
-                "shared-visible preview dismissed without moving the desktop pointer");
         }
     }
 

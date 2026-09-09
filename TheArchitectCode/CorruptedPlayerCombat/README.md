@@ -62,11 +62,16 @@ replacement remain in the existing lifecycle/persistence implementation.
   consecutive extra turns is an explicit error, not an endless loop.
 
 The telegraph shows only the current native hand, with larger cards and no
-background panel. Current/maximum energy and clickable draw, discard and exhaust
-counts sit below the hand. Each pile opens the native read-only pile browser,
+background panel or themed scroll-area overlay. A half-size native character
+energy orb and three-quarter-size draw, discard and exhaust icons sit below the
+hand, using the player's HUD artwork, count badges and typography. Energy shows
+current/maximum resources; each pile opens the native read-only pile browser,
 which keeps draw order hidden and reflects live pile contents.
+The enemy's pile icons do not register or override the human's pile hotkeys.
 An empty hand stays empty in the preview; neither the draw pile nor the discard
-pile is presented as playable cards. Native cards enlarge on hover.
+pile is presented as playable cards. Native cards enlarge on hover or keyboard/
+controller focus and dismiss when the pointer or focus leaves. Clicking does not
+pin a preview, so there is no Clear button.
 The enemy is named for its saved character (for example, "Corrupted Ironclad").
 This is a state preview, **not an exact future-damage forecast**.
 

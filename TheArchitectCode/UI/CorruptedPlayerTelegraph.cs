@@ -1,4 +1,5 @@
 using Godot;
+using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -30,15 +31,15 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     private static readonly Vector2 CardFaceSize = new(120, 160);
     private NCreature _anchor = null!;
     private Creature _creature = null!;
-    private Control? _pinned;
     private ScrollContainer _scroll = null!;
     private HBoxContainer _row = null!;
     private Label _heading = null!;
     private HBoxContainer _resources = null!;
-    private Label _energy = null!;
-    private Button _draw = null!;
-    private Button _discard = null!;
-    private Button _exhaust = null!;
+    private Control _energySlot = null!;
+    private NEnergyCounter? _energy;
+    private MegaLabel _draw = null!;
+    private MegaLabel _discard = null!;
+    private MegaLabel _exhaust = null!;
     private PlayerCombatState? _nativeState;
     private Action _refreshPlan = null!;
     private readonly List<CardCell> _cells = [];
@@ -74,37 +75,42 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     public override void _Ready()
     {
         var toolbar = new HBoxContainer();
+        toolbar.AddThemeConstantOverride("separation", 8);
         _heading = new Label { Text = "Corrupted Player · play →", ClipText = true, SizeFlagsHorizontal = SizeFlags.ExpandFill };
         _heading.AddThemeFontSizeOverride("font_size", 16);
         toolbar.AddChild(_heading);
         _resources = new HBoxContainer { Visible = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        _resources.AddThemeConstantOverride("separation", 8);
         toolbar.AddChild(_resources);
-        _energy = new Label
+        _energySlot = new Control
         {
             Name = "Energy",
-            TooltipText = "Current / maximum energy",
-            CustomMinimumSize = new Vector2(100, 0)
+            CustomMinimumSize = new Vector2(72, 64),
+            MouseFilter = MouseFilterEnum.Stop,
+            TooltipText = "Current / maximum energy; not a future damage forecast.\n" +
+                "Plays left to right, reconsidering after each card. Choices select the first valid option.\n" +
+                "Attack intent: any Attack in your CURRENT hand when the Corrupted Player checks, regardless of cost.\n" +
+                "Co-op-only cards and third-party card/modifier effects are preserved but unsupported."
         };
-        _resources.AddChild(_energy);
+        _resources.AddChild(_energySlot);
         _draw = AddPileButton("Draw", () => _nativeState!.DrawPile);
         _discard = AddPileButton("Discard", () => _nativeState!.DiscardPile);
         _exhaust = AddPileButton("Exhaust", () => _nativeState!.ExhaustPile);
-        var previous = new Button { Text = "‹", FocusMode = FocusModeEnum.All };
-        var next = new Button { Text = "›", FocusMode = FocusModeEnum.All };
-        var clear = new Button { Text = "Clear", FocusMode = FocusModeEnum.All };
+        var previous = AddToolbarButton("‹", "Scroll hand left");
+        var next = AddToolbarButton("›", "Scroll hand right");
         previous.Pressed += () => _scroll.ScrollHorizontal -= 100;
         next.Pressed += () => _scroll.ScrollHorizontal += 100;
-        clear.Pressed += ClearInspection;
         toolbar.AddChild(previous);
         toolbar.AddChild(next);
-        toolbar.AddChild(clear);
         _scroll = new ScrollContainer
         {
+            Name = "HandScroll",
             HorizontalScrollMode = ScrollContainer.ScrollMode.Auto,
             VerticalScrollMode = ScrollContainer.ScrollMode.Disabled,
             FollowFocus = true,
             CustomMinimumSize = new Vector2(0, CardFaceSize.Y)
         };
+        _scroll.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
         AddChild(_scroll);
         AddChild(toolbar);
         _row = new HBoxContainer();
@@ -129,10 +135,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
                 UpdateCardText(_enlarged!, _inspected.Entry);
             return;
         }
-        var inspectedId = _inspected?.Entry.InstanceId;
-        bool wasPinned = _pinned != null;
         int scroll = _scroll.ScrollHorizontal;
-        ClearInspection();
+        ClearPreview();
         _cells.Clear();
         foreach (var child in _row.GetChildren())
         {
@@ -144,44 +148,99 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         foreach (var card in cards)
             AddCard(card);
         _scroll.ScrollHorizontal = scroll;
-        if (wasPinned && _cells.FirstOrDefault(cell => cell.Entry.InstanceId == inspectedId) is { } pinned)
-        {
-            _pinned = pinned.Face;
-            Inspect(pinned);
-        }
     }
 
-    private Button AddPileButton(string name, Func<CardPile> getPile)
+    private static Button AddToolbarButton(string text, string tooltip) => new()
+    {
+        Text = text,
+        TooltipText = tooltip,
+        Flat = true,
+        CustomMinimumSize = new Vector2(32, 32),
+        SizeFlagsVertical = SizeFlags.ShrinkCenter,
+        FocusMode = FocusModeEnum.All
+    };
+
+    private MegaLabel AddPileButton(string name, Func<CardPile> getPile)
     {
         var button = new Button
         {
             Name = name + "Pile",
+            Flat = true,
+            CustomMinimumSize = new Vector2(72, 64),
             FocusMode = FocusModeEnum.All,
             TooltipText = $"View the Corrupted Player's {name.ToLowerInvariant()} pile"
         };
+        foreach (var style in new[] { "normal", "hover", "pressed", "disabled" })
+            button.AddThemeStyleboxOverride(style, new StyleBoxEmpty());
+
+        var visuals = new Control
+        {
+            Name = "Visuals",
+            Size = new Vector2(80, 80),
+            Scale = Vector2.One * 0.75f,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        // Reuse the native artwork, badge and typography without registering the
+        // player's pile hotkeys or native combat UI animations on the enemy's HUD.
+        var scene = PreloadManager.Cache.GetScene($"res://scenes/combat/{name.ToLowerInvariant()}_pile.tscn")
+            .Instantiate<Control>();
+        foreach (var path in new[] { "Icon", "CountContainer" })
+        {
+            var child = scene.GetNode<Control>(path);
+            scene.RemoveChild(child);
+            visuals.AddChild(child);
+        }
+        scene.Free();
+        // Both badges sit to the right in the compact strip; the native discard
+        // badge sits to the left because that pile normally hugs the screen edge.
+        if (name != "Exhaust")
+        {
+            var badge = visuals.GetNode<Control>("CountContainer");
+            badge.SetAnchorsPreset(LayoutPreset.TopLeft);
+            badge.Position = new Vector2(48, 36);
+        }
+        IgnoreMouse(visuals);
+        button.AddChild(visuals);
+        var count = visuals.GetNode<MegaLabel>("CountContainer/Count");
+        void UpdateHighlight()
+        {
+            var color = button.IsHovered() || button.HasFocus() ? new Color(1.2f, 1.2f, 1.2f) : Colors.White;
+            visuals.Modulate = color;
+        }
+        button.MouseEntered += UpdateHighlight;
+        button.MouseExited += UpdateHighlight;
+        button.FocusEntered += UpdateHighlight;
+        button.FocusExited += UpdateHighlight;
         button.Pressed += () =>
         {
-            ClearInspection();
+            ClearPreview();
             NCardPileScreen.ShowScreen(getPile(), []);
         };
         _resources.AddChild(button);
-        return button;
+        return count;
     }
 
-    public void SetNativeState(PlayerCombatState state)
+    public void SetNativePlayer(Player player)
     {
+        var state = player.PlayerCombatState
+            ?? throw new InvalidOperationException("The Corrupted Player HUD requires an active combat state.");
         _nativeDisplay = true;
         _nativeState = state;
         _heading.Hide();
         _resources.Show();
-        _energy.Text = $"Energy {state.Energy}/{state.MaxEnergy}";
-        _draw.Text = $"Draw {state.DrawPile.Cards.Count}";
-        _discard.Text = $"Discard {state.DiscardPile.Cards.Count}";
-        _exhaust.Text = $"Exhaust {state.ExhaustPile.Cards.Count}";
-        _energy.TooltipText = "Current / maximum energy; not a future damage forecast.\n" +
-            "Plays left to right, reconsidering after each card. Choices select the first valid option.\n" +
-            "Attack intent: any Attack in your CURRENT hand when the Corrupted Player checks, regardless of cost.\n" +
-            "Co-op-only cards and third-party card/modifier effects are preserved but unsupported.";
+        if (_energy == null)
+        {
+            _energy = NEnergyCounter.Create(player)
+                ?? throw new InvalidOperationException("Could not create the Corrupted Player's native energy counter.");
+            _energySlot.AddChild(_energy);
+            _energy.PivotOffset = Vector2.Zero;
+            _energy.Position = new Vector2(4, 0);
+            _energy.Scale = Vector2.One * 0.5f;
+            IgnoreMouse(_energy);
+        }
+        _draw.SetTextAutoSize(state.DrawPile.Cards.Count.ToString());
+        _discard.SetTextAutoSize(state.DiscardPile.Cards.Count.ToString());
+        _exhaust.SetTextAutoSize(state.ExhaustPile.Cards.Count.ToString());
     }
 
     private void AddCard(CorruptedPlayerTelegraphCard entry)
@@ -221,12 +280,6 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             face.FocusEntered += () => Inspect(binding);
             face.MouseExited += () => DismissHover(face);
             face.FocusExited += () => DismissHover(face);
-            face.Pressed += () =>
-            {
-                ClearInspection();
-                _pinned = face;
-                Inspect(binding);
-            };
         }
         else
         {
@@ -308,7 +361,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
 
     private void Inspect(CardCell cell)
     {
-        if ((_pinned != null && _pinned != cell.Face) || _inspected == cell || cell.Entry.Card == null ||
+        if (_inspected == cell || cell.Entry.Card == null ||
             NCapstoneContainer.Instance?.InUse == true || NHoverTipSet.shouldBlockHoverTips ||
             NGame.Instance?.HoverTipsContainer is not { } hoverContainer)
             return;
@@ -331,14 +384,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
 
     private void DismissHover(Control owner)
     {
-        if (_pinned != owner && _inspected?.Face == owner)
+        if (_inspected?.Face == owner)
             ClearPreview();
-    }
-
-    private void ClearInspection()
-    {
-        ClearPreview();
-        _pinned = null;
     }
 
     private void ClearPreview()
@@ -387,7 +434,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             (_nativeDisplay && CombatManager.Instance.IsOverOrEnding))
         {
             Hide();
-            ClearInspection();
+            ClearPreview();
             return;
         }
         _refreshPlan();
@@ -400,19 +447,10 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             Mathf.Clamp(above.X - width / 2f, 16f, Mathf.Max(16f, viewport.X - width - 16f)),
             Mathf.Clamp(above.Y - Size.Y + (_nativeDisplay ? 24f : -24f), 12f, Mathf.Max(12f, viewport.Y - Size.Y - 12f)));
         if (!IsVisibleInTree() || NCapstoneContainer.Instance?.InUse == true || NHoverTipSet.shouldBlockHoverTips)
-            ClearInspection();
+            ClearPreview();
         else
             PositionPreview();
     }
 
-    public override void _UnhandledKeyInput(InputEvent @event)
-    {
-        if (@event is InputEventKey { Pressed: true, Keycode: Key.Escape } && _pinned != null)
-        {
-            ClearInspection();
-            GetViewport().SetInputAsHandled();
-        }
-    }
-
-    public override void _ExitTree() => ClearInspection();
+    public override void _ExitTree() => ClearPreview();
 }
