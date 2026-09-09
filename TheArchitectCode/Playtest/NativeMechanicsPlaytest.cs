@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Godot;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -9,18 +10,23 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.Models.Enchantments;
+using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
+using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
+using MegaCrit.Sts2.addons.mega_text;
 using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using TheArchitect.TheArchitectCode.Lifecycle;
+using TheArchitect.TheArchitectCode.UI;
 
 namespace TheArchitect.TheArchitectCode.Playtest;
 
 internal static class NativeMechanicsPlaytest
 {
-    internal static async Task Run(Player human, NativeCorruptedPlayer actor)
+    internal static async Task Run(Player human, NativeCorruptedPlayer actor, bool previewsOnly = false)
     {
         if (!NativeDemoSafety.Enabled)
             throw new InvalidOperationException("Mechanics probes require the disposable smoke environment.");
@@ -70,6 +76,113 @@ internal static class NativeMechanicsPlaytest
                 actor.TurnFinished -= CaptureEnergy;
             }
             actor.AssertIdentity();
+        }
+
+        var previewStrike = Card<StrikeIronclad>();
+        var previewTwin = Card<TwinStrike>();
+        var previewArea = Card<Thunderclap>();
+        var previewRandom = Card<SwordBoomerang>();
+        var previewSharp = Card<StrikeIronclad>(true);
+        CardCmd.Enchant<Sharp>(previewSharp, 4);
+        Prepare(Card<Inflame>(), previewStrike, previewTwin, previewArea, previewRandom, previewSharp);
+        var game = NGame.Instance!;
+        var telegraph = actor.Body.GetCreatureNode()!.GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph");
+        Button PreviewFace(CardModel card) => telegraph.FindChildren("CorruptedPlayerCard", "Button", true, false)
+            .OfType<Button>().Single(face => face.GetChildren().OfType<NCard>().Any(node => node.Model == card));
+        async Task PreviewDamage(CardModel card, int expected)
+        {
+            await game.AwaitProcessFrame();
+            await game.AwaitProcessFrame();
+            var node = PreviewFace(card).GetChildren().OfType<NCard>().Single();
+            Require(FirstDisplayedNumber(node) == expected,
+                $"{card.Id.Entry} miniature displays current damage {expected}");
+            if (card == previewStrike)
+            {
+                var enlarged = game.HoverTipsContainer!.GetNode<Control>("CorruptedPlayerCardPreview")
+                    .GetChildren().OfType<NCard>().Single();
+                Require(enlarged.Model == card && FirstDisplayedNumber(enlarged) == expected,
+                    $"already-open hover updates to current damage {expected}");
+            }
+        }
+        actor.Show(telegraph);
+        PreviewFace(previewStrike).EmitSignal(Button.SignalName.Pressed);
+        var previewHand = actor.State.Hand.Cards.ToArray();
+        var previewBaseValues = previewHand.Select(card => card.DynamicVars.Values.Select(v => v.BaseValue).ToArray()).ToArray();
+        var actorRng = NativeDemoPlaytest.AllRng(actor.Player);
+        var humanRng = NativeDemoPlaytest.AllRng(human);
+        var previewEnergy = actor.State.Energy;
+        var previewHp = human.Creature.CurrentHp;
+        await PreviewDamage(previewStrike, 6);
+        Require(actor.Body.GetPowerAmount<StrengthPower>() == 0, "preview does not simulate preceding Inflame");
+        await PowerCmd.Apply<StrengthPower>(context, actor.Body, 2, actor.Body, null);
+        await PreviewDamage(previewStrike, 8);
+        await PowerCmd.Apply<WeakPower>(context, actor.Body, 2, human.Creature, null);
+        await PreviewDamage(previewStrike, 6);
+        await PowerCmd.Apply<VulnerablePower>(context, human.Creature, 2, actor.Body, null);
+        await PreviewDamage(previewStrike, 9);
+        await PreviewDamage(previewTwin, 7);
+        await PreviewDamage(previewArea, 6);
+        await PreviewDamage(previewRandom, 5);
+        await PreviewDamage(previewSharp, 16);
+        await PowerCmd.Apply<StrengthPower>(context, human.Creature, 20, human.Creature, null);
+        await PowerCmd.Apply<WeakPower>(context, human.Creature, 2, actor.Body, null);
+        await PowerCmd.Apply<VulnerablePower>(context, actor.Body, 2, human.Creature, null);
+        await PreviewDamage(previewStrike, 9);
+        Require(actor.SelectTarget(previewStrike) == human.Creature &&
+            actor.SelectTarget(previewArea) == null && actor.SelectTarget(previewRandom) == null,
+            "preview and execution share targeted selection without selecting random targets");
+        await NativeDemoPlaytest.Capture("powered-card-preview");
+        await PowerCmd.Apply<StrengthPower>(context, actor.Body, 2, actor.Body, null);
+        await PreviewDamage(previewStrike, 11);
+        await PowerCmd.Remove<StrengthPower>(actor.Body);
+        await PreviewDamage(previewStrike, 6);
+        await PowerCmd.Remove<WeakPower>(actor.Body);
+        await PreviewDamage(previewStrike, 9);
+        await PowerCmd.Remove<VulnerablePower>(human.Creature);
+        await PreviewDamage(previewStrike, 6);
+        Require(previewHand.SequenceEqual(actor.State.Hand.Cards) && actor.State.Energy == previewEnergy &&
+            human.Creature.CurrentHp == previewHp && actorRng == NativeDemoPlaytest.AllRng(actor.Player) &&
+            humanRng == NativeDemoPlaytest.AllRng(human) && previewHand.Select((card, i) =>
+                card.DynamicVars.Values.Select(v => v.BaseValue).SequenceEqual(previewBaseValues[i])).All(equal => equal),
+            "repeated previews preserve hand, energy, HP, both RNG streams and card base values");
+
+        var unpowered = new CorruptedPlayerTelegraphCard(previewStrike, "preview-probe",
+            previewStrike.Id.Entry, null, true, [], new Dictionary<string, decimal>(), NativeCurrentState: true);
+        await PowerCmd.Apply<StrengthPower>(context, actor.Body, 10, actor.Body, null);
+        telegraph.ShowPlan([unpowered], false);
+        Require(FirstDisplayedNumber(PreviewFace(previewStrike).GetChildren().OfType<NCard>().Single()) == 6,
+            "unsupported entry retains unpowered display despite live Strength");
+        await game.AwaitProcessFrame();
+        await game.AwaitProcessFrame();
+        telegraph.ShowPlan([unpowered with
+        {
+            Unsupported = false, NativeCurrentState = false, PlayOrder = 1,
+            PreviewValues = new Dictionary<string, decimal> { ["Damage"] = 42 }
+        }], false);
+        Require(FirstDisplayedNumber(PreviewFace(previewStrike).GetChildren().OfType<NCard>().Single()) == 42,
+            "legacy entry retains frozen preview values");
+        await game.AwaitProcessFrame();
+        await game.AwaitProcessFrame();
+        actor.Body.RemoveAllPowersInternalExcept();
+        human.Creature.RemoveAllPowersInternalExcept();
+        previewStrike = Card<StrikeIronclad>();
+        Prepare(previewStrike, Card<Wound>(), Card<Wound>(), Card<Wound>(), Card<Wound>());
+        actor.Show(telegraph);
+        PreviewFace(previewStrike).EmitSignal(Button.SignalName.Pressed);
+        await PowerCmd.Apply<StrengthPower>(context, actor.Body, 2, actor.Body, null);
+        await PowerCmd.Apply<WeakPower>(context, actor.Body, 2, human.Creature, null);
+        await PowerCmd.Apply<VulnerablePower>(context, human.Creature, 2, actor.Body, null);
+        await PreviewDamage(previewStrike, 9);
+        previewHp = human.Creature.CurrentHp;
+        await Turn();
+        Require(previewHp - human.Creature.CurrentHp == 9 && previewStrike.DynamicVars.Damage.BaseValue == 6,
+            "native attack matches displayed damage without double-applying preview modifiers");
+        actor.Body.RemoveAllPowersInternalExcept();
+        human.Creature.RemoveAllPowersInternalExcept();
+        if (previewsOnly)
+        {
+            MainFile.Logger.Info("NATIVE CARD PREVIEWS PASSED");
+            return;
         }
 
         Prepare(Card<Wound>(), Card<Wound>(), Card<Wound>(), Card<Wound>(), Card<Wound>());
@@ -269,6 +382,10 @@ internal static class NativeMechanicsPlaytest
         actor.Player.MaxEnergy = actor.Player.Character.MaxEnergy;
         MainFile.Logger.Info("NATIVE MECHANICS PASSED");
     }
+
+    private static int FirstDisplayedNumber(NCard card) =>
+        int.Parse(Regex.Match(card.GetNode<MegaRichTextLabel>("%DescriptionLabel").GetParsedText(), @"\d+").Value,
+            System.Globalization.CultureInfo.InvariantCulture);
 
     private static void Require(bool condition, string message)
     {

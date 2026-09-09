@@ -151,6 +151,12 @@ internal static class NativeDemoPlaytest
             manager.GetNode<Control>("%Orbs").GetChildCount() == actor.State.OrbQueue.Capacity,
             "native orb manager and initial slots attached for the saved character");
         await InspectCorruptedPlayerDisplay(game, actor);
+        if (CommandLineHelper.HasArg("architect-native-previews"))
+        {
+            await NativeMechanicsPlaytest.Run(human, actor, previewsOnly: true);
+            game.GetTree().Quit();
+            return;
+        }
         game.GetViewport().GuiReleaseFocus();
         if (!NativeDemoSafety.SharedVisible)
             Input.WarpMouse(game.GetViewportRect().Size / 2f);
@@ -382,7 +388,7 @@ internal static class NativeDemoPlaytest
 
     internal static string RngSnapshot(Player player) => JsonSerializer.Serialize(player.RunState.Rng.ToSerializable(),
         JsonSerializationUtility.GetTypeInfo<SerializableRunRngSet>());
-    private static string AllRng(Player player) => RngSnapshot(player) +
+    internal static string AllRng(Player player) => RngSnapshot(player) +
         JsonSerializer.Serialize(player.PlayerRng.ToSerializable(), new JsonSerializerOptions { IncludeFields = true });
     internal static Task PlayerTurn(Player player, int turn) => WaitFor(() =>
         player.PlayerCombatState is { Phase: PlayerTurnPhase.Play } state && state.TurnNumber == turn &&
