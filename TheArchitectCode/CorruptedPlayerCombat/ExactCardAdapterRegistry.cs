@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
 
-namespace TheArchitect.TheArchitectCode.Challenger;
+namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 /// <summary>Whole-card allowlist audited against installed beta 0.111.0, not card metadata heuristics.</summary>
 public sealed class ExactCardAdapterRegistry

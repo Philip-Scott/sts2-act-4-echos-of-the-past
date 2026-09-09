@@ -1,4 +1,4 @@
-# Challenger Snapshot persistence seams
+# Corrupted Player Snapshot persistence seams
 
 Research date: 2026-09-07
 
@@ -10,7 +10,7 @@ Versions examined: The Architect manifest minimum `0.107.0`; BaseLib `3.4.5`
 
 ## Decision
 
-Persist the single-player Challenger Snapshot as an Architect-owned, versioned JSON file under the
+Persist the single-player Corrupted Player Snapshot as an Architect-owned, versioned JSON file under the
 active game's **modded profile directory**. Resolve the directory from
 `SaveManager.Instance.GetProfileScopedPath(...)`, listen to `SaveManager.ProfileIdChanged`, and use
 the game's atomic write pattern (`.tmp`, rename, optional `.backup`). Treat `CurrentProfileId` only
@@ -22,7 +22,7 @@ Do **not** put the successor snapshot in BaseLib `ModConfig`, and do not attach 
 - `ModConfig` writes to the account-global `OS.GetUserDataDir()/mod_configs` directory, so it is not
   profile-scoped.
 - BaseLib's extended `IRunState` save data is appropriate for state needed to resume the *current*
-  run, but a Challenger Snapshot is progression between runs and must survive deletion of the run
+  run, but a Corrupted Player Snapshot is progression between runs and must survive deletion of the run
   save.
 
 The game does not expose a public API for adding arbitrary files to its Steam Cloud synchronization
@@ -60,16 +60,16 @@ profiles separate.
 Recommended relative path:
 
 ```text
-TheArchitect/challenger_snapshot.json
+TheArchitect/corrupted_player_snapshot.json
 ```
 
 Recommended lifecycle:
 
 1. Load after `SaveManager` has initialized the profile.
 2. Reload on `ProfileIdChanged`.
-3. Save only when a completed run produces a new challenger.
+3. Save only when a completed run produces a new Corrupted Player.
 4. Never derive the path manually from `profile{n}`; call `GetProfileScopedPath`.
-5. Serialize first, write `challenger_snapshot.json.tmp`, then atomically rename it over the target;
+5. Serialize first, write `corrupted_player_snapshot.json.tmp`, then atomically rename it over the target;
    retain or refresh `.backup` before replacement.
 
 The game's `GodotFileIo.WriteFile` follows this backup/temp/rename sequence and creates missing
@@ -125,7 +125,7 @@ is not on those lists. Writing it directly with Godot or `System.IO` bypasses cl
 [`SaveManager.cs`](https://github.com/hongyipan152/STS2SourceCode/blob/d3db818409984371aa5582b94c55877ee2f72e3e/src/Core/Saves/SaveManager.cs))
 
 BaseLib `ExtendedSaveTypes.RegisterSavedValue<IRunState, T>` patches `SerializableRun` and packet
-serialization. It is useful if the current run must remember which challenger it loaded, but is not
+serialization. It is useful if the current run must remember which Corrupted Player it loaded, but is not
 the authoritative between-run store. Registration must happen before BaseLib freezes the generated
 serializer properties.
 ([`ExtendedSaveHandlers.cs`](https://github.com/Alchyr/BaseLib-StS2/blob/22757933ba10adc4322a628519a233a567507d87/Patches/Saves/ExtendedSaveHandlers.cs),
@@ -175,7 +175,7 @@ Given each participant's 16 raw UUID bytes:
 
 ```text
 groupKey = hex(SHA-256(
-  utf8("TheArchitect/ChallengerGroup/v1") ||
+  utf8("TheArchitect/CorruptedPlayerGroup/v1") ||
   uint32_be(participantCount) ||
   concat(sort_lexicographically(distinct(profileUuidBytes)))
 ))
@@ -258,7 +258,7 @@ Before implementing persistence:
 - Test profile switch and profile deletion with all three slots.
 - Test crash recovery from primary, `.tmp`, and `.backup` combinations.
 - Decide explicitly whether local-only storage is acceptable; do not claim Steam Cloud support.
-- Prototype the multiplayer identity exchange at the earliest point the challenger is needed and
+- Prototype the multiplayer identity exchange at the earliest point the Corrupted Player is needed and
   prove the custom handler exists there.
 - Confirm that reconnect preserves the same session sender binding.
 - Reconcile the game minimum and pin the BaseLib package used for the wire/storage contract.

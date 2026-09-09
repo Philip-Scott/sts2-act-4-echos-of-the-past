@@ -21,19 +21,19 @@ supplied tower-approach illustration; the boss fight retains the
 native Architect workshop interior. Native campfire, merchant, and room
 interactions remain intact.
 
-The Challenger now uses the **native in-process card engine in normal play**,
+The Corrupted Player now uses the **native in-process card engine in normal play**,
 restoring the saved deck, upgrades, native enchantments and saved card properties.
 It owns persistent native energy, piles, powers, RNG, orbs and pets without
 joining the human party. There is no worker process or adapter fallback.
-Cards play left to right with deterministic first-valid choices. The Challenger
+Cards play left to right with deterministic first-valid choices. The Corrupted Player
 draws its upcoming hand during your turn (five cards by default), then plays
 that hand when you end your turn without drawing a second opening hand. The preview
 shows its actual hand and resources, not a guaranteed damage forecast;
 cards enlarge on hover. Native orb slots appear for Defect and for any other
-character that acquires orb capacity. Enemy pets stay beside their Challenger,
+character that acquires orb capacity. Enemy pets stay beside their Corrupted Player,
 without moving the human.
 
-Corrupted Challengers use **Bound Echo** rather than a purple tint: cyan-violet
+Corrupted Players use **Bound Echo** rather than a purple tint: cyan-violet
 afterimages and a slowly shifting body slice sit inside orbiting gold seals and
 a ground sigil. The effect composites the animated body, not individual Spine
 attachments, and leaves native character materials, health, intents and orbs
@@ -45,28 +45,28 @@ Co-op-only cards and third-party card/modifier effects are visibly
 **Unsupported** and remain unplayed; the original saved JSON is preserved.
 Missing saved models block entry with an actionable error rather than silently
 dropping cards. This is not a claim that every vanilla card combination has been
-audited. See [native Challenger behavior and boundaries](TheArchitectCode/Challenger/README.md).
+audited. See [native Corrupted Player behavior and boundaries](TheArchitectCode/CorruptedPlayerCombat/README.md).
 Terminal outcomes open the native victory screen directly.
 
 For fast feedback, start a disposable modded single-player run, open the
 developer console with the **backtick (`)** key, and enter `architect`. This skips to the Act 4
 map using your current deck, HP, and gold; it does not grant a late-game build.
-Normal completion of this run can replace your profile's Challenger.
+Normal completion of this run can replace your profile's Corrupted Player.
 Use `architect`, not `act 4`: the vanilla `act` command can only visit acts
 already appended to the current run.
 
 An alternative **unsaved** developer launch uses the game's bootstrap mode:
 `--bootstrap --architect-playtest`. Add `--architect-repeat` to use a copy of
-the test character's deck for the Challenger phase. This does not replace the
-profile's Challenger or record run history.
+the test character's deck for the Corrupted Player phase. This does not replace the
+profile's Corrupted Player or record run history.
 
-Developer checks: `dotnet run --project tests/Challenger/Challenger.Tests.csproj`
+Developer checks: `dotnet run --project tests/CorruptedPlayer/CorruptedPlayer.Tests.csproj`
 and `dotnet run --project tests/Architect/Architect.Tests.csproj` retain the
 legacy planner and persistence/Architect regressions. They are not substitutes
 for native runtime coverage. The Linux `scripts/native-demo.sh` launcher exercises
 the production actor from normal startup using a disposable copy of a supplied
 snapshot; its name is historical. See its documented invocation and isolation
-requirements in the native Challenger README. On Linux, `native-demo.sh run`
+requirements in the native Corrupted Player README. On Linux, `native-demo.sh run`
 uses a private virtual display per instance, so worktrees can run and capture
 concurrently without sharing desktop input. Installed game assets are shared
 read-only; only each run's small mod bundle, disposable snapshot and optional
@@ -74,7 +74,7 @@ shader caches are copied.
 For faster in-process automation, opt into `run --shared-visible`: separate
 GPU-rendered desktop windows retain file/process isolation, use native viewport
 captures, and reject external mouse/keyboard commands. Desktop focus is still
-shared; see the native Challenger README for the tradeoff and measured timings.
+shared; see the native Corrupted Player README for the tradeoff and measured timings.
 **Changing XDG_DATA_HOME alone
 does not isolate Steam Cloud or real saves.**
 
@@ -84,8 +84,8 @@ This opt-in scenario uses the five base characters rather than a saved snapshot,
 with disposable data and Steam disabled. Its captures and log go under
 `artifacts/native-demo/`; it does not install the build into the live game.
 
-Challengers are stored locally in the active **modded** profile's
-`TheArchitect/challenger_snapshot.json`, with an atomic replacement and backup.
+Corrupted Players are stored locally in the active **modded** profile's
+`TheArchitect/corrupted_player_snapshot.json`, with an atomic replacement and backup.
 They are not synchronized through Steam Cloud. Keep the same character/content
 mods enabled for the next visit; an unavailable character produces a First Visit.
 
@@ -93,6 +93,10 @@ This is an early playtest build, not completion of every item in #2. Full
 crash-transaction recovery between snapshot capture and base-game progression/history
 is still tracked in #12. Avoid force-closing the game during the result transition.
 The beta game's normal combat saves restart the encounter rather than resuming mid-turn.
+
+**Naming:** The enemy fought before the Architect is the **Corrupted Player**,
+not the human player. Code identifiers, paths, and save keys use this name too.
+Pre-release saves using the old name are not migrated.
 
 ## Requirements
 

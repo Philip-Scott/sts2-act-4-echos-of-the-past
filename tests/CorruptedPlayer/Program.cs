@@ -1,10 +1,10 @@
 using System.Collections.Immutable;
 using System.Text.Json;
-using TheArchitect.TheArchitectCode.Challenger;
+using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 int passed = 0;
 var registry = new ExactCardAdapterRegistry();
-var planner = new ChallengerPlanner(registry);
+var planner = new CorruptedPlayerPlanner(registry);
 var inputs = new PlannerInputs { Opponents = [new(0)] };
 
 void Test(string name, Action action)
@@ -27,9 +27,9 @@ CardDescriptor Perfected(int level = 0) =>
 CardDescriptor Impervious(int level = 0) =>
     Card("impervious", "CARD.IMPERVIOUS", 2, SimulationKeywords.Exhaust, values: [("Block", 30m + 10m * level)])
         with { UpgradeLevel = level };
-ChallengerState State(params CardDescriptor[] cards) => new(1, 0, 123, 0, cards.ToImmutableArray(), [], [], []);
+CorruptedPlayerState State(params CardDescriptor[] cards) => new(1, 0, 123, 0, cards.ToImmutableArray(), [], [], []);
 string Json<T>(T value) => JsonSerializer.Serialize(value);
-ChallengerPlan Plan(params CardDescriptor[] cards) => planner.BuildPlan(State(cards), inputs);
+CorruptedPlayerPlan Plan(params CardDescriptor[] cards) => planner.BuildPlan(State(cards), inputs);
 void Register(string id, Func<CardDescriptor, AdapterContext, AdapterResult> recipe) => registry.Register(new TestAdapter(id, recipe));
 
 Test("five-card draw, three energy, original input unchanged", () =>
@@ -44,9 +44,9 @@ Test("five-card draw, three energy, original input unchanged", () =>
 Test("deterministic seed, identity separation and repeatable UI reads", () =>
 {
     var deck = Enumerable.Range(0, 40).Select(i => Card(i.ToString())).ToArray();
-    var a = ChallengerState.Create(deck, "run", "snapshot", "encounter");
-    var b = ChallengerState.Create(deck, "run", "snapshot", "encounter");
-    var c = ChallengerState.Create(deck, "run", "snapshot-2", "encounter");
+    var a = CorruptedPlayerState.Create(deck, "run", "snapshot", "encounter");
+    var b = CorruptedPlayerState.Create(deck, "run", "snapshot", "encounter");
+    var c = CorruptedPlayerState.Create(deck, "run", "snapshot-2", "encounter");
     Check(Json(a) == Json(b) && Json(a) != Json(c));
     Check(Json(planner.BuildPlan(a, inputs)) == Json(planner.BuildPlan(a, inputs)));
 });
@@ -355,7 +355,7 @@ Test("Strike metadata and installed plans roundtrip, and legacy missing metadata
 {
     var state = State(Perfected(), Impervious()) with { Exhaust = [Card("old-strike") with { HasStrikeTag = true }] };
     var plan = planner.BuildPlan(state, inputs);
-    var restored = ChallengerSave.Deserialize(ChallengerSave.Serialize(state, plan));
+    var restored = CorruptedPlayerSave.Deserialize(CorruptedPlayerSave.Serialize(state, plan));
     Check(Json(restored.Plan) == Json(plan) && Json(restored.State) == Json(state));
     Check(Json(planner.BuildPlan(restored.State, inputs)) == Json(plan));
     var legacyCard = JsonSerializer.Deserialize<CardDescriptor>(Json(Card("legacy")).Replace(",\"HasStrikeTag\":false", ""))!;
@@ -386,9 +386,9 @@ Test("empty and exhausted decks produce explicit stable no-op turns", () =>
 });
 Test("save roundtrip retains installed immutable plan, RNG, piles and original JSON", () =>
 {
-    var state = ChallengerState.Create(Enumerable.Range(0, 8).Select(i => Card(i.ToString())), "run", "snapshot", "encounter");
+    var state = CorruptedPlayerState.Create(Enumerable.Range(0, 8).Select(i => Card(i.ToString())), "run", "snapshot", "encounter");
     var plan = planner.BuildPlan(state, inputs);
-    var save = ChallengerSave.Deserialize(ChallengerSave.Serialize(state, plan));
+    var save = CorruptedPlayerSave.Deserialize(CorruptedPlayerSave.Serialize(state, plan));
     Check(Json(save.Plan) == Json(plan) && Json(save.State) == Json(state));
     Check(Json(planner.BuildPlan(save.Plan!.NextState, inputs)) == Json(planner.BuildPlan(plan.NextState, inputs)));
 });
@@ -396,7 +396,7 @@ Test("installed plan cannot be rerolled through changed inputs", () =>
 {
     var state = State(Card("attack"));
     var plan = planner.BuildPlan(state, inputs);
-    var persisted = ChallengerSave.Deserialize(ChallengerSave.Serialize(state, plan));
+    var persisted = CorruptedPlayerSave.Deserialize(CorruptedPlayerSave.Serialize(state, plan));
     var changed = inputs with { Strength = 99 };
     Check(planner.BuildPlan(state, changed).Cards[0].Actions[0].Amount == 105);
     Check(persisted.Plan!.Cards[0].Actions[0].Amount == 6);
@@ -404,7 +404,7 @@ Test("installed plan cannot be rerolled through changed inputs", () =>
 Test("future RNG or save schema fails rather than silently rerolling", () =>
 {
     bool failed = false;
-    try { ChallengerSave.Deserialize(ChallengerSave.Serialize(State() with { Version = 999 }, null)); }
+    try { CorruptedPlayerSave.Deserialize(CorruptedPlayerSave.Serialize(State() with { Version = 999 }, null)); }
     catch (JsonException) { failed = true; }
     Check(failed);
 });
@@ -495,7 +495,7 @@ Test("corrupt installed action enum is rejected on load", () =>
     var plan = planner.BuildPlan(state, inputs);
     plan = plan with { Cards = [plan.Cards[0] with { Actions = [new((ActionKind)999)] }] };
     bool rejected = false;
-    try { ChallengerSave.Deserialize(ChallengerSave.Serialize(state, plan)); }
+    try { CorruptedPlayerSave.Deserialize(CorruptedPlayerSave.Serialize(state, plan)); }
     catch (JsonException) { rejected = true; }
     Check(rejected);
 });

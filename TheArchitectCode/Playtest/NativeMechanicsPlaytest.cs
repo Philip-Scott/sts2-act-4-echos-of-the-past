@@ -13,14 +13,14 @@ using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
-using TheArchitect.TheArchitectCode.Challenger;
+using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using TheArchitect.TheArchitectCode.Lifecycle;
 
 namespace TheArchitect.TheArchitectCode.Playtest;
 
 internal static class NativeMechanicsPlaytest
 {
-    internal static async Task Run(Player human, NativeChallenger actor)
+    internal static async Task Run(Player human, NativeCorruptedPlayer actor)
     {
         if (!NativeDemoSafety.Enabled)
             throw new InvalidOperationException("Mechanics probes require the disposable smoke environment.");
@@ -209,7 +209,7 @@ internal static class NativeMechanicsPlaytest
             JsonSerializationUtility.GetTypeInfo<SerializableCard>());
         var preflight = NativeCardSupport.Preflight([unavailable]);
         Require(preflight?.Contains("not installed") == true, "missing saved model rejected before card restoration");
-        NativeChallengerPreflight.Show(preflight!);
+        NativeCorruptedPlayerPreflight.Show(preflight!);
         Require(NModalContainer.Instance?.OpenModal is NErrorPopup, "unavailable snapshot model has visible native error modal");
         await NativeDemoPlaytest.Capture("missing-model");
         NModalContainer.Instance!.Clear();
@@ -217,14 +217,14 @@ internal static class NativeMechanicsPlaytest
         actor.Body.RemoveAllPowersInternalExcept();
         human.Creature.RemoveAllPowersInternalExcept();
         var humanPosition = human.Creature.GetCreatureNode()!.GlobalPosition;
-        var challengerPosition = actor.Body.GetCreatureNode()!.GlobalPosition;
+        var corruptedPlayerPosition = actor.Body.GetCreatureNode()!.GlobalPosition;
         void RequirePetLayout()
         {
             var petNode = actor.Player.Osty!.GetCreatureNode()!;
             var ownerNode = actor.Body.GetCreatureNode()!;
             Require(human.Creature.GetCreatureNode()!.GlobalPosition.IsEqualApprox(humanPosition) &&
-                ownerNode.GlobalPosition.IsEqualApprox(challengerPosition),
-                "enemy pet summon/revive preserves human and Challenger coordinates");
+                ownerNode.GlobalPosition.IsEqualApprox(corruptedPlayerPosition),
+                "enemy pet summon/revive preserves human and Corrupted Player coordinates");
             Require(petNode.GetParent() == ownerNode.GetParent() &&
                 petNode.GlobalPosition.X > NCombatRoom.Instance!.Size.X / 2 &&
                 petNode.GlobalPosition.X < ownerNode.GlobalPosition.X &&

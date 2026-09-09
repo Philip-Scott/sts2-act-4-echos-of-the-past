@@ -17,14 +17,14 @@ using MegaCrit.Sts2.Core.Unlocks;
 using TheArchitect.TheArchitectCode.Monsters;
 using TheArchitect.TheArchitectCode.UI;
 
-namespace TheArchitect.TheArchitectCode.Challenger;
+namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
-public sealed class NativeChallenger
+public sealed class NativeCorruptedPlayer
 {
-    private static readonly ConditionalWeakTable<Player, NativeChallenger> Players = new();
-    private static readonly ConditionalWeakTable<Creature, NativeChallenger> Creatures = new();
-    public static bool TryGet(Player player, out NativeChallenger actor) => Players.TryGetValue(player, out actor!);
-    public static bool TryGet(Creature creature, out NativeChallenger actor) => Creatures.TryGetValue(creature, out actor!);
+    private static readonly ConditionalWeakTable<Player, NativeCorruptedPlayer> Players = new();
+    private static readonly ConditionalWeakTable<Creature, NativeCorruptedPlayer> Creatures = new();
+    public static bool TryGet(Player player, out NativeCorruptedPlayer actor) => Players.TryGetValue(player, out actor!);
+    public static bool TryGet(Creature creature, out NativeCorruptedPlayer actor) => Creatures.TryGetValue(creature, out actor!);
 
     public Player Player { get; }
     public Creature Body { get; }
@@ -47,11 +47,11 @@ public sealed class NativeChallenger
     private bool _endTurnRequested;
     internal event Action<CardModel>? CardPlayed;
 
-    public NativeChallenger(Creature body, CharacterModel character, IReadOnlyList<JsonElement> deck, string seed)
+    public NativeCorruptedPlayer(Creature body, CharacterModel character, IReadOnlyList<JsonElement> deck, string seed)
     {
-        if (body.Monster is not CorruptedChallenger || body.CombatState is not CombatState combat ||
+        if (body.Monster is not CorruptedPlayer || body.CombatState is not CombatState combat ||
             combat.Players.Count != 1)
-            throw new InvalidOperationException("Native Challenger requires a live single-player enemy.");
+            throw new InvalidOperationException("Native Corrupted Player requires a live single-player enemy.");
         Body = body;
         _combat = combat;
         // Avoid CreateForNewRun's discovery/save notifications and starter relic acquisition.
@@ -70,14 +70,14 @@ public sealed class NativeChallenger
         foreach (var raw in deck)
         {
             var saved = raw.Deserialize(JsonSerializationUtility.GetTypeInfo<SerializableCard>())
-                ?? throw new JsonException("The Challenger snapshot contains a null card.");
+                ?? throw new JsonException("The Corrupted Player snapshot contains a null card.");
             if (saved.Id == null || ModelDb.GetByIdOrNull<CardModel>(saved.Id) == null)
-                throw new NotSupportedException($"The Challenger's saved card {saved.Id} is not installed.");
+                throw new NotSupportedException($"The Corrupted Player's saved card {saved.Id} is not installed.");
             var card = run.LoadCard(NativeCardSupport.ForNativeLoad(raw, saved), Player);
             if ((NativeCardSupport.SavedReason(raw) ?? NativeCardSupport.Reason(card)) is { } reason)
             {
                 _unsupported.Add(card, reason);
-                MainFile.Logger.Warn($"Challenger {card.Id}: {reason}; preserved but not executed.");
+                MainFile.Logger.Warn($"Corrupted Player {card.Id}: {reason}; preserved but not executed.");
             }
             Player.Deck.AddInternal(card, silent: true);
         }
@@ -96,7 +96,7 @@ public sealed class NativeChallenger
             Body.Player != Player || Body.IsPlayer || !Body.IsMonster || Body.Side != CombatSide.Enemy ||
             _combat.Players.Contains(Player) || _combat.RunState.Players.Contains(Player) ||
             _combat.Players.Count != 1 || _combat.RunState.Players.Count != 1)
-            throw new InvalidOperationException("Native Challenger violated actor/thread/single-player isolation.");
+            throw new InvalidOperationException("Native Corrupted Player violated actor/thread/single-player isolation.");
     }
 
     private bool CanAct => !Cleaned && Body.IsAlive && !CombatManager.Instance.IsOverOrEnding &&
@@ -109,7 +109,7 @@ public sealed class NativeChallenger
         if (!CanAct)
             return;
         if (State.Phase != PlayerTurnPhase.None)
-            throw new InvalidOperationException("Native Challenger turn was started twice.");
+            throw new InvalidOperationException("Native Corrupted Player turn was started twice.");
         // Extra enemy turns have no intervening human turn to prepare their hand.
         await PrepareTurn();
         State.Phase = PlayerTurnPhase.Start;
@@ -125,7 +125,7 @@ public sealed class NativeChallenger
         if (!CanAct || HandPrepared)
             return;
         if (State.Phase != PlayerTurnPhase.None)
-            throw new InvalidOperationException("Native Challenger hand can only be prepared between turns.");
+            throw new InvalidOperationException("Native Corrupted Player hand can only be prepared between turns.");
         _reasons.Clear();
         _endTurnRequested = false;
         if (CompletedTurns > 0)
@@ -204,7 +204,7 @@ public sealed class NativeChallenger
                     break;
                 if (++plays > 100)
                 {
-                    MainFile.Logger.Warn("Native Challenger turn stopped at the 100-play safety limit.");
+                    MainFile.Logger.Warn("Native Corrupted Player turn stopped at the 100-play safety limit.");
                     _reasons[next] = "100-play safety limit";
                     break;
                 }
@@ -297,7 +297,7 @@ public sealed class NativeChallenger
         if (Cleaned)
             return;
         // A lethal native card may defer state cleanup, but its orb UI must stop immediately.
-        ChallengerOrbs.Hide(Body);
+        CorruptedPlayerOrbs.Hide(Body);
         if (Executing)
             return;
         Cleaned = true;
@@ -311,8 +311,8 @@ public sealed class NativeChallenger
         MainFile.Logger.Info("NATIVE actor cleaned up");
     }
 
-    internal static IEnumerable<NativeChallenger> In(ICombatState combat) =>
-        combat.Enemies.Select(c => TryGet(c, out var actor) ? actor : null).OfType<NativeChallenger>().ToArray();
+    internal static IEnumerable<NativeCorruptedPlayer> In(ICombatState combat) =>
+        combat.Enemies.Select(c => TryGet(c, out var actor) ? actor : null).OfType<NativeCorruptedPlayer>().ToArray();
 
     internal static void CleanupAll()
     {
@@ -344,7 +344,7 @@ public sealed class NativeChallenger
         for (var extra = 0; CanAct && Hook.ShouldTakeExtraTurn(_combat, Player); extra++)
         {
             if (extra == 20)
-                throw new InvalidOperationException("Native Challenger exceeded the 20-extra-turn safety limit.");
+                throw new InvalidOperationException("Native Corrupted Player exceeded the 20-extra-turn safety limit.");
             await Hook.AfterTakingExtraTurn(_combat, Player);
             var participants = _combat.GetTeammatesOf(Body).Where(c => c.IsAlive).ToArray();
             foreach (var creature in participants)
@@ -363,7 +363,7 @@ public sealed class NativeChallenger
         }
     }
 
-    public void Show(ChallengerTelegraph telegraph)
+    public void Show(CorruptedPlayerTelegraph telegraph)
     {
         var pile = State.Hand;
         var cards = pile.Cards;
@@ -372,7 +372,7 @@ public sealed class NativeChallenger
             if (!_cardIds.TryGetValue(card, out var id))
                 _cardIds.Add(card, id = $"generated:{_cardIds.Count}");
             var unsupported = UnsupportedReason(card);
-            return new ChallengerTelegraphCard(card, id, card.Id.Entry, null, unsupported != null, [],
+            return new CorruptedPlayerTelegraphCard(card, id, card.Id.Entry, null, unsupported != null, [],
                 new Dictionary<string, decimal>(), NativeCurrentState: true,
                 Status: unsupported ?? _reasons.GetValueOrDefault(card));
         }).ToArray(), false);
@@ -389,66 +389,66 @@ public sealed class NativeChallenger
 }
 
 [HarmonyPatch(typeof(Creature), nameof(Creature.Player), MethodType.Getter)]
-internal static class NativeChallengerOwnerPatch
+internal static class NativeCorruptedPlayerOwnerPatch
 {
     private static void Postfix(Creature __instance, ref Player? __result)
     {
-        if (NativeChallenger.TryGet(__instance, out var actor))
+        if (NativeCorruptedPlayer.TryGet(__instance, out var actor))
             __result = actor.Player;
     }
 }
 
 [HarmonyPatch(typeof(Creature), nameof(Creature.IsPlayer), MethodType.Getter)]
-internal static class NativeChallengerParticipantPatch
+internal static class NativeCorruptedPlayerParticipantPatch
 {
     private static void Postfix(Creature __instance, ref bool __result)
     {
-        if (NativeChallenger.TryGet(__instance, out _))
+        if (NativeCorruptedPlayer.TryGet(__instance, out _))
             __result = false;
     }
 }
 
 [HarmonyPatch(typeof(CombatState), nameof(CombatState.IterateHookListeners))]
-internal static class NativeChallengerMonsterHooksPatch
+internal static class NativeCorruptedPlayerMonsterHooksPatch
 {
     private static void Postfix(CombatState __instance, ref IEnumerable<AbstractModel> __result) =>
-        __result = __result.Where(NativeChallenger.IncludeHook)
-            .Concat(NativeChallenger.In(__instance).Select(actor => actor.Body.Monster!));
+        __result = __result.Where(NativeCorruptedPlayer.IncludeHook)
+            .Concat(NativeCorruptedPlayer.In(__instance).Select(actor => actor.Body.Monster!));
 }
 
 [HarmonyPatch(typeof(Hook), nameof(Hook.AfterDamageGiven))]
-internal static class NativeChallengerDamageMetricPatch
+internal static class NativeCorruptedPlayerDamageMetricPatch
 {
     private static void Prefix(Creature? dealer, DamageResult results)
     {
-        if (NativeChallenger.TryGet(results.Receiver, out _) &&
+        if (NativeCorruptedPlayer.TryGet(results.Receiver, out _) &&
             dealer is { IsPlayer: true, Player: { } player })
             player.ExtraFields.DamageDealt += results.UnblockedDamage;
     }
 }
 
 [HarmonyPatch(typeof(Hook), nameof(Hook.AfterCombatEnd))]
-internal static class NativeChallengerCombatCleanupPatch
+internal static class NativeCorruptedPlayerCombatCleanupPatch
 {
     private static void Postfix(ref Task __result) => __result = Cleanup(__result);
     private static async Task Cleanup(Task original)
     {
         await original;
-        NativeChallenger.CleanupAll();
+        NativeCorruptedPlayer.CleanupAll();
     }
 
     [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.Reset))]
-    internal static class NativeChallengerResetPatch
+    internal static class NativeCorruptedPlayerResetPatch
     {
-        private static void Prefix() => NativeChallenger.CleanupAll();
+        private static void Prefix() => NativeCorruptedPlayer.CleanupAll();
     }
 
     [HarmonyPatch(typeof(PlayerCmd), nameof(PlayerCmd.EndTurn))]
-    internal static class NativeChallengerForcedEndPatch
+    internal static class NativeCorruptedPlayerForcedEndPatch
     {
         private static bool Prefix(Player player)
         {
-            if (!NativeChallenger.TryGet(player, out var actor))
+            if (!NativeCorruptedPlayer.TryGet(player, out var actor))
                 return true;
             actor.RequestEndTurn();
             return false;

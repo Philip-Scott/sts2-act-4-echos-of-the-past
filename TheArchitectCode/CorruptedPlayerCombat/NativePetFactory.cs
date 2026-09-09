@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Runs;
 
-namespace TheArchitect.TheArchitectCode.Challenger;
+namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 internal static class NativePetFactory
 {
@@ -17,7 +17,7 @@ internal static class NativePetFactory
 
     internal static async Task<Creature> AddPet<T>(Player player) where T : MonsterModel
     {
-        if (!NativeChallenger.TryGet(player, out var actor))
+        if (!NativeCorruptedPlayer.TryGet(player, out var actor))
             return await PlayerCmd.AddPet<T>(player);
         var pet = actor.View.CreateCreature(ModelDb.Monster<T>().ToMutable(), player.Creature.Side, null);
         await PlayerCmd.AddPet(pet, player);

@@ -9,7 +9,7 @@ using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
 using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using TheArchitect.TheArchitectCode.Acts;
-using TheArchitect.TheArchitectCode.Challenger;
+using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.Models.Cards;
@@ -59,7 +59,7 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
         ArchitectLifecycle.AppendAct(run);
         await RunManager.Instance.SetActInternal(3);
         ArchitectRun.Get(run).EntrySnapshot = CommandLineHelper.HasArg("architect-repeat")
-            ? new ChallengerEnvelope { Revision = 1, Snapshot = ChallengerSnapshot.Capture(localPlayer) }
+            ? new CorruptedPlayerEnvelope { Revision = 1, Snapshot = CorruptedPlayerSnapshot.Capture(localPlayer) }
             : null;
         if (CommandLineHelper.HasArg("architect-feedback"))
         {
@@ -70,14 +70,14 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
             cards[1].UpgradeInternal();
             var deck = cards.Select(card => JsonSerializer.SerializeToElement(card.ToSerializable(),
                 JsonSerializationUtility.GetTypeInfo<SerializableCard>())).ToArray();
-            var original = ChallengerSnapshot.Capture(localPlayer);
-            ArchitectRun.Get(run).EntrySnapshot = new ChallengerEnvelope
+            var original = CorruptedPlayerSnapshot.Capture(localPlayer);
+            ArchitectRun.Get(run).EntrySnapshot = new CorruptedPlayerEnvelope
             {
                 Revision = 1,
                 Snapshot = original with
                 {
                     Deck = deck,
-                    ContentHash = ChallengerSnapshot.Hash(original.CharacterId, original.MaxHp, deck)
+                    ContentHash = CorruptedPlayerSnapshot.Hash(original.CharacterId, original.MaxHp, deck)
                 }
             };
         }
@@ -175,26 +175,26 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
         await WaitFor(() => player.PlayerCombatState is { TurnNumber: 1, Phase: PlayerTurnPhase.Play } &&
             CombatManager.Instance.IsPartOfPlayerTurn(player) && !CombatManager.Instance.IsStarting);
         var combat = player.Creature.CombatState!;
-        var challenger = combat.Enemies.FirstOrDefault(enemy => enemy.Monster is CorruptedChallenger);
-        if (challenger?.Monster is CorruptedChallenger challengerModel)
+        var corruptedPlayer = combat.Enemies.FirstOrDefault(enemy => enemy.Monster is CorruptedPlayer);
+        if (corruptedPlayer?.Monster is CorruptedPlayer corruptedPlayerModel)
         {
-            var actor = challengerModel.Native ??
-                throw new InvalidOperationException("The saved snapshot must create a native Challenger.");
+            var actor = corruptedPlayerModel.Native ??
+                throw new InvalidOperationException("The saved snapshot must create a native Corrupted Player.");
             var initialHp = player.Creature.CurrentHp;
             if (CommandLineHelper.HasArg("architect-feedback"))
             {
-                await PowerCmd.Apply<WeakPower>(new ThrowingPlayerChoiceContext(), challenger, 2, player.Creature, null);
-                await PowerCmd.Apply<FrailPower>(new ThrowingPlayerChoiceContext(), challenger, 2, player.Creature, null);
+                await PowerCmd.Apply<WeakPower>(new ThrowingPlayerChoiceContext(), corruptedPlayer, 2, player.Creature, null);
+                await PowerCmd.Apply<FrailPower>(new ThrowingPlayerChoiceContext(), corruptedPlayer, 2, player.Creature, null);
                 actor.AssertIdentity();
             }
-            await Capture(".challenger");
-            var face = NGame.Instance!.FindChild("ChallengerCard", true, false) as Button
-                ?? throw new InvalidOperationException("The Challenger card inspection UI is missing.");
+            await Capture(".corrupted-player");
+            var face = NGame.Instance!.FindChild("CorruptedPlayerCard", true, false) as Button
+                ?? throw new InvalidOperationException("The Corrupted Player card inspection UI is missing.");
             face.EmitSignal(Control.SignalName.MouseEntered);
             face.EmitSignal(Control.SignalName.FocusEntered);
             var hoverContainer = NGame.Instance?.HoverTipsContainer
                 ?? throw new InvalidOperationException("The card hover container is missing.");
-            var preview = hoverContainer.GetNode<Control>("ChallengerCardPreview");
+            var preview = hoverContainer.GetNode<Control>("CorruptedPlayerCardPreview");
             var previewRect = preview.GetGlobalRect();
             if (!NGame.Instance!.GetViewport().GetVisibleRect().Encloses(previewRect) ||
                 previewRect.GetCenter().DistanceTo(face.GetGlobalRect().GetCenter()) > 600f)
@@ -206,15 +206,15 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
             await WaitFor(() => player.PlayerCombatState is { TurnNumber: 2, Phase: PlayerTurnPhase.Play } &&
                 CombatManager.Instance.IsPartOfPlayerTurn(player));
             if (player.Creature.CurrentHp >= initialHp)
-                throw new InvalidOperationException("The Challenger starter plan did not execute its attacks.");
+                throw new InvalidOperationException("The Corrupted Player starter plan did not execute its attacks.");
             var hp = player.Creature.CurrentHp;
             var hand = player.PlayerCombatState!.Hand.Cards.ToArray();
             var energy = player.PlayerCombatState.Energy;
-            await CreatureCmd.Kill(challenger, true);
+            await CreatureCmd.Kill(corruptedPlayer, true);
             if (player.Creature.CurrentHp != hp || player.PlayerCombatState.Energy != energy ||
                 !player.PlayerCombatState.Hand.Cards.SequenceEqual(hand) ||
                 !combat.Enemies.Any(enemy => enemy.Monster is ArchitectBoss))
-                throw new InvalidOperationException("Challenger handoff did not preserve player combat state.");
+                throw new InvalidOperationException("Corrupted Player handoff did not preserve player combat state.");
             var boss = combat.Enemies.Single(enemy => enemy.Monster is ArchitectBoss);
             if (NCombatRoom.Instance!.GetCreatureNode(boss)!.GlobalPosition.X <
                 NGame.Instance.GetViewport().GetVisibleRect().Size.X * 0.6f)
@@ -261,16 +261,16 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
         var path = Path.Combine(OS.GetUserDataDir(), "TheArchitect", $"smoke-{Guid.NewGuid():N}.json");
         try
         {
-            var snapshot = ChallengerSnapshot.Capture(player);
-            var first = ChallengerStore.Commit(path, "first", "ArchitectWin", snapshot);
-            var duplicate = ChallengerStore.Commit(path, "first", "ArchitectWin", snapshot);
-            var second = ChallengerStore.Commit(path, "second", "ArchitectLoss", snapshot);
-            var loaded = ChallengerStore.Load(path);
-            var backup = ChallengerStore.Load(path + ".backup");
+            var snapshot = CorruptedPlayerSnapshot.Capture(player);
+            var first = CorruptedPlayerStore.Commit(path, "first", "ArchitectWin", snapshot);
+            var duplicate = CorruptedPlayerStore.Commit(path, "first", "ArchitectWin", snapshot);
+            var second = CorruptedPlayerStore.Commit(path, "second", "ArchitectLoss", snapshot);
+            var loaded = CorruptedPlayerStore.Load(path);
+            var backup = CorruptedPlayerStore.Load(path + ".backup");
             if (first != 1 || duplicate != 1 || second != 2 || loaded?.Revision != 2 || backup?.Revision != 1 ||
                 loaded.ProfileUuid != backup.ProfileUuid || loaded.Snapshot?.ContentHash != snapshot.ContentHash ||
                 loaded.Snapshot.RestoreDeck().Count != player.Deck.Cards.Count)
-                throw new InvalidOperationException("Challenger snapshot roundtrip, backup, or idempotent commit failed.");
+                throw new InvalidOperationException("Corrupted Player snapshot roundtrip, backup, or idempotent commit failed.");
             MainFile.Logger.Info("Architect smoke: native snapshot roundtrip, atomic backup, and duplicate commit passed.");
         }
         finally

@@ -72,9 +72,9 @@ Game assemblies and decompiled game source are not redistributed in this repo.
 Native combat saves record encounter identity/custom state and prefinished
 status, not live combat piles, turns, or the active monster phase. Loading
 reconstructs a fresh combat; `CombatRoom.Resume()` is unimplemented. Preserve
-the entry Challenger snapshot in the run extension and restart the same
+the entry Corrupted Player snapshot in the run extension and restart the same
 encounter on nonterminal reload. Do not save a new encounter entry when the
-Challenger hands off to the Architect.
+Corrupted Player hands off to the Architect.
 
 Sources: `MegaCrit.Sts2.Core.Rooms/CombatRoom.cs` (91-118, 158-180, 197-258).
 
@@ -85,7 +85,7 @@ revision again. Native-card roundtrip, backup, and duplicate-commit behavior
 are exercised by the opt-in smoke harness using a separate temporary file.
 
 Sources: `MegaCrit.Sts2.Core.Saves/SaveManager.cs`, `GetProfileScopedPath`;
-`TheArchitectCode/Persistence/ChallengerStore.cs`;
+`TheArchitectCode/Persistence/CorruptedPlayerStore.cs`;
 `TheArchitectCode/Playtest/ArchitectPlaytest.cs`.
 
 ## Remaining crash-consistency limitation

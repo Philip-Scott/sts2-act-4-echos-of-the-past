@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace TheArchitect.TheArchitectCode.Challenger;
+namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 /// <summary>Schema 1: SHA-256 seed tuple, SplitMix64 stream, unbiased Fisher-Yates. No game RNG.</summary>
 internal sealed class PrivateRng(ulong state)
@@ -13,7 +13,7 @@ internal sealed class PrivateRng(ulong state)
     public static PrivateRng Create(string runSeed, string snapshotIdentity, string encounterIdentity)
     {
         byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(
-            new[] { "challenger-rng-v1", runSeed, snapshotIdentity, encounterIdentity })));
+            new[] { "corrupted-player-rng-v1", runSeed, snapshotIdentity, encounterIdentity })));
         return new(BinaryPrimitives.ReadUInt64LittleEndian(hash));
     }
 

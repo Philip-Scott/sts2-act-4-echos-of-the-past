@@ -10,7 +10,7 @@ public sealed class ArchitectRun
     private static readonly ConditionalWeakTable<IRunState, ArchitectRun> States = new();
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public bool Entered { get; set; }
-    public ChallengerEnvelope? EntrySnapshot { get; set; }
+    public CorruptedPlayerEnvelope? EntrySnapshot { get; set; }
     public string? Outcome { get; set; }
     public long? SnapshotRevision { get; set; }
 
@@ -38,10 +38,10 @@ public sealed class ArchitectRun
     {
         if (Entered)
             return;
-        EntrySnapshot = ChallengerStore.Load();
+        EntrySnapshot = CorruptedPlayerStore.Load();
         if (EntrySnapshot?.Snapshot?.ResolveCharacter() == null && EntrySnapshot != null)
         {
-            MainFile.Logger.Warn("Previous Challenger character is unavailable; using First Visit.");
+            MainFile.Logger.Warn("Previous Corrupted Player character is unavailable; using First Visit.");
             EntrySnapshot = null;
         }
         Entered = true;

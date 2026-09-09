@@ -2,7 +2,7 @@ using Godot;
 
 namespace TheArchitect.TheArchitectCode.UI;
 
-public partial class ChallengerBinding : Node2D
+public partial class CorruptedPlayerBinding : Node2D
 {
     private readonly Vector2[] _arc = new Vector2[65];
     private readonly Vector2[] _sigil = new Vector2[97];

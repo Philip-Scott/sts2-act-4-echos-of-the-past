@@ -11,16 +11,16 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.TestSupport;
 
-namespace TheArchitect.TheArchitectCode.Challenger;
+namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 internal sealed class NativeChoiceContext(Player player)
     : HookPlayerChoiceContext(player, player.NetId, GameActionType.Combat)
 {
     public override Task SignalPlayerChoiceBegun(Player chooser, PlayerChoiceOptions options) =>
-        throw new NotSupportedException("An unbridged native Challenger choice attempted to enter the human action queue.");
+        throw new NotSupportedException("An unbridged native Corrupted Player choice attempted to enter the human action queue.");
 
     public override Task SignalPlayerChoiceEnded() =>
-        throw new NotSupportedException("An unbridged native Challenger choice attempted to resume a human action.");
+        throw new NotSupportedException("An unbridged native Corrupted Player choice attempted to resume a human action.");
 }
 
 internal sealed class NativeCardSelector : ICardSelector
@@ -28,7 +28,7 @@ internal sealed class NativeCardSelector : ICardSelector
     internal static NativeCardSelector Instance { get; } = new();
     public CardRewardSelection GetSelectedCardReward(IReadOnlyList<CardCreationResult> options,
         IReadOnlyList<CardRewardAlternative> alternatives) =>
-        throw new NotSupportedException("The Challenger cannot receive party card rewards.");
+        throw new NotSupportedException("The Corrupted Player cannot receive party card rewards.");
     public Task<IEnumerable<CardModel>> GetSelectedCards(IEnumerable<CardModel> options, int minSelect, int maxSelect)
     {
         var cards = options.ToArray();
@@ -75,7 +75,7 @@ internal static class NativeCardSelectionPatch
     }
 
     private static ICardSelector? Selector(Player player) =>
-        NativeChallenger.TryGet(player, out _) ? NativeCardSelector.Instance : CardSelectCmd.Selector;
+        NativeCorruptedPlayer.TryGet(player, out _) ? NativeCardSelector.Instance : CardSelectCmd.Selector;
 
     private static ICardSelector? DeckSelector(IReadOnlyList<CardModel> cards) =>
         cards.Count > 0 ? Selector(cards[0].Owner) : CardSelectCmd.Selector;
@@ -87,10 +87,10 @@ internal static class NativeBundleChoicePatch
     private static bool Prefix(Player player, IReadOnlyList<IReadOnlyList<CardModel>> bundles,
         ref Task<IEnumerable<CardModel>> __result)
     {
-        if (!NativeChallenger.TryGet(player, out _))
+        if (!NativeCorruptedPlayer.TryGet(player, out _))
             return true;
         if (bundles.Count == 0)
-            throw new InvalidOperationException("A native Challenger bundle choice has no options.");
+            throw new InvalidOperationException("A native Corrupted Player bundle choice has no options.");
         MainFile.Logger.Info("NATIVE choice: first offered bundle");
         __result = Task.FromResult<IEnumerable<CardModel>>(bundles[0]);
         return false;

@@ -7,7 +7,7 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Cards;
 
-namespace TheArchitect.TheArchitectCode.Challenger;
+namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 internal static class NativeHumanIntent
 {
@@ -15,8 +15,8 @@ internal static class NativeHumanIntent
     {
         if (target.Monster is { } monster)
             return monster.IntendsToAttack;
-        if (!NativeChallenger.TryGet(source.Owner, out _) || target.Player is not { } player)
-            throw new InvalidOperationException("An intent query requires a monster or a native Challenger's human opponent.");
+        if (!NativeCorruptedPlayer.TryGet(source.Owner, out _) || target.Player is not { } player)
+            throw new InvalidOperationException("An intent query requires a monster or a native Corrupted Player's human opponent.");
         return player.PlayerCombatState?.Hand.Cards.Any(card => card.Type == CardType.Attack) == true;
     }
 }

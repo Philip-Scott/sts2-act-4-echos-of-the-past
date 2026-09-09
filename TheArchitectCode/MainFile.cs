@@ -26,7 +26,7 @@ public partial class MainFile : Node
         Harmony harmony = new(ModId);
 
         harmony.PatchAll(assembly);
-        Challenger.NativeCombatCallSites.Install(harmony);
+        CorruptedPlayerCombat.NativeCombatCallSites.Install(harmony);
         Logger.Info("The Architect 0.1.0 initialized for Slay the Spire 2 public-beta 0.111.0.");
     }
 }

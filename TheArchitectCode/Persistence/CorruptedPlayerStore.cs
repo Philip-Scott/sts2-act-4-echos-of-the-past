@@ -11,9 +11,9 @@ using MegaCrit.Sts2.Core.Saves.Runs;
 
 namespace TheArchitect.TheArchitectCode.Persistence;
 
-public sealed record ChallengerSnapshot(string CharacterId, int MaxHp, JsonElement[] Deck, string ContentHash)
+public sealed record CorruptedPlayerSnapshot(string CharacterId, int MaxHp, JsonElement[] Deck, string ContentHash)
 {
-    public static ChallengerSnapshot Capture(Player player)
+    public static CorruptedPlayerSnapshot Capture(Player player)
     {
         var cards = player.Deck.Cards.Select(card =>
             JsonSerializer.SerializeToElement(card.ToSerializable(), JsonSerializationUtility.GetTypeInfo<SerializableCard>())).ToArray();
@@ -37,7 +37,7 @@ public sealed record ChallengerSnapshot(string CharacterId, int MaxHp, JsonEleme
     }
 }
 
-public sealed record ChallengerEnvelope
+public sealed record CorruptedPlayerEnvelope
 {
     [JsonRequired] public int SchemaVersion { get; init; } = 1;
     [JsonRequired] public long Revision { get; init; }
@@ -46,18 +46,18 @@ public sealed record ChallengerEnvelope
     public string GameVersion { get; init; } = "0.111.0";
     public string? TerminalRunId { get; init; }
     public string? Outcome { get; init; }
-    [JsonRequired] public ChallengerSnapshot? Snapshot { get; init; }
+    [JsonRequired] public CorruptedPlayerSnapshot? Snapshot { get; init; }
 }
 
-public static class ChallengerStore
+public static class CorruptedPlayerStore
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
     private static string FilePath => ProjectSettings.GlobalizePath(
-        SaveManager.Instance.GetProfileScopedPath("TheArchitect/challenger_snapshot.json"));
+        SaveManager.Instance.GetProfileScopedPath("TheArchitect/corrupted_player_snapshot.json"));
 
-    public static ChallengerEnvelope? Load(bool forWrite = false) => Load(FilePath, forWrite);
+    public static CorruptedPlayerEnvelope? Load(bool forWrite = false) => Load(FilePath, forWrite);
 
-    internal static ChallengerEnvelope? Load(string path, bool forWrite = false)
+    internal static CorruptedPlayerEnvelope? Load(string path, bool forWrite = false)
     {
         if (!File.Exists(path) && !File.Exists(path + ".backup"))
             return null;
@@ -67,11 +67,11 @@ public static class ChallengerStore
                 continue;
             try
             {
-                var envelope = JsonSerializer.Deserialize<ChallengerEnvelope>(File.ReadAllText(candidate), Options)
+                var envelope = JsonSerializer.Deserialize<CorruptedPlayerEnvelope>(File.ReadAllText(candidate), Options)
                     ?? throw new JsonException("Snapshot envelope is null.");
                 if (envelope.SchemaVersion != 1)
                 {
-                    var message = $"Unsupported Challenger schema {envelope.SchemaVersion}; file preserved.";
+                    var message = $"Unsupported Corrupted Player schema {envelope.SchemaVersion}; file preserved.";
                     if (forWrite)
                         throw new NotSupportedException(message);
                     MainFile.Logger.Warn(message);
@@ -82,24 +82,24 @@ public static class ChallengerStore
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
             {
-                MainFile.Logger.Error($"Cannot load Challenger snapshot '{candidate}': {error.Message}");
+                MainFile.Logger.Error($"Cannot load Corrupted Player snapshot '{candidate}': {error.Message}");
             }
         }
-        MainFile.Logger.Warn("No valid Challenger snapshot could be read. Using First Visit; corrupt files are preserved.");
+        MainFile.Logger.Warn("No valid Corrupted Player snapshot could be read. Using First Visit; corrupt files are preserved.");
         return null;
     }
 
-    public static long? Commit(string terminalRunId, string outcome, ChallengerSnapshot snapshot) =>
+    public static long? Commit(string terminalRunId, string outcome, CorruptedPlayerSnapshot snapshot) =>
         Commit(FilePath, terminalRunId, outcome, snapshot);
 
-    internal static long? Commit(string path, string terminalRunId, string outcome, ChallengerSnapshot snapshot)
+    internal static long? Commit(string path, string terminalRunId, string outcome, CorruptedPlayerSnapshot snapshot)
     {
         try
         {
             var prior = Load(path, forWrite: true);
             if (prior?.TerminalRunId == terminalRunId)
                 return prior.Revision;
-            var next = (prior ?? new ChallengerEnvelope()) with
+            var next = (prior ?? new CorruptedPlayerEnvelope()) with
             {
                 Revision = checked((prior?.Revision ?? 0) + 1),
                 TerminalRunId = terminalRunId,
@@ -113,7 +113,7 @@ public static class ChallengerStore
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
         {
-            MainFile.Logger.Error($"Challenger snapshot was not recorded; previous snapshot preserved: {error}");
+            MainFile.Logger.Error($"Corrupted Player snapshot was not recorded; previous snapshot preserved: {error}");
             return null;
         }
     }
@@ -139,15 +139,15 @@ public static class ChallengerStore
         File.Move(temporary, path, overwrite: true);
     }
 
-    private static void Validate(ChallengerEnvelope envelope)
+    private static void Validate(CorruptedPlayerEnvelope envelope)
     {
         if (envelope.ProfileUuid == Guid.Empty || envelope.Revision < 0 ||
             envelope.Snapshot is not { MaxHp: > 0, Deck: not null, CharacterId: not null } snapshot)
-            throw new JsonException("Invalid Challenger envelope.");
+            throw new JsonException("Invalid Corrupted Player envelope.");
         _ = ModelId.Deserialize(snapshot.CharacterId);
         if (snapshot.Deck.Any(card => card.ValueKind != JsonValueKind.Object))
-            throw new JsonException("Invalid Challenger deck.");
-        if (snapshot.ContentHash != ChallengerSnapshot.Hash(snapshot.CharacterId, snapshot.MaxHp, snapshot.Deck))
-            throw new JsonException("Challenger snapshot content hash does not match.");
+            throw new JsonException("Invalid Corrupted Player deck.");
+        if (snapshot.ContentHash != CorruptedPlayerSnapshot.Hash(snapshot.CharacterId, snapshot.MaxHp, snapshot.Deck))
+            throw new JsonException("Corrupted Player snapshot content hash does not match.");
     }
 }

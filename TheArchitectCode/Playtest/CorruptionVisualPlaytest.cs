@@ -17,7 +17,7 @@ using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.ValueProps;
-using TheArchitect.TheArchitectCode.Challenger;
+using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using TheArchitect.TheArchitectCode.Monsters;
 using TheArchitect.TheArchitectCode.Persistence;
 using TheArchitect.TheArchitectCode.UI;
@@ -60,14 +60,14 @@ internal static class CorruptionVisualPlaytest
             [], "ARCHITECT-BOUND-ECHO-" + character.Id.Entry, GameMode.Standard);
         var human = run.Players.Single();
         var destination = ProjectSettings.GlobalizePath(
-            SaveManager.Instance.GetProfileScopedPath("TheArchitect/challenger_snapshot.json"));
+            SaveManager.Instance.GetProfileScopedPath("TheArchitect/corrupted_player_snapshot.json"));
         Require(RunManager.Instance.ShouldSave &&
             Path.GetFullPath(destination).StartsWith(NativeDemoSafety.RuntimePath + "/", StringComparison.Ordinal),
             $"{label}: snapshot and run saves are disposable");
-        var snapshot = ChallengerSnapshot.Capture(human);
+        var snapshot = CorruptedPlayerSnapshot.Capture(human);
         Require(snapshot.ResolveCharacter() == character &&
             snapshot.Deck.Length == character.StartingDeck.Count(), $"{label}: fixture is the actual new-run starting deck");
-        Require(ChallengerStore.Commit("bound-echo-" + label, "VisualProbe", snapshot) != null,
+        Require(CorruptedPlayerStore.Commit("bound-echo-" + label, "VisualProbe", snapshot) != null,
             $"{label}: generated snapshot committed without captured user data");
         await Task.Delay(1500);
         var entry = new DevConsole(shouldAllowDebugCommands: true).ProcessCommand("architect");
@@ -81,8 +81,8 @@ internal static class CorruptionVisualPlaytest
         await RunManager.Instance.EnterMapCoord(run.Map.StartingMapPoint.Children.Single().coord);
         await RunManager.Instance.EnterMapCoord(run.Map.BossMapPoint.coord);
         await NativeDemoPlaytest.PlayerTurn(human, 1);
-        var actor = Challenger(human.Creature.CombatState!.Enemies
-            .Single(c => c.Monster is CorruptedChallenger).Monster as CorruptedChallenger);
+        var actor = RequireNativeActor(human.Creature.CombatState!.Enemies
+            .Single(c => c.Monster is CorruptedPlayer).Monster as CorruptedPlayer);
         var node = actor.Body.GetCreatureNode()!;
         var humanNode = human.Creature.GetCreatureNode()!;
         await Task.Delay(2000);
@@ -97,7 +97,7 @@ internal static class CorruptionVisualPlaytest
         await Capture(label, "idle");
         PlayerCmd.EndTurn(human, false);
         await NativeDemoPlaytest.PlayerTurn(human, 2);
-        Require(actor.CompletedTurns == 1, $"{label}: a real native Challenger turn completed with Bound Echo active");
+        Require(actor.CompletedTurns == 1, $"{label}: a real native Corrupted Player turn completed with Bound Echo active");
         await Task.Delay(2000);
         await Capture(label, "native-turn");
         foreach (var (trigger, animation) in new[] { ("Attack", "attack"), ("Cast", "cast"), ("Hit", "hurt") })
@@ -132,7 +132,7 @@ internal static class CorruptionVisualPlaytest
             var pet = actor.Player.Osty?.GetCreatureNode()
                 ?? throw new InvalidOperationException("Visual probe failed to summon the native enemy pet.");
             Require(pet.GetParent() == node.GetParent() && !node.Visuals.IsAncestorOf(pet),
-                $"{label}: real enemy Osty remains outside the Challenger's body group");
+                $"{label}: real enemy Osty remains outside the Corrupted Player's body group");
             AssertCorruptedPet(pet);
             Require(human.Osty?.GetCreatureNode() is { } humanPet &&
                 !Descendants(humanPet).Any(n => n.Name.ToString().StartsWith("BoundEcho", StringComparison.Ordinal)),
@@ -162,7 +162,7 @@ internal static class CorruptionVisualPlaytest
         // Native revive fades NCreatureVisuals, not its original Spine materials.
         var originalAlpha = node.Visuals.Modulate;
         var ui = new[] { node.GetNode<CanvasItem>("%HealthBar"), node.IntentContainer,
-            Find<CanvasItem>(node, "ChallengerTelegraph"), node.OrbManager! };
+            Find<CanvasItem>(node, "CorruptedPlayerTelegraph"), node.OrbManager! };
         var uiColors = ui.Select(item => item.Modulate).ToArray();
         foreach (var alpha in new[] { 0.5f, 0f, 1f })
         {
@@ -209,12 +209,12 @@ internal static class CorruptionVisualPlaytest
             await game.LoadRun(run, saved.PreFinishedRoom);
             human = run.Players.Single();
             await NativeDemoPlaytest.PlayerTurn(human, 1);
-            actor = Challenger(human.Creature.CombatState!.Enemies
-                .Single(c => c.Monster is CorruptedChallenger).Monster as CorruptedChallenger);
+            actor = RequireNativeActor(human.Creature.CombatState!.Enemies
+                .Single(c => c.Monster is CorruptedPlayer).Monster as CorruptedPlayer);
             node = actor.Body.GetCreatureNode()!;
             humanNode = human.Creature.GetCreatureNode()!;
             AssertIsolation(node, humanNode, label + " reload");
-            Require(actor != previous, $"{label}: reload constructed a fresh production Challenger");
+            Require(actor != previous, $"{label}: reload constructed a fresh production Corrupted Player");
             await Capture(label, "reload");
         }
 
@@ -228,7 +228,7 @@ internal static class CorruptionVisualPlaytest
         await Capture(label, "death");
         await death;
         Require(actor.Cleaned && actor.Body.GetCreatureNode() == null,
-            $"{label}: native death removes and cleans the Challenger during boss handoff");
+            $"{label}: native death removes and cleans the Corrupted Player during boss handoff");
         Require(!GodotObject.IsInstanceValid(orbs) || !orbs.Visible,
             $"{label}: native orb UI is hidden or freed after death");
         await WaitFor(() => (!GodotObject.IsInstanceValid(front) || !front.IsVisibleInTree()) &&
@@ -245,8 +245,8 @@ internal static class CorruptionVisualPlaytest
         MainFile.Logger.Info($"CORRUPTION CHARACTER PASSED: {label}");
     }
 
-    private static NativeChallenger Challenger(CorruptedChallenger? monster) =>
-        monster?.Native ?? throw new InvalidOperationException("Production Challenger native actor missing.");
+    private static NativeCorruptedPlayer RequireNativeActor(CorruptedPlayer? monster) =>
+        monster?.Native ?? throw new InvalidOperationException("Production Corrupted Player native actor missing.");
 
     private static async Task AssertCompositorModulation(NGame game, CanvasGroup bodyGroup)
     {
@@ -271,7 +271,7 @@ internal static class CorruptionVisualPlaytest
             foreach (var tint in new[] { Colors.White, new Color(1, 1, 1, 0.5f), new Color(0.7f, 0.5f, 0.9f, 0.5f), Colors.Transparent })
             {
                 faded.Modulate = tint;
-                group.Visible = ChallengerCorruption.ApplyInheritedModulation(group);
+                group.Visible = CorruptedPlayerCorruption.ApplyInheritedModulation(group);
                 await game.AwaitProcessFrame();
                 await game.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
                 using var image = game.GetViewport().GetTexture().GetImage();
@@ -341,12 +341,12 @@ internal static class CorruptionVisualPlaytest
             $"{label}: independent binding layers bracket, and are not sampled inside, the body group");
         Require(!group.IsAncestorOf(node.Hitbox) && !group.IsAncestorOf(node.GetNode("%HealthBar")) &&
             !group.IsAncestorOf(node.IntentContainer) && node.OrbManager != null &&
-            !group.IsAncestorOf(node.OrbManager) && !group.IsAncestorOf(Find<Node>(node, "ChallengerTelegraph")) &&
+            !group.IsAncestorOf(node.OrbManager) && !group.IsAncestorOf(Find<Node>(node, "CorruptedPlayerTelegraph")) &&
             !group.IsAncestorOf(node.Visuals.GetNode("%Bounds")),
             $"{label}: hitbox, bounds, health, intents, orbs and card telegraph stay outside body group");
         Require(node.HasSpineAnimation && original.Scale.X < 0 &&
             !Descendants(human).Any(n => n.Name.ToString().StartsWith("BoundEcho", StringComparison.Ordinal)),
-            $"{label}: Challenger retains left-facing native Spine; matching normal human has no effect");
+            $"{label}: Corrupted Player retains left-facing native Spine; matching normal human has no effect");
         var bounds = node.Visuals.GetNode<Control>("%Bounds");
         MainFile.Logger.Info($"CORRUPTION GEOMETRY {label}: creature={node.GetPath()} position={node.Position} " +
             $"visuals.position={node.Visuals.Position} visuals.scale={node.Visuals.Scale} " +
@@ -372,7 +372,7 @@ internal static class CorruptionVisualPlaytest
         }
     }
 
-    [HarmonyPatch(typeof(CorruptedChallenger), nameof(CorruptedChallenger.CreateCustomVisuals))]
+    [HarmonyPatch(typeof(CorruptedPlayer), nameof(CorruptedPlayer.CreateCustomVisuals))]
     internal static class CorruptionNativeMaterialRetentionPatch
     {
         private static void Postfix(NCreatureVisuals __result)

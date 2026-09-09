@@ -5,7 +5,7 @@ using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Platform.Steam;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Test;
-using TheArchitect.TheArchitectCode.Challenger;
+using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using Environment = System.Environment;
 
 namespace TheArchitect.TheArchitectCode.Playtest;

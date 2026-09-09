@@ -6,7 +6,7 @@ using HarmonyLib;
 using TheArchitect.TheArchitectCode.Acts;
 using TheArchitect.TheArchitectCode.Monsters;
 using TheArchitect.TheArchitectCode.Persistence;
-using TheArchitect.TheArchitectCode.Challenger;
+using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using TheArchitect.TheArchitectCode.Lifecycle;
 
 namespace TheArchitect.TheArchitectCode.Encounters;
@@ -27,7 +27,7 @@ public sealed class ArchitectEncounter : CustomEncounterModel
     public override string? CustomRunHistoryIconPath => BossNodePath + ".png";
     public override string? CustomRunHistoryIconOutlinePath => BossNodePath + "_outline.png";
     public override IEnumerable<MonsterModel> AllPossibleMonsters =>
-        [ArchitectModels.Boss, ArchitectModels.Challenger];
+        [ArchitectModels.Boss, ArchitectModels.CorruptedPlayer];
 
     protected override IReadOnlyList<(MonsterModel, string?)> GenerateMonsters()
     {
@@ -37,19 +37,19 @@ public sealed class ArchitectEncounter : CustomEncounterModel
             return [(ArchitectModels.Boss.ToMutable(), null)];
         if (NativeCardSupport.Preflight(snapshot.Deck) is { } error)
         {
-            NativeChallengerPreflight.Show(error);
+            NativeCorruptedPlayerPreflight.Show(error);
             throw new NotSupportedException(error);
         }
         var character = snapshot.ResolveCharacter();
         if (character == null)
         {
-            MainFile.Logger.Warn("Challenger character unavailable at encounter entry; using First Visit.");
+            MainFile.Logger.Warn("Corrupted Player character unavailable at encounter entry; using First Visit.");
             return [(ArchitectModels.Boss.ToMutable(), null)];
         }
-        var challenger = (CorruptedChallenger)ArchitectModels.Challenger.ToMutable();
-        challenger.Configure(character, snapshot.MaxHp, snapshot.Deck,
+        var corruptedPlayer = (CorruptedPlayer)ArchitectModels.CorruptedPlayer.ToMutable();
+        corruptedPlayer.Configure(character, snapshot.MaxHp, snapshot.Deck,
             $"{run.Rng.StringSeed}|{envelope.Revision}|{snapshot.ContentHash}|{Id}");
-        return [(challenger, null)];
+        return [(corruptedPlayer, null)];
     }
 }
 

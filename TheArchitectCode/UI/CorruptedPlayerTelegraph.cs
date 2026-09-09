@@ -16,16 +16,16 @@ using MegaCrit.Sts2.addons.mega_text;
 
 namespace TheArchitect.TheArchitectCode.UI;
 
-public sealed record ChallengerTelegraphIntent(AbstractIntent Icon, string Value);
+public sealed record CorruptedPlayerTelegraphIntent(AbstractIntent Icon, string Value);
 
-public sealed record ChallengerTelegraphCard(
+public sealed record CorruptedPlayerTelegraphCard(
     CardModel? Card, string InstanceId, string Name, int? PlayOrder, bool Unsupported,
-    IReadOnlyList<ChallengerTelegraphIntent> Intents,
+    IReadOnlyList<CorruptedPlayerTelegraphIntent> Intents,
     IReadOnlyDictionary<string, decimal> PreviewValues,
     bool NativeCurrentState = false,
     string? Status = null);
 
-public partial class ChallengerTelegraph : VBoxContainer
+public partial class CorruptedPlayerTelegraph : VBoxContainer
 {
     private static readonly Vector2 CardFaceSize = new(120, 160);
     private NCreature _anchor = null!;
@@ -48,19 +48,19 @@ public partial class ChallengerTelegraph : VBoxContainer
     private NHoverTipSet? _tips;
     private bool _nativeDisplay;
 
-    private sealed class CardCell(ChallengerTelegraphCard entry, Button face, HBoxContainer intents)
+    private sealed class CardCell(CorruptedPlayerTelegraphCard entry, Button face, HBoxContainer intents)
     {
-        public ChallengerTelegraphCard Entry = entry;
+        public CorruptedPlayerTelegraphCard Entry = entry;
         public Button Face { get; } = face;
         public HBoxContainer Intents { get; } = intents;
         public NCard? Miniature;
     }
 
-    public static ChallengerTelegraph Attach(NCreature anchor, Creature creature, Action refreshPlan)
+    public static CorruptedPlayerTelegraph Attach(NCreature anchor, Creature creature, Action refreshPlan)
     {
-        var panel = new ChallengerTelegraph
+        var panel = new CorruptedPlayerTelegraph
         {
-            Name = "ChallengerTelegraph",
+            Name = "CorruptedPlayerTelegraph",
             MouseFilter = MouseFilterEnum.Stop,
             ZIndex = 30,
             _anchor = anchor,
@@ -74,7 +74,7 @@ public partial class ChallengerTelegraph : VBoxContainer
     public override void _Ready()
     {
         var toolbar = new HBoxContainer();
-        _heading = new Label { Text = "Challenger · play →", ClipText = true, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        _heading = new Label { Text = "Corrupted Player · play →", ClipText = true, SizeFlagsHorizontal = SizeFlags.ExpandFill };
         _heading.AddThemeFontSizeOverride("font_size", 16);
         toolbar.AddChild(_heading);
         _resources = new HBoxContainer { Visible = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
@@ -112,9 +112,9 @@ public partial class ChallengerTelegraph : VBoxContainer
         _scroll.AddChild(_row);
     }
 
-    public void ShowPlan(IReadOnlyList<ChallengerTelegraphCard> cards, bool limited)
+    public void ShowPlan(IReadOnlyList<CorruptedPlayerTelegraphCard> cards, bool limited)
     {
-        _heading.Text = limited ? "Challenger · play → · plan limit" : "Challenger · play →";
+        _heading.Text = limited ? "Corrupted Player · play → · plan limit" : "Corrupted Player · play →";
         if (_row.GetChildCount() > 0 && _cells.Count == cards.Count && _cells.Select(cell =>
                 (cell.Entry.InstanceId, cell.Entry.PlayOrder, cell.Entry.Unsupported))
             .SequenceEqual(cards.Select(card => (card.InstanceId, card.PlayOrder, card.Unsupported))))
@@ -157,7 +157,7 @@ public partial class ChallengerTelegraph : VBoxContainer
         {
             Name = name + "Pile",
             FocusMode = FocusModeEnum.All,
-            TooltipText = $"View the Corrupted character's {name.ToLowerInvariant()} pile"
+            TooltipText = $"View the Corrupted Player's {name.ToLowerInvariant()} pile"
         };
         button.Pressed += () =>
         {
@@ -180,17 +180,17 @@ public partial class ChallengerTelegraph : VBoxContainer
         _exhaust.Text = $"Exhaust {state.ExhaustPile.Cards.Count}";
         _energy.TooltipText = "Current / maximum energy; not a future damage forecast.\n" +
             "Plays left to right, reconsidering after each card. Choices select the first valid option.\n" +
-            "Attack intent: any Attack in your CURRENT hand when the Challenger checks, regardless of cost.\n" +
+            "Attack intent: any Attack in your CURRENT hand when the Corrupted Player checks, regardless of cost.\n" +
             "Co-op-only cards and third-party card/modifier effects are preserved but unsupported.";
     }
 
-    private void AddCard(ChallengerTelegraphCard entry)
+    private void AddCard(CorruptedPlayerTelegraphCard entry)
     {
         var cell = new VBoxContainer { CustomMinimumSize = CardFaceSize };
         _row.AddChild(cell);
         var face = new Button
         {
-            Name = "ChallengerCard",
+            Name = "CorruptedPlayerCard",
             CustomMinimumSize = CardFaceSize,
             ClipContents = true,
             FocusMode = FocusModeEnum.All,
@@ -277,7 +277,7 @@ public partial class ChallengerTelegraph : VBoxContainer
         }
     }
 
-    private static void UpdateCardText(NCard node, ChallengerTelegraphCard entry)
+    private static void UpdateCardText(NCard node, CorruptedPlayerTelegraphCard entry)
     {
         node.SetForceUnpoweredPreview(true);
         node.UpdateVisuals(PileType.Deck, CardPreviewMode.Normal);
@@ -317,7 +317,7 @@ public partial class ChallengerTelegraph : VBoxContainer
         if (_enlarged == null)
             return;
         _inspected = cell;
-        _preview = new Control { Name = "ChallengerCardPreview", MouseFilter = MouseFilterEnum.Ignore, ZIndex = 1000 };
+        _preview = new Control { Name = "CorruptedPlayerCardPreview", MouseFilter = MouseFilterEnum.Ignore, ZIndex = 1000 };
         hoverContainer.AddChild(_preview);
         _enlarged.SetForceUnpoweredPreview(true);
         _preview.AddChild(_enlarged);
