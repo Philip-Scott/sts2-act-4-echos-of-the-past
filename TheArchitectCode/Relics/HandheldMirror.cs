@@ -2,7 +2,6 @@ using BaseLib.Extensions;
 using BaseLib.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Players;
-using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.RelicPools;
 
 namespace TheArchitect.TheArchitectCode.Relics;
@@ -22,13 +21,12 @@ public sealed class HandheldMirror : UnwrittenRelic
 
     public override async Task AfterObtained()
     {
-        // Freeze and draw all three before obtaining anything: acquisition hooks may produce rewards.
-        var population = MirrorDuplication.CapturePopulation(Owner);
-        if (!Owner.Creature.IsAlive || population.Length < MirrorDuplication.CopyCount)
-            throw new InvalidOperationException("Handheld Mirror requires three distinct, non-melted owned relic types other than itself.");
+        if (!CanOffer(Owner))
+            throw new InvalidOperationException("Handheld Mirror requires three distinct, non-melted owned relic types that are not blocklisted.");
 
-        var selected = MirrorDuplication.SelectThree(population, Owner.PlayerRng.Rewards.NextInt);
-        foreach (var id in selected)
-            await RelicCmd.Obtain(ModelDb.GetById<RelicModel>(id).ToMutable(), Owner);
+        // Prepare all three before acquisition hooks can change the inventory or source state.
+        var copies = MirrorDuplication.PrepareCopies(Owner.Relics, Owner.PlayerRng.Rewards.NextInt);
+        foreach (var copy in copies)
+            await RelicCmd.Obtain(copy, Owner);
     }
 }
