@@ -33,12 +33,19 @@ need a padded composed-body render target to avoid Spine attachment seams;
 Binding can instead use body-relative back/front effect nodes. Keep health,
 intents, orbs and pets outside the body effect.
 
-The human requested combining B + C on 2026-09-08. D captures that direction,
-while A/B/C remain available for comparison. This is not approval of the final
-combined appearance or in-game implementation. Production `CorruptedChallenger`
-is unchanged.
-Keep this study on `philip-scott-corrupted-effect-redesign`; only integrate a
-chosen treatment after evaluating it on animated game characters.
+The human requested combining B + C on 2026-09-08, then selected D for in-game
+implementation. The pre-integration prototype is preserved in commit `82cd318`
+on `philip-scott-corrupted-effect-redesign`; A/B/C remain comparison material,
+not game modes.
+
+Production uses [ChallengerCorruption](../UI/ChallengerCorruption.cs) to composite
+the native animated body through a `CanvasGroup` and
+[ChallengerBinding](../UI/ChallengerBinding.cs) for independent back/front geometry.
+It retains the original Spine node and materials rather than replacing the body
+with the browser stand-ins or applying a shader to each attachment. Native death
+VFX can still take ownership of the body after the corruption fades.
+Enemy-owned Osty receives a separate instance of the same effect when its native
+visuals are created; the human's Osty and both creatures' health UI are unaffected.
 
 ## Corrupted Challenger telegraph prototype
 

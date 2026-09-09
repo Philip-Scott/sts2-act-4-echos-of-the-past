@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Run only in an explicitly reserved game window. The installed mod directory is never modified.
 if [[ "${1:-}" != "--exclusive-window" || $# -lt 2 || $# -gt 3 ]]; then
-    echo "Usage: bash scripts/native-demo.sh --exclusive-window /absolute/path/to/game [--loss|--nondefect|--poison]" >&2
+    echo "Usage: bash scripts/native-demo.sh --exclusive-window /absolute/path/to/game [--loss|--nondefect|--poison|--corruption]" >&2
     exit 2
 fi
 scenario=()
@@ -13,6 +13,8 @@ elif [[ "${3:-}" == "--nondefect" ]]; then
     scenario=(--architect-native-nondefect)
 elif [[ "${3:-}" == "--poison" ]]; then
     scenario=(--architect-native-poison)
+elif [[ "${3:-}" == "--corruption" ]]; then
+    scenario=(--architect-corruption-visuals)
 elif [[ -n "${3:-}" ]]; then
     echo "Unknown demo scenario: $3" >&2
     exit 2
@@ -39,7 +41,9 @@ test -f "$mods/BaseLib/BaseLib.dll"
 # Standalone Steam-off account; no settings are read from the real profile.
 mkdir -p "$runtime/xdg/SlayTheSpire2/default/1"
 cp "$root/scripts/native-demo-settings.json" "$runtime/xdg/SlayTheSpire2/default/1/settings.save"
-cp "${ARCHITECT_SNAPSHOT_INPUT:?Set ARCHITECT_SNAPSHOT_INPUT to the read-only captured snapshot}" "$runtime/snapshot-input.json"
+if [[ "${3:-}" != "--corruption" ]]; then
+    cp "${ARCHITECT_SNAPSHOT_INPUT:?Set ARCHITECT_SNAPSHOT_INPUT to the read-only captured snapshot}" "$runtime/snapshot-input.json"
+fi
 echo "Isolated automatic native demo: $runtime"
 exec bwrap --die-with-parent --unshare-net --unshare-ipc \
     --ro-bind / / --tmpfs /var/home --bind "$runtime/tmp" /tmp --tmpfs /run \

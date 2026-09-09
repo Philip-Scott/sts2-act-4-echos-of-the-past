@@ -63,6 +63,11 @@ internal static class NativeDemoPlaytest
     {
         await menuReady;
         await Task.Delay(2000);
+        if (CommandLineHelper.HasArg("architect-corruption-visuals"))
+        {
+            await CorruptionVisualPlaytest.Run(game);
+            return;
+        }
         game.GetWindow().Title = "The Architect - ISOLATED NATIVE INTEGRATION (automatic)";
         var run = await game.StartNewSingleplayerRun(ModelDb.Character<Ironclad>(), true,
             [ModelDb.Act<Overgrowth>(), ModelDb.Act<Hive>(), ModelDb.Act<Glory>()],

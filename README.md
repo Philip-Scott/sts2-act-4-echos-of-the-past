@@ -33,6 +33,14 @@ cards enlarge on hover. Native orb slots appear for Defect and for any other
 character that acquires orb capacity. Enemy pets stay beside their Challenger,
 without moving the human.
 
+Corrupted Challengers use **Bound Echo** rather than a purple tint: cyan-violet
+afterimages and a slowly shifting body slice sit inside orbiting gold seals and
+a ground sigil. The effect composites the animated body, not individual Spine
+attachments, and leaves native character materials, health, intents and orbs
+alone. Enemy-owned Osty gets the same effect on its own body, including when it
+grows or revives; the human's Osty is unchanged. The bindings stay outside the
+distortion and fade when their creature dies.
+
 Co-op-only cards and third-party card/modifier effects are visibly
 **Unsupported** and remain unplayed; the original saved JSON is preserved.
 Missing saved models block entry with an actionable error rather than silently
@@ -60,6 +68,12 @@ the production actor from normal startup using a disposable copy of a supplied
 snapshot; its name is historical. See its documented invocation and isolation
 requirements in the native Challenger README. **Changing XDG_DATA_HOME alone
 does not isolate Steam Cloud or real saves.**
+
+For the Bound Echo visual pass, build to `artifacts/mods`, close the game, then
+run `bash scripts/native-demo.sh --exclusive-window "/path/to/Slay the Spire 2" --corruption`.
+This opt-in scenario uses the five base characters rather than a saved snapshot,
+with disposable data and Steam disabled. Its captures and log go under
+`artifacts/native-demo/`; it does not install the build into the live game.
 
 Challengers are stored locally in the active **modded** profile's
 `TheArchitect/challenger_snapshot.json`, with an atomic replacement and backup.

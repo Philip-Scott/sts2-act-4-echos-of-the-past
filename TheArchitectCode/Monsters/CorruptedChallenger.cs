@@ -57,7 +57,7 @@ public sealed class CorruptedChallenger : CustomMonsterModel
         var visuals = Character.CreateVisuals();
         var body = visuals.GetNode<Node2D>("%Visuals");
         body.Scale = new Vector2(-body.Scale.X, body.Scale.Y);
-        visuals.Modulate = new Color(0.70f, 0.40f, 0.90f);
+        ChallengerCorruption.Attach(visuals);
         return visuals;
     }
 

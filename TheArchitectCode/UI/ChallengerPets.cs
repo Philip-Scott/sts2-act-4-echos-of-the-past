@@ -53,6 +53,16 @@ internal static class ChallengerPetRoomPatch
     }
 }
 
+[HarmonyPatch(typeof(NCreature), nameof(NCreature.Create))]
+internal static class ChallengerOstyCorruptionPatch
+{
+    private static void Postfix(Creature entity, NCreature? __result)
+    {
+        if (__result != null && entity.Monster is Osty && ChallengerPets.IsPrivatePet(entity))
+            ChallengerCorruption.Attach(__result.Visuals);
+    }
+}
+
 [HarmonyPatch(typeof(NCreature), nameof(NCreature._Ready))]
 internal static class ChallengerPetHealthDisplayPatch
 {
