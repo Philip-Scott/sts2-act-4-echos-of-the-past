@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="steel" x1="127" y1="90" x2="159" y2="113" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#cdd0be"/>
+      <stop offset=".45" stop-color="#acb9b6"/>
+      <stop offset="1" stop-color="#718b99"/>
+    </linearGradient>
+    <linearGradient id="copper" x1="119" y1="36" x2="146" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#bc7e68"/>
+      <stop offset=".52" stop-color="#a96b58"/>
+      <stop offset="1" stop-color="#895046"/>
+    </linearGradient>
+    <clipPath id="needle">
+      <path clip-rule="evenodd" d="M195 26 C203 25 209 32 206 40 C204 47 200 55 195 63 L140 156 Q138 160 134 163 L35 226 L126 151 L177 49 C183 37 187 28 195 26 Z M194 38 C196 34 200 35 199 39 C197 46 191 55 187 60 C185 63 181 61 183 57 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- The loose bight sits behind the eye, rather than wrapping the shaft. -->
+  <path d="M191 48 C173 40 155 38 138 42 C110 47 91 67 94 87 C97 106 118 115 138 106 C153 99 162 81 170 67 C177 57 184 52 191 48"
+        fill="none" stroke="#67483f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M191 48 C173 40 155 38 138 42 C110 47 91 67 94 87 C97 106 118 115 138 106 C153 99 162 81 170 67 C177 57 184 52 191 48"
+        fill="none" stroke="url(#copper)" stroke-width="4.6" stroke-linecap="round"/>
+  <path d="M177 44 C160 39 148 40 135 45 C115 50 100 65 97 79 M99 95 C103 101 108 104 114 106"
+        fill="none" stroke="#d19b7a" stroke-width="1.6" stroke-linecap="round" opacity=".75"/>
+  <path d="M126 109 L127 105 M147 99 L143 96 M159 82 L155 80 M116 54 L114 51"
+        fill="none" stroke="#794e43" stroke-width="1.6" stroke-linecap="round" opacity=".75"/>
+
+  <path d="M195 26 C203 25 209 32 206 40 C204 47 200 55 195 63 L140 156 Q138 160 134 163 L35 226 L126 151 L177 49 C183 37 187 28 195 26 Z M194 38 C196 34 200 35 199 39 C197 46 191 55 187 60 C185 63 181 61 183 57 Z"
+        fill="url(#steel)" fill-rule="evenodd" stroke="#40535c" stroke-width="3.4" stroke-linejoin="round"/>
+  <g clip-path="url(#needle)">
+    <path d="M203 28 C212 38 197 63 190 75 L139 163 L35 226 L127 153 L185 56 C194 44 201 34 203 28 Z"
+          fill="#68828f"/>
+    <path d="M205 39 L195 63 L140 156 Q138 160 134 163 L35 226 L129 158 L191 57 Z"
+          fill="#526c7a"/>
+    <path d="M196 28 C187 39 181 53 177 61 L130 152 L56 210 L127 149 L175 50 C184 32 186 29 196 28 Z"
+          fill="#e0dfc9"/>
+    <path d="M190 66 L140 149 L132 156 L126 153 L175 66 L182 63 Z"
+          fill="#a9b7b5"/>
+    <path d="M130 148 Q136 149 139 152 L134 161 L120 171 Q127 162 130 156 L125 154 Z"
+          fill="#7e939b"/>
+    <path d="M129 149 Q133 150 132 153 L127 157 L65 206 L125 154 Z"
+          fill="#cbd0bd"/>
+    <path d="M173 78 Q165 96 153 113 L151 113 Q159 96 167 82 Z M145 126 Q141 136 136 142 L134 142 L140 129 Z"
+          fill="#d6d9c6"/>
+    <path d="M193 29 C198 27 203 31 203 34 M179 47 L175 55"
+          fill="none" stroke="#e7e1c9" stroke-width="2.7" stroke-linecap="round"/>
+    <path d="M173 84 L177 85 M156 117 L160 118 M119 168 L123 164"
+          fill="none" stroke="#596f79" stroke-width="1.7" stroke-linecap="round" opacity=".8"/>
+    <path d="M180 61 Q182 67 188 63"
+          fill="none" stroke="#566e79" stroke-width="2.7"/>
+  </g>
+
+  <!-- One strand emerges through the open eye and falls away freely. -->
+  <path d="M189 52 C193 49 197 48 200 51 C207 57 204 72 209 85 C213 95 224 99 232 96"
+        fill="none" stroke="#65453e" stroke-width="7.1" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M189 52 C193 49 197 48 200 51 C207 57 204 72 209 85 C213 95 224 99 232 96"
+        fill="none" stroke="#af735e" stroke-width="4.2" stroke-linecap="round"/>
+  <path d="M190 51 C195 47 199 50 201 54 M206 78 C207 85 210 89 214 92"
+        fill="none" stroke="#d39a79" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M230 96 L235 95 M231 98 L234 99"
+        fill="none" stroke="#936353" stroke-width="1.4" stroke-linecap="round"/>
+</svg>

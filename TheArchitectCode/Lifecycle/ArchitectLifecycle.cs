@@ -169,7 +169,7 @@ public sealed class ArchitectConsoleCommand : AbstractConsoleCmd
 {
     public override string CmdName => "architect";
     public override string Args => "";
-    public override string Description => "Playtest Act 4 from the current single-player run (keeps your deck and health).";
+    public override string Description => "Playtest Act 4 from the current single-player build, including The Unwritten.";
     public override bool IsNetworked => false;
 
     public override CmdResult Process(Player? issuingPlayer, string[] args)

@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="leather" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop stop-color="#b68a59"/>
+      <stop offset=".48" stop-color="#94633e"/>
+      <stop offset="1" stop-color="#69452f"/>
+    </linearGradient>
+    <linearGradient id="thumb" x1="0" y1="0" x2="1" y2="0.7">
+      <stop stop-color="#c49660"/>
+      <stop offset=".56" stop-color="#a57548"/>
+      <stop offset="1" stop-color="#795035"/>
+    </linearGradient>
+    <linearGradient id="ice" x1="0" y1="0" x2=".65" y2="1">
+      <stop stop-color="#eef4e2"/>
+      <stop offset=".53" stop-color="#c3e8e8"/>
+      <stop offset="1" stop-color="#85bbca"/>
+    </linearGradient>
+    <linearGradient id="blueFace" x1="0" y1="0" x2=".65" y2="1">
+      <stop stop-color="#607fa6"/>
+      <stop offset="1" stop-color="#425877"/>
+    </linearGradient>
+  </defs>
+
+  <!-- The farther fingers turn up behind the stone. -->
+  <g stroke="#51392d" stroke-width="3.8" stroke-linejoin="round" stroke-linecap="round">
+    <path fill="url(#leather)" d="M140 141 C147 120 154 96 166 82 C172 75 181 76 186 83 C192 93 184 108 179 120 L163 151 Z"/>
+    <path fill="#c0925d" stroke="none" d="M166 86 C172 80 179 81 181 87 C182 91 180 97 177 102 L168 99 Z"/>
+    <path fill="url(#leather)" d="M157 148 C168 127 181 104 192 98 C200 93 209 97 211 105 C214 116 201 132 189 149 L176 162 Z"/>
+    <path fill="#b88a56" stroke="none" d="M193 102 C200 99 205 102 205 108 L200 118 L189 112 Z"/>
+    <path d="M189 115 Q194 115 200 121" fill="none" stroke="#745035" stroke-width="2.2"/>
+    <path fill="url(#leather)" d="M173 164 C187 148 199 125 210 122 C217 120 224 125 224 132 C224 143 211 156 201 168 L186 178 Z"/>
+    <path fill="#b28655" stroke="none" d="M209 127 C215 124 220 129 218 134 L212 143 L203 137 Z"/>
+    <path d="M202 140 Q208 141 212 146" fill="none" stroke="#715036" stroke-width="2.2"/>
+    <path fill="url(#leather)" d="M180 181 C195 165 209 148 218 147 C225 147 230 153 227 160 C223 171 207 184 190 192 L170 199 Z"/>
+    <path fill="#b18556" stroke="none" d="M215 153 C219 150 224 153 223 157 L216 165 L210 160 Z"/>
+    <path d="M207 162 Q211 163 214 167" fill="none" stroke="#705036" stroke-width="2.2"/>
+  </g>
+
+  <!-- An open, cupped palm, with a single broad shadow under the gem. -->
+  <path d="M75 119 C91 120 102 133 117 133 C137 133 153 122 172 125 C184 126 194 137 195 151 C199 172 183 186 161 197 L144 214 L78 205 L77 185 C58 163 53 144 57 131 C60 123 66 120 75 119 Z" fill="url(#leather)" stroke="#50392d" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M110 144 C130 137 157 130 174 134 C185 137 187 150 180 158 C164 174 137 172 120 161 Z" fill="#68472f"/>
+  <path d="M84 151 C92 168 101 177 119 181 C138 185 160 177 178 167 C171 184 153 189 144 201 L91 193 C81 180 77 166 77 157 Z" fill="#b07e4d"/>
+  <path d="M136 188 C153 183 173 176 183 166 C183 180 166 192 155 199 L143 212 L122 205 Z" fill="#744c33"/>
+
+  <!-- Six large, unbroken planes keep the diamond legible at inventory size. -->
+  <g stroke-linejoin="round">
+    <path d="M108 35 L169 30 L205 67 L145 144 L78 77 Z" fill="#8fcbd5" stroke="#3f6471" stroke-width="4"/>
+    <path d="M108 35 L169 30 L157 65 L111 71 Z" fill="#e9f0dd"/>
+    <path d="M108 35 L111 71 L78 77 Z" fill="#b8e2dd"/>
+    <path d="M169 30 L205 67 L157 65 Z" fill="#a3c5d0"/>
+    <path d="M78 77 L111 71 L145 144 Z" fill="#75b4c5"/>
+    <path d="M111 71 L157 65 L145 144 Z" fill="url(#ice)"/>
+    <path d="M157 65 L205 67 L145 144 Z" fill="url(#blueFace)"/>
+    <path d="M108 35 L111 71 L78 77 M169 30 L157 65 L111 71 L145 144 M157 65 L205 67" fill="none" stroke="#638c9d" stroke-width="2" opacity=".65"/>
+    <path d="M81 76 L108 35 L168 30" fill="none" stroke="#f5efd6" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M169 30 L205 67 L145 144 L78 77" fill="none" stroke="#476776" stroke-width="3.6"/>
+    <path d="M113 73 L143 132" fill="none" stroke="#e3f2e6" stroke-width="2.3" opacity=".7"/>
+  </g>
+
+  <!-- The thumb overlaps the stone's lower-left edge, rather than an arm. -->
+  <path d="M92 183 C81 176 71 164 63 151 C52 137 46 121 46 108 C45 98 49 91 57 90 C66 89 71 96 73 106 C75 118 81 129 91 135 C98 139 108 142 112 151 C117 162 106 179 92 183 Z" fill="url(#thumb)" stroke="#51392d" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M53 108 C51 99 55 94 60 96 C66 98 66 106 68 115 C71 128 77 136 86 141 C81 144 75 144 70 139 C59 129 56 118 53 108 Z" fill="#d0a16b"/>
+  <path d="M64 150 C75 163 81 169 91 174 C100 177 105 167 105 159 C106 170 100 178 92 180 C80 173 71 162 64 150 Z" fill="#815437"/>
+  <path d="M52 118 Q59 114 68 116 M74 146 Q83 146 88 142 M110 173 Q122 181 137 177" fill="none" stroke="#744d32" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M58 103 L60 108 M81 156 L86 162" fill="none" stroke="#e0b780" stroke-width="2.2" stroke-linecap="round" opacity=".75"/>
+
+  <!-- Broad, worn cuff; one visibly mismatched gold repair. -->
+  <path d="M75 181 Q104 195 146 196 L150 209 L135 234 Q92 233 60 211 L63 194 Z" fill="#805736" stroke="#4c362c" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M75 181 Q108 196 146 196 L150 207 Q112 211 64 193 Z" fill="#bb8b55" stroke="#65432e" stroke-width="2.8" stroke-linejoin="round"/>
+  <path d="M67 199 Q99 217 142 218 L135 230 Q91 228 64 210 Z" fill="#996c41"/>
+  <path d="M139 210 L132 230 Q139 231 143 219 L150 207 Z" fill="#62432e"/>
+  <path d="M72 200 L69 207 M87 207 L85 215 M104 213 L103 221 M121 216 L120 224" fill="none" stroke="#c29a68" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M91 190 L99 202 M100 193 L94 200" fill="none" stroke="#75542e" stroke-width="5" stroke-linecap="round"/>
+  <path d="M91 189 L99 201 M100 192 L94 199" fill="none" stroke="#e0b85b" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M69 192 L78 196 M113 203 L126 205" fill="none" stroke="#d0a66e" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+</svg>

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bronze" x1="79" y1="43" x2="172" y2="155" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e2bd72"/>
+      <stop offset=".44" stop-color="#b9914e"/>
+      <stop offset="1" stop-color="#826039"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="89" y1="52" x2="164" y2="138" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6c8e8c"/>
+      <stop offset=".55" stop-color="#527673"/>
+      <stop offset="1" stop-color="#394a59"/>
+    </linearGradient>
+    <linearGradient id="sweep" x1="91" y1="63" x2="148" y2="108" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e0e2c7"/>
+      <stop offset=".45" stop-color="#c0d1bd"/>
+      <stop offset="1" stop-color="#88aaa1"/>
+    </linearGradient>
+    <linearGradient id="grip" x1="116" y1="179" x2="143" y2="202" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#c8a260"/>
+      <stop offset=".55" stop-color="#a57b42"/>
+      <stop offset="1" stop-color="#765238"/>
+    </linearGradient>
+    <clipPath id="mirror">
+      <path d="M126 34 C151 33 170 57 171 83 C174 112 156 142 135 146 C112 151 89 128 85 102 C79 74 92 42 115 36 Z"/>
+    </clipPath>
+  </defs>
+  <g transform="rotate(34 128 128)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M120 149 C123 162 123 173 119 183 L115 213 Q110 227 124 235 Q137 238 142 226 L140 189 Q135 177 137 161 L141 151 Z"
+          fill="#604936" stroke="#423d32" stroke-width="3.7"/>
+    <path d="M117 146 C121 162 123 170 119 181 L114 212 Q109 224 120 230 Q130 235 137 224 L134 185 C129 173 131 163 135 151 Z"
+          fill="url(#grip)" stroke="#634b31" stroke-width="3"/>
+    <path d="M118 171 Q121 179 118 190 L115 212 Q113 220 119 224 L123 223 Q120 216 123 205 L127 183 L126 173 Z"
+          fill="#dbb674"/>
+    <path d="M127 184 Q123 203 124 211 Q125 216 129 218" fill="none" stroke="#725438" stroke-width="3"/>
+    <path d="M117 226 Q125 230 132 224" fill="none" stroke="#9f784a" stroke-width="2.5"/>
+    <path d="M118 178 L133 181 L133 186 Q127 187 117 183 Z"
+          fill="#b48d50" stroke="#6c5034" stroke-width="2.5"/>
+    <path d="M119 178 L130 180" fill="none" stroke="#e0bd7c" stroke-width="2.2"/>
+    <path d="M131 23 C155 22 174 40 182 61 L181 69 L187 74 C194 113 172 153 147 162 C122 173 96 153 85 127 C71 100 76 63 94 40 Q110 23 131 23 Z"
+          fill="#73573b" stroke="#493f33" stroke-width="3.8"/>
+    <path d="M183 75 C191 106 174 143 152 155 Q140 164 126 160 L130 166 C158 171 187 141 191 105 Q193 86 187 74 Z"
+          fill="#564738"/>
+    <path d="M128 19 C151 19 170 34 179 55 L174 60 L181 64 C190 95 176 133 154 150 C139 163 122 162 108 154 C84 140 72 110 73 85 C73 57 87 34 107 24 Q119 19 128 19 Z"
+          fill="url(#bronze)" stroke="#64503a" stroke-width="3.6"/>
+    <path d="M107 25 Q123 19 137 24 C115 24 99 38 89 58 Q79 77 82 97 L76 92 C74 63 89 35 107 25 Z"
+          fill="#efd095"/>
+    <path d="M144 26 Q164 34 173 53 L170 58 Q159 37 144 31 Z" fill="#d6ad68"/>
+    <path d="M76 96 L81 100 Q84 118 93 130 L91 134 Q79 119 76 105 Z"
+          fill="#a49b70" opacity=".58"/>
+    <path d="M82 116 C92 139 108 153 126 154 Q143 156 159 140 L154 150 Q139 164 120 157 C100 151 87 135 82 116 Z"
+          fill="#947047"/>
+    <path d="M126 32 C153 31 172 56 174 83 C177 114 159 145 136 149 C111 155 87 130 82 103 C77 73 91 40 115 34 Z"
+          fill="#5b513e" stroke="#8f7148" stroke-width="2.4"/>
+    <path d="M126 34 C151 33 170 57 171 83 C174 112 156 142 135 146 C112 151 89 128 85 102 C79 74 92 42 115 36 Z"
+          fill="url(#glass)" stroke="#414f49" stroke-width="2.5"/>
+    <g clip-path="url(#mirror)" stroke="none">
+      <path d="M76 69 C96 76 113 62 132 52 Q150 43 165 48 L177 75 C153 71 145 84 126 92 C109 99 97 111 84 111 Z"
+            fill="url(#sweep)"/>
+      <path d="M82 74 C102 80 121 62 137 55 Q147 50 157 50 C141 48 127 57 114 65 Q95 77 82 71 Z"
+            fill="#e5e5cd" opacity=".65"/>
+      <path d="M86 114 Q102 125 120 124 C141 123 159 108 173 96 L174 116 C158 139 140 151 122 146 Q100 141 86 114 Z"
+            fill="#4c686d"/>
+      <path d="M103 135 Q121 146 136 140 C151 136 160 125 167 117 L165 132 Q150 153 130 151 Q114 147 103 135 Z"
+            fill="#797283" opacity=".84"/>
+      <path d="M87 107 Q90 122 100 131 L105 130 Q93 116 92 108 Z" fill="#92a99d" opacity=".64"/>
+      <path d="M159 53 L154 69 L157 78 L151 87 M155 68 L148 65"
+            fill="none" stroke="#425e5d" stroke-width="1.4"/>
+      <path d="M157 53 L152 69 L155 78" fill="none" stroke="#adc0af" stroke-width="1" opacity=".75"/>
+      <path d="M111 143 L113 134 L110 130" fill="none" stroke="#374e52" stroke-width="1.3"/>
+    </g>
+    <path d="M88 103 C81 81 91 51 109 41 Q117 36 128 36"
+          fill="none" stroke="#d8bb80" stroke-width="2.5"/>
+    <path d="M136 148 C157 144 175 112 173 88" fill="none" stroke="#c29a60" stroke-width="2.7"/>
+    <path d="M174 59 L180 64 L184 72 L178 69 L170 61 Z" fill="#625141"/>
+    <path d="M171 61 L177 66" fill="none" stroke="#e0b777" stroke-width="2"/>
+    <path d="M88 43 L93 39 M80 87 L79 94 M104 145 L108 148 M156 135 L160 130"
+          fill="none" stroke="#ecd09a" stroke-width="2.2"/>
+    <path d="M97 33 L99 37 M147 32 L150 36 M92 126 L95 130 M140 154 L144 152"
+          fill="none" stroke="#846341" stroke-width="2"/>
+    <path d="M119 156 Q126 162 133 157 L134 165 Q128 170 121 164 Z"
+          fill="#9c7644" stroke="#705237" stroke-width="2.5"/>
+    <path d="M120 156 Q126 161 131 158" fill="none" stroke="#e1bc79" stroke-width="2.4"/>
+    <path d="M123 192 L121 199 M117 216 L117 219" fill="none" stroke="#e2bb7c" stroke-width="1.8"/>
+  </g>
+</svg>

@@ -45,6 +45,8 @@ internal static class ArchitectHistoryIcons
     {
         if (__result != null && modelId == ArchitectModels.EncounterId)
             __result = ArchitectModels.Encounter.CustomRunHistoryIconPath;
+        else if (modelId == ArchitectModels.AncientId)
+            __result = ArchitectModels.Ancient.CustomRunHistoryIconPath;
     }
 
     [HarmonyPatch(typeof(ImageHelper), nameof(ImageHelper.GetRoomIconOutlinePath))]
@@ -53,5 +55,7 @@ internal static class ArchitectHistoryIcons
     {
         if (__result != null && modelId == ArchitectModels.EncounterId)
             __result = ArchitectModels.Encounter.CustomRunHistoryIconOutlinePath;
+        else if (modelId == ArchitectModels.AncientId)
+            __result = ArchitectModels.Ancient.CustomRunHistoryIconOutlinePath;
     }
 }

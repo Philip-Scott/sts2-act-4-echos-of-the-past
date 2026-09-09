@@ -62,6 +62,8 @@ class NativeDemoTests(unittest.TestCase):
             game.mkdir()
             (game / "SlayTheSpire2").touch()
             snapshot.write_text('{"captured":true}')
+            run_save = root / "current_run.save"
+            run_save.write_text('{"saved_run":true}')
             (root / "scripts").mkdir()
             (root / "scripts/native-demo-settings.json").write_text("{}")
             for mod in ("TheArchitect", "BaseLib"):
@@ -74,6 +76,7 @@ class NativeDemoTests(unittest.TestCase):
             required = demo.required_file
             with patch.object(demo, "ROOT", root), patch.object(demo, "RUNS", root / "runs"), \
                  patch.dict(demo.os.environ, {"ARCHITECT_SNAPSHOT_INPUT": str(snapshot),
+                                             "ARCHITECT_RUN_INPUT": str(run_save),
                                              "ARCHITECT_MODS_INPUT": str(mods)}), \
                  patch.object(demo, "tool", return_value="/usr/bin/unused"), \
                  patch.object(demo, "required_file", side_effect=lambda p: Path(p) if str(p).endswith("50_mesa.json") else required(p)), \
@@ -83,8 +86,27 @@ class NativeDemoTests(unittest.TestCase):
                 result = demo.launch(SimpleNamespace(game=str(game), label="test", scenario="default",
                                                      cache_from=None, cold=True, render_threads=4,
                                                      shared_visible=False, render_device="/dev/dri/renderD128"))
+                with patch.dict(demo.os.environ, {"ARCHITECT_SNAPSHOT_INPUT": ""}):
+                    ancient_result = demo.launch(SimpleNamespace(game=str(game), label="ancient", scenario="ancient",
+                                                                 cache_from=None, cold=True, render_threads=4,
+                                                                 shared_visible=False, render_device="/dev/dri/renderD128"))
+                    saved_result = demo.launch(SimpleNamespace(game=str(game), label="saved", scenario="saved-run",
+                                                               cache_from=None, cold=True, render_threads=4,
+                                                               shared_visible=False, render_device="/dev/dri/renderD128"))
             self.assertEqual(result, 0)
-            run = next((root / "runs").iterdir())
+            self.assertEqual(ancient_result, 0)
+            self.assertEqual(saved_result, 0)
+            run = next((root / "runs").glob("run-*-test-*"))
+            ancient = next((root / "runs").glob("run-*-ancient-*"))
+            self.assertFalse((ancient / "snapshot-input.json").exists())
+            self.assertIsNone(json.loads((ancient / "run.json").read_text())["snapshot_sha256"])
+            saved = next((root / "runs").glob("run-*-saved-*"))
+            self.assertEqual((saved / "run-input.json").read_text(), run_save.read_text())
+            self.assertFalse((saved / "snapshot-input.json").exists())
+            self.assertEqual(json.loads((saved / "run.json").read_text())["run_save_sha256"],
+                             demo.hashlib.sha256(run_save.read_bytes()).hexdigest())
+            run_save.write_text('{"saved_run":"changed"}')
+            self.assertEqual((saved / "run-input.json").read_text(), '{"saved_run":true}')
             (mods / "TheArchitect/TheArchitect.dll").write_text("rebuilt")
             self.assertEqual((run / "mods/TheArchitect/TheArchitect.dll").read_text(), "original")
             self.assertEqual((run / "snapshot-input.json").read_text(), snapshot.read_text())

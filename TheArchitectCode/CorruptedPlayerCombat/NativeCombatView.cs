@@ -185,8 +185,8 @@ internal static class NativeCombatCallSites
         power.Owner is { } owner && NativeCorruptedPlayer.TryGet(owner, out var actor) ? actor.View : power.CombatState;
     private static ICombatState OrbScope(OrbModel orb) =>
         orb.Owner is { } owner && NativeCorruptedPlayer.TryGet(owner, out var actor) ? actor.View : orb.CombatState;
-    private static Player? CreatureOwner(Creature creature) =>
+    internal static Player? CreatureOwner(Creature creature) =>
         NativeCorruptedPlayer.TryGet(creature, out var actor) ? actor.Player : creature.Player;
-    private static bool IsPartyPlayer(Creature creature) =>
+    internal static bool IsPartyPlayer(Creature creature) =>
         !NativeCorruptedPlayer.TryGet(creature, out _) && creature.IsPlayer;
 }

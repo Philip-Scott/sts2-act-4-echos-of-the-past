@@ -20,6 +20,8 @@ internal static class NativeDemoSafety
     {
         if (!Enabled)
             return;
+        if (CommandLineHelper.HasArg("architect-native-saved-run"))
+            NativeSavedRunPlaytest.PrepareIdentityProbe();
         RuntimePath = Environment.GetEnvironmentVariable("ARCHITECT_NATIVE_RUNTIME")
             ?? throw new InvalidOperationException("Use the isolated native-demo launcher.");
         if (SteamInitializer.Initialized || CommandLineHelper.GetValue("force-steam") != "off" ||

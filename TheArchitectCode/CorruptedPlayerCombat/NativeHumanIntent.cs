@@ -15,7 +15,8 @@ internal static class NativeHumanIntent
     {
         if (target.Monster is { } monster)
             return monster.IntendsToAttack;
-        if (!NativeCorruptedPlayer.TryGet(source.Owner, out _) || target.Player is not { } player)
+        if (!NativeCorruptedPlayer.TryGet(source.Owner, out _) ||
+            NativeCombatCallSites.CreatureOwner(target) is not { } player)
             throw new InvalidOperationException("An intent query requires a monster or a native Corrupted Player's human opponent.");
         return player.PlayerCombatState?.Hand.Cards.Any(card => card.Type == CardType.Attack) == true;
     }

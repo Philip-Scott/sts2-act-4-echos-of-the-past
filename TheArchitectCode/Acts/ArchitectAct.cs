@@ -21,7 +21,7 @@ public sealed class ArchitectAct : CustomActModel, ILocalizationProvider
     public List<(string, string)> Localization => new ActLoc("The Architect");
     protected override int BaseNumberOfRooms => 1;
     protected override int NumberOfWeakEncounters => 0;
-    public override IEnumerable<AncientEventModel> AllAncients => [];
+    public override IEnumerable<AncientEventModel> AllAncients => [ArchitectModels.Ancient];
     public override IEnumerable<EventModel> AllEvents => [];
     public override IEnumerable<EncounterModel> GenerateAllEncounters() => [ArchitectModels.Encounter];
     protected override string CustomBackgroundScenePath => ArchitectBackgroundScenePath;
@@ -35,30 +35,12 @@ public sealed class ArchitectAct : CustomActModel, ILocalizationProvider
     public override Color MapBgColor => ModelDb.Act<Glory>().MapBgColor;
     public override Color MapTraveledColor => new("292929");
     public override Color MapUntraveledColor => new("555555");
-    protected override ActMap CustomCreateMap(RunState runState, bool replaceTreasureWithElites) => new ArchitectMap();
+    protected override ActMap CustomCreateMap(RunState runState, bool replaceTreasureWithElites) =>
+        new ArchitectMap(Ancient != null);
 
     public void InitializeRooms()
     {
         AssertMutable();
-        _rooms = new RoomSet { Boss = ArchitectModels.Encounter };
+        _rooms = new RoomSet { Ancient = ArchitectModels.Ancient, Boss = ArchitectModels.Encounter };
     }
-}
-
-public sealed class ArchitectMap : ActMap
-{
-    protected override MapPoint?[,] Grid { get; } = new MapPoint?[7, 2];
-    public override MapPoint StartingMapPoint { get; } = Point(0, MapPointType.RestSite);
-    public override MapPoint BossMapPoint { get; } = Point(2, MapPointType.Boss);
-
-    public ArchitectMap()
-    {
-        var shop = Point(1, MapPointType.Shop);
-        Grid[3, 1] = shop;
-        StartingMapPoint.AddChildPoint(shop);
-        shop.AddChildPoint(BossMapPoint);
-        startMapPoints.Add(StartingMapPoint);
-    }
-
-    private static MapPoint Point(int row, MapPointType type) =>
-        new(3, row) { PointType = type, CanBeModified = false };
 }

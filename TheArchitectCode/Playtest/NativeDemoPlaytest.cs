@@ -73,6 +73,21 @@ internal static class NativeDemoPlaytest
             game.AddChild(new NativeDemoObserver());
         }
         await Task.Delay(2000);
+        if (CommandLineHelper.HasArg("architect-native-relic-art"))
+        {
+            await UnwrittenPlaytest.RenderRelicArt(game);
+            return;
+        }
+        if (CommandLineHelper.HasArg("architect-native-saved-run"))
+        {
+            await NativeSavedRunPlaytest.Run(game);
+            return;
+        }
+        if (CommandLineHelper.HasArg("architect-native-ancient"))
+        {
+            await UnwrittenPlaytest.Run(game);
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-corruption-visuals"))
         {
             await CorruptionVisualPlaytest.Run(game);
@@ -108,12 +123,14 @@ internal static class NativeDemoPlaytest
         Require(ArchitectRun.Get(run).EntrySnapshot?.Snapshot?.ContentHash == expected.Snapshot!.ContentHash,
             "normal encounter entry captured the real saved snapshot");
         var human = run.Players.Single();
+        await UnwrittenPlaytest.ChooseBuildGift(human);
         await WaitFor(() => NMapScreen.Instance?.IsOpen == true);
         await Capture("map");
-        await RunManager.Instance.EnterMapCoord(run.Map.StartingMapPoint.coord);
+        var rest = run.Map.StartingMapPoint.Children.Single();
+        await RunManager.Instance.EnterMapCoord(rest.coord);
         await Task.Delay(500);
         await Capture("rest");
-        await RunManager.Instance.EnterMapCoord(run.Map.StartingMapPoint.Children.Single().coord);
+        await RunManager.Instance.EnterMapCoord(rest.Children.Single().coord);
         await Task.Delay(500);
         await Capture("shop");
         await RunManager.Instance.EnterMapCoord(run.Map.BossMapPoint.coord);
@@ -352,7 +369,7 @@ internal static class NativeDemoPlaytest
         game.GetTree().Quit();
     }
 
-    internal static async Task HumanPlay<T>(Player human, Creature target) where T : CardModel
+    internal static async Task HumanPlay<T>(Player human, Creature? target) where T : CardModel
     {
         var card = human.Creature.CombatState!.CreateCard<T>(human);
         await CardPileCmd.Add(card, PileType.Hand, skipVisuals: true);

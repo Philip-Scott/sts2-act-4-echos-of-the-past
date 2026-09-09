@@ -13,13 +13,44 @@ It is single-player only. Disable other fourth-act mods, including Act4Heart,
 before playing; multiplayer runs retain the vanilla route.
 
 After Act 3, the run continues to **Act 4 — The Architect** with a fixed
-Rest Site → Shop → boss route. The first visit fights the Architect; later
+Ancient → Rest Site → Shop → boss route. The first visit fights the Architect; later
 visits first fight a corrupted version of the previous completed character.
-The compact map fits all three nodes without scrolling, using neutral-ink
+The compact map fits all four nodes without scrolling, using neutral-ink
 icons and an original Architect boss silhouette. Rest and Shop share the
 supplied tower-approach illustration; the boss fight retains the
 native Architect workshop interior. Native campfire, merchant, and room
 interactions remain intact.
+
+**The Unwritten**, the Architect's rival and patron of imperfection, offers one
+mandatory choice from three personal relic offers: a build gift, a recovery gift,
+and a bargain-slot gift. Native Ancient entry healing, choices, reward screens,
+and save behavior are retained; there is no decline, reroll, or special
+multiplayer protocol. Candidates have equal weights within each category.
+
+| Category | Relic | Effect |
+| --- | --- | --- |
+| Build | Loose Thread | Draw +1 on your first three turns. |
+| Build | Crooked Needle | Start combat with 1 Strength and 1 Dexterity. |
+| Build | Orange Pearl | Start combat with 1 Artifact. |
+| Build | Diamond Hand | After drawing on odd-numbered turns, apply combat-only Glam to a random eligible unenchanted card in hand. |
+| Recovery | Unspent Possibility | Gain 150 Gold. |
+| Recovery | Last Meal | Gain 20 maximum HP, heal 20, and receive two potion rewards and one rare-card reward. |
+| Bargain | Borrowed Tomorrow | Gain +1 Energy on your first three turns; start combat with 2 ordinary Vulnerable. |
+| Bargain | Handheld Mirror | Acquire fresh copies of three different eligible owned relic types, with no additional cost. |
+
+First and Repeat Visits use the same pool. Turn counts include extra turns, and
+the Corrupted Player-to-Architect transition does not restart bonuses or copied
+relic counters. Only permanent deck and maximum-HP changes enter the existing
+terminal snapshot; relics, Gold, potions, and combat-only Glam do not.
+The Unwritten uses an initial sigil presentation and eight original, individually
+illustrated relic icons, with matching inventory, selection-outline, and large
+inspection textures. Editable SVG sources accompany the PNG assets.
+Mirror can copy all owned relic types, including modded relics, without a
+compatibility list. Only Mirror itself and melted copies are excluded; copied
+relics keep their normal acquisition behavior, requirements, and drawbacks.
+Older saves already in the Architect Act retain their original three-stop route.
+Interrupted nested rewards inherit native Ancient limitations, not a new
+crash-safe transaction system.
 
 The Corrupted Player now uses the **native in-process card engine in normal play**,
 restoring the saved deck, upgrades, native enchantments and saved card properties.
@@ -50,10 +81,31 @@ Terminal outcomes open the native victory screen directly.
 
 For fast feedback, start a disposable modded single-player run, open the
 developer console with the **backtick (`)** key, and enter `architect`. This skips to the Act 4
-map using your current deck, HP, and gold; it does not grant a late-game build.
+map using your current build; The Unwritten's native entry healing still applies,
+but the command does not grant a late-game deck or extra Gold.
 Normal completion of this run can replace your profile's Corrupted Player.
 Use `architect`, not `act 4`: the vanilla `act` command can only visit acts
 already appended to the current run.
+
+The isolated native arrival scenario needs no snapshot input:
+`bash scripts/native-demo.sh run "/path/to/Slay the Spire 2" --ancient`.
+It uses disposable saves and the worktree's `artifacts/mods`, never the live mod
+installation. The `architect` command includes The Unwritten; the direct
+boss bootstrap below intentionally remains a combat-only entry.
+
+`--architect-history-setup /absolute/path/to/config.json` prepares a live Slot 2
+run from two single-player victory histories and opens The Unwritten with Mirror
+offered by the selected native seed. Select Slot 2 and back it up first; the
+launcher refuses another slot or an active run. The configuration supplies `ProfileId` (2),
+`PlayerHistoryPath`, `OpponentHistoryPath`, `OutputDirectory`, a `Seed` prefix,
+and explicit historical `MaxEnergy` / `BaseOrbSlotCount` values, which run history
+does not store. Deck upgrades, enchantments, relic state, potions, HP and Gold are
+restored without replaying acquisition rewards. Ordinary launches do not run
+this setup.
+Set `ForceMirror` to `false` to use `Seed` unchanged and let all Ancient offers
+roll normally; it defaults to `true` for existing Mirror-specific setups.
+`--architect-resume-slot2` instead opens the existing selected Slot 2 single-player
+save without rerunning history setup or replacing its rewards and Shop choices.
 
 An alternative **unsaved** developer launch uses the game's bootstrap mode:
 `--bootstrap --architect-playtest`. Add `--architect-repeat` to use a copy of
@@ -77,6 +129,12 @@ captures, and reject external mouse/keyboard commands. Desktop focus is still
 shared; see the native Corrupted Player README for the tradeoff and measured timings.
 **Changing XDG_DATA_HOME alone
 does not isolate Steam Cloud or real saves.**
+
+To reproduce an existing Corrupted Player fight without touching its profile,
+set `ARCHITECT_RUN_INPUT` to the saved `current_run.save` and run
+`scripts/native-demo.sh run "/path/to/Slay the Spire 2" --saved-run`.
+This copies the run into the isolated instance and exercises preview creation,
+human power-card play, and save/reload, including optimized creature-identity reads.
 
 For the Bound Echo visual pass, build to `artifacts/mods`, close the game, then
 run `bash scripts/native-demo.sh --exclusive-window "/path/to/Slay the Spire 2" --corruption`.

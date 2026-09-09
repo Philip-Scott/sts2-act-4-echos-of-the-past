@@ -104,6 +104,7 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
     internal static async Task SmokeMapAndRooms(Player player)
     {
         var run = player.RunState;
+        await UnwrittenPlaytest.ChooseBuildGift(player);
         var encounter = ArchitectModels.Encounter;
         if (ImageHelper.GetRoomIconPath(MegaCrit.Sts2.Core.Map.MapPointType.Boss, RoomType.Boss, encounter.Id)
                 != encounter.CustomRunHistoryIconPath ||
@@ -114,9 +115,9 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
         await Task.Delay(4000);
         await Capture(".map");
         var points = NMapScreen.Instance!.FindChildren("*", "", true, false).OfType<NMapPoint>().ToArray();
-        if (points.Length != 3 || points.Any(point => !NGame.Instance!.GetViewport().GetVisibleRect()
+        if (points.Length != 4 || points.Any(point => !NGame.Instance!.GetViewport().GetVisibleRect()
                 .Encloses(point.GetGlobalRect().Grow(24f))))
-            throw new InvalidOperationException("All three Act 4 map nodes must fit on screen without scrolling: " +
+            throw new InvalidOperationException("All four Act 4 map nodes must fit on screen without scrolling: " +
                 string.Join("; ", points.Select(point => $"{point.Name}: {point.GetGlobalRect()}")));
         var beforeScroll = points[0].GlobalPosition.Y;
         NMapScreen.Instance._GuiInput(new InputEventMouseButton { ButtonIndex = MouseButton.WheelUp, Pressed = true });
@@ -127,14 +128,15 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
         await Task.Delay(800);
         if (Math.Abs(points[0].GlobalPosition.Y - afterScroll) > 1f)
             throw new InvalidOperationException("The compact map must stop scrolling after input stops.");
-        await RunManager.Instance.EnterMapCoord(run.Map.StartingMapPoint.coord);
+        var rest = run.Map.StartingMapPoint.Children.Single();
+        await RunManager.Instance.EnterMapCoord(rest.coord);
         if (run.CurrentRoom is not RestSiteRoom)
-            throw new InvalidOperationException("Act 4 must start at a normal Rest Site.");
+            throw new InvalidOperationException("The Ancient must lead to a normal Rest Site.");
         await WaitFor(() => NRestSiteRoom.Instance?.IsVisibleInTree() == true);
         await Task.Delay(1200);
         AssertBackdrop(NRestSiteRoom.Instance!, ArchitectRoomBackgrounds.RestBackgroundPath);
         await Capture(".rest");
-        await RunManager.Instance.EnterMapCoord(run.Map.StartingMapPoint.Children.Single().coord);
+        await RunManager.Instance.EnterMapCoord(rest.Children.Single().coord);
         if (run.CurrentRoom.RoomType != RoomType.Shop)
             throw new InvalidOperationException("Act 4 must contain a normal shop.");
         await WaitFor(() => NMerchantRoom.Instance?.IsVisibleInTree() == true);
@@ -143,7 +145,7 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
             ArchitectRoomBackgrounds.ShopBackgroundPath);
         await Capture(".shop");
         await RunManager.Instance.EnterMapCoord(run.Map.BossMapPoint.coord);
-        MainFile.Logger.Info("Architect smoke: Act 4 Rest -> Shop -> Boss passed.");
+        MainFile.Logger.Info("Architect smoke: Act 4 Ancient -> Rest -> Shop -> Boss passed.");
         await Smoke(player);
     }
 

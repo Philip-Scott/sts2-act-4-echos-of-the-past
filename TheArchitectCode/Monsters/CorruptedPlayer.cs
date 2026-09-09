@@ -90,7 +90,7 @@ public sealed class CorruptedPlayer : CustomMonsterModel
         var node = Creature.GetCreatureNode();
         if (node != null)
         {
-            CorruptedPlayerOrbs.Attach(node);
+            CorruptedPlayerOrbs.Attach(node, Native.State);
             _telegraph = CorruptedPlayerTelegraph.Attach(node, Creature, ShowNativeState);
             Native.Changed += ShowNativeState;
             ShowNativeState();

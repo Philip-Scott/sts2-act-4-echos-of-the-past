@@ -155,9 +155,15 @@ def sandbox_command(game, run, xvfb, render_threads=4, shared_display=None, rend
 
 def launch(args):
     game = required_file(Path(args.game) / "SlayTheSpire2").parent
-    if not os.environ.get("ARCHITECT_SNAPSHOT_INPUT"):
+    requires_snapshot = args.scenario not in ("ancient", "saved-run", "relic-art")
+    if requires_snapshot and not os.environ.get("ARCHITECT_SNAPSHOT_INPUT"):
         raise ValueError("Set ARCHITECT_SNAPSHOT_INPUT to the captured snapshot to copy (never modified).")
-    snapshot = required_file(os.environ["ARCHITECT_SNAPSHOT_INPUT"])
+    snapshot = required_file(os.environ["ARCHITECT_SNAPSHOT_INPUT"]) if requires_snapshot else None
+    run_save = None
+    if args.scenario == "saved-run":
+        if not os.environ.get("ARCHITECT_RUN_INPUT"):
+            raise ValueError("Set ARCHITECT_RUN_INPUT to the saved run to copy (never modified).")
+        run_save = required_file(os.environ["ARCHITECT_RUN_INPUT"])
     shared_display = os.environ.get("DISPLAY", "") if args.shared_visible else None
     if args.shared_visible:
         if not local_display_socket(shared_display).is_socket():
@@ -213,9 +219,14 @@ def launch(args):
         settings = run / "xdg/SlayTheSpire2/default/1"
         settings.mkdir(parents=True)
         shutil.copyfile(ROOT / "scripts/native-demo-settings.json", settings / "settings.save")
-        shutil.copyfile(snapshot, run / "snapshot-input.json")
+        if snapshot is not None:
+            shutil.copyfile(snapshot, run / "snapshot-input.json")
+        if run_save is not None:
+            shutil.copyfile(run_save, run / "run-input.json")
+            metadata["run_save_sha256"] = hashlib.sha256((run / "run-input.json").read_bytes()).hexdigest()
         metadata.update(mods=hashes(run / "mods"),
-                        snapshot_sha256=hashlib.sha256((run / "snapshot-input.json").read_bytes()).hexdigest(),
+                        snapshot_sha256=hashlib.sha256((run / "snapshot-input.json").read_bytes()).hexdigest()
+                        if snapshot is not None else None,
                         state="starting", started_at=time.time())
         write_json(run / "run.json", metadata)
         print(f"Isolated native demo: {run.name}\nArtifacts: {run}", flush=True)
@@ -457,7 +468,7 @@ def main():
     cache.add_argument("--cache-from", help="Copy shader caches from this completed run ID.")
     cache.add_argument("--cold", action="store_true", help="Do not seed shader caches from a completed run.")
     scenarios = run.add_mutually_exclusive_group()
-    for scenario in ("loss", "nondefect", "poison"):
+    for scenario in ("loss", "nondefect", "poison", "ancient", "saved-run", "relic-art"):
         scenarios.add_argument("--" + scenario, dest="scenario", action="store_const", const=scenario)
     run.set_defaults(scenario="default")
     for action in ("status", "capture", "stop", "pointer", "click", "key", "_serve"):

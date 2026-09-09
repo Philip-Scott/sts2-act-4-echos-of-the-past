@@ -1,8 +1,15 @@
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models.Monsters;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 using TheArchitect.TheArchitectCode.Powers;
+using TheArchitect.TheArchitectCode.Acts;
+using MegaCrit.Sts2.Core.Map;
+using BaseLib.Utils;
+using System.Reflection;
+using MegaCrit.Sts2.Core.Models.RelicPools;
+using TheArchitect.TheArchitectCode.Relics;
 
 int passed = 0;
 
@@ -100,4 +107,64 @@ foreach (int limit in new[] { 200, 300 })
     });
 }
 
-Console.WriteLine($"{passed} Architect power tests passed.");
+foreach (var hasAncient in new[] { true, false })
+{
+    Test($"map: fixed route (Ancient={hasAncient})", () =>
+    {
+        var map = new ArchitectMap(hasAncient);
+        MapPointType[] expected = hasAncient
+            ? [MapPointType.Ancient, MapPointType.RestSite, MapPointType.Shop, MapPointType.Boss]
+            : [MapPointType.RestSite, MapPointType.Shop, MapPointType.Boss];
+        var point = map.StartingMapPoint;
+        for (var row = 0; row < expected.Length; row++)
+        {
+            Check(point.PointType == expected[row] && point.coord.col == 3 && point.coord.row == row);
+            Check(!point.CanBeModified);
+            if (row < expected.Length - 1)
+                point = point.Children.Single();
+        }
+        Check(point == map.BossMapPoint && !point.Children.Any());
+        Check(map.GetAllMapPoints().Count() == expected.Length - 2,
+            "Starting Ancient and boss must be outside the interior grid.");
+    });
+}
+
+UnwrittenBonusTests.Run(Test);
+HandheldMirrorTests.Run(Test, Check);
+
+Test("Unwritten: all eight relics declare the pool required by native descriptions", () =>
+{
+    Type[] relics = [typeof(LooseThread), typeof(CrookedNeedle), typeof(OrangePearl), typeof(DiamondHand),
+        typeof(UnspentPossibility), typeof(LastMeal), typeof(BorrowedTomorrow), typeof(HandheldMirror)];
+    foreach (var relic in relics)
+        Check(relic.GetCustomAttribute<PoolAttribute>()?.PoolType == typeof(SharedRelicPool), relic.Name);
+});
+
+Test("Unwritten: each relic uses its own small, outline and large icon", () =>
+{
+    (Type Type, string Slug)[] icons =
+    [
+        (typeof(LooseThread), "loose_thread"), (typeof(CrookedNeedle), "crooked_needle"),
+        (typeof(OrangePearl), "orange_pearl"), (typeof(DiamondHand), "diamond_hand"),
+        (typeof(UnspentPossibility), "unspent_possibility"), (typeof(LastMeal), "last_meal"),
+        (typeof(BorrowedTomorrow), "borrowed_tomorrow"), (typeof(HandheldMirror), "handheld_mirror")
+    ];
+    var outline = typeof(UnwrittenRelic).GetProperty("PackedIconOutlinePath",
+        BindingFlags.Instance | BindingFlags.NonPublic)!;
+    var big = typeof(UnwrittenRelic).GetProperty("BigIconPath",
+        BindingFlags.Instance | BindingFlags.NonPublic)!;
+    var paths = new HashSet<string>();
+    foreach (var (type, slug) in icons)
+    {
+        if (ModelDb.GetByIdOrNull<RelicModel>(ModelDb.GetId(type)) == null)
+            ModelDb.Inject(type);
+        var relic = ModelDb.GetById<RelicModel>(ModelDb.GetId(type));
+        Check(relic.PackedIconPath == $"res://TheArchitect/images/relics/{slug}.png", slug);
+        Check((string?)outline.GetValue(relic) == $"res://TheArchitect/images/relics/{slug}_outline.png", slug);
+        Check((string?)big.GetValue(relic) == $"res://TheArchitect/images/relics/big/{slug}.png", slug);
+        Check(paths.Add(relic.PackedIconPath), slug);
+    }
+    Check(paths.Count == 8);
+});
+
+Console.WriteLine($"{passed} Architect tests passed.");

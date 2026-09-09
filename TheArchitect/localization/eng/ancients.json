@@ -1,3 +1,9 @@
 {
-  
+  "THEARCHITECT-THE_UNWRITTEN.title": "The Unwritten",
+  "THEARCHITECT-THE_UNWRITTEN.epithet": "Patron of Imperfection",
+  "THEARCHITECT-THE_UNWRITTEN.pages.INITIAL.description": "The Architect has planned your ending. Take one possibility he did not account for.",
+  "THEARCHITECT-THE_UNWRITTEN.pages.DONE.description": "Leave a flaw in his perfect design.",
+  "THEARCHITECT-THE_UNWRITTEN.talk.firstVisitEver.0-0.ancient": "He calls it perfection. I call it a cage. Take something he did not plan for.",
+  "THEARCHITECT-THE_UNWRITTEN.talk.ANY.0-0r.ancient": "No design survives every possibility. Choose yours.",
+  "THEARCHITECT-THE_UNWRITTEN.talk.ANY.1-0.ancient": "There is still room for a mistake. Make it his."
 }

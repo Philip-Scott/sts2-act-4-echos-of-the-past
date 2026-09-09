@@ -92,11 +92,20 @@ public sealed class NativeCorruptedPlayer
 
     public void AssertIdentity()
     {
+        // Use the same explicit bridge as native call sites: inlined identity getters
+        // can bypass their Harmony detours in our own callers too.
         if (Environment.CurrentManagedThreadId != _threadId || Player.Creature != Body ||
-            Body.Player != Player || Body.IsPlayer || !Body.IsMonster || Body.Side != CombatSide.Enemy ||
+            NativeCombatCallSites.CreatureOwner(Body) != Player || NativeCombatCallSites.IsPartyPlayer(Body) ||
+            !Body.IsMonster || Body.Side != CombatSide.Enemy ||
             _combat.Players.Contains(Player) || _combat.RunState.Players.Contains(Player) ||
             _combat.Players.Count != 1 || _combat.RunState.Players.Count != 1)
-            throw new InvalidOperationException("Native Corrupted Player violated actor/thread/single-player isolation.");
+            throw new InvalidOperationException("Native Corrupted Player violated actor/thread/single-player isolation: " +
+                $"thread={Environment.CurrentManagedThreadId}/{_threadId}, playerBody={Player.Creature == Body}, " +
+                $"bodyOwner={NativeCombatCallSites.CreatureOwner(Body) == Player}, " +
+                $"isPlayer={NativeCombatCallSites.IsPartyPlayer(Body)}, isMonster={Body.IsMonster}, " +
+                $"side={Body.Side}, inCombatParty={_combat.Players.Contains(Player)}, " +
+                $"inRunParty={_combat.RunState.Players.Contains(Player)}, " +
+                $"combatPlayers={_combat.Players.Count}, runPlayers={_combat.RunState.Players.Count}.");
     }
 
     private bool CanAct => !Cleaned && Body.IsAlive && !CombatManager.Instance.IsOverOrEnding &&
@@ -422,7 +431,8 @@ internal static class NativeCorruptedPlayerDamageMetricPatch
     private static void Prefix(Creature? dealer, DamageResult results)
     {
         if (NativeCorruptedPlayer.TryGet(results.Receiver, out _) &&
-            dealer is { IsPlayer: true, Player: { } player })
+            dealer != null && NativeCombatCallSites.IsPartyPlayer(dealer) &&
+            NativeCombatCallSites.CreatureOwner(dealer) is { } player)
             player.ExtraFields.DamageDealt += results.UnblockedDamage;
     }
 }
