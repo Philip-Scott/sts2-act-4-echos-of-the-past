@@ -18,8 +18,11 @@ using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Models.Orbs;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Orbs;
+using MegaCrit.Sts2.Core.Nodes.Screens;
+using MegaCrit.Sts2.Core.Nodes.Screens.Capstones;
 using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
@@ -30,6 +33,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 using TheArchitect.TheArchitectCode.Challenger;
 using TheArchitect.TheArchitectCode.Monsters;
 using TheArchitect.TheArchitectCode.Persistence;
+using TheArchitect.TheArchitectCode.UI;
 
 namespace TheArchitect.TheArchitectCode.Playtest;
 
@@ -62,13 +66,19 @@ internal static class NativeDemoPlaytest
     private static async Task Demonstrate(NGame game, Task menuReady)
     {
         await menuReady;
+        if (NativeDemoSafety.SharedVisible)
+        {
+            game.GetWindow().Unfocusable = true;
+            game.GetViewport().GuiDisableInput = true;
+            game.AddChild(new NativeDemoObserver());
+        }
         await Task.Delay(2000);
         if (CommandLineHelper.HasArg("architect-corruption-visuals"))
         {
             await CorruptionVisualPlaytest.Run(game);
             return;
         }
-        game.GetWindow().Title = "The Architect - ISOLATED NATIVE INTEGRATION (automatic)";
+        game.GetWindow().Title = $"The Architect - NATIVE {Path.GetFileName(NativeDemoSafety.RuntimePath)}";
         var run = await game.StartNewSingleplayerRun(ModelDb.Character<Ironclad>(), true,
             [ModelDb.Act<Overgrowth>(), ModelDb.Act<Hive>(), ModelDb.Act<Glory>()],
             [], "ARCHITECT-NATIVE-INTEGRATION", GameMode.Standard);
@@ -123,6 +133,12 @@ internal static class NativeDemoPlaytest
         Require(actor.Body.GetCreatureNode()?.OrbManager is { } manager &&
             manager.GetNode<Control>("%Orbs").GetChildCount() == actor.State.OrbQueue.Capacity,
             "native orb manager and initial slots attached for the saved character");
+        await InspectChallengerDisplay(game, actor);
+        game.GetViewport().GuiReleaseFocus();
+        if (!NativeDemoSafety.SharedVisible)
+            Input.WarpMouse(game.GetViewportRect().Size / 2f);
+        await Task.Delay(2500);
+        await Capture("challenger-display");
         var rngBefore = "";
         actor.TurnStarting += () => rngBefore = AllRng(human);
         actor.TurnFinished += () => Require(rngBefore == AllRng(human), "actor turn left human run/player RNG unchanged");
@@ -141,6 +157,9 @@ internal static class NativeDemoPlaytest
                 actor.State.OrbQueue.Orbs.All(orb => orbNodes.Any(node => node.Model == orb)),
                 "native orb slots and live orb models are rendered");
             actor.AssertIdentity();
+            AssertChallengerHandPosition(actor);
+            if (turn == 1)
+                await InspectChallengerDisplay(game, actor);
             await Capture($"turn-{turn}");
             await CreatureCmd.Heal(human.Creature, human.Creature.MaxHp);
         }
@@ -237,6 +256,86 @@ internal static class NativeDemoPlaytest
         await Finish(game, run, actor, expected.Revision, "ArchitectWin");
     }
 
+    private static async Task InspectChallengerDisplay(NGame game, NativeChallenger actor)
+    {
+        await game.AwaitProcessFrame();
+        AssertChallengerHandPosition(actor);
+        var telegraph = actor.Body.GetCreatureNode()!.GetNode<ChallengerTelegraph>("ChallengerTelegraph");
+        Require((Control)telegraph is not PanelContainer, "Challenger hand has no background panel");
+        foreach (var (character, name) in new (CharacterModel, string)[]
+        {
+            (ModelDb.Character<Ironclad>(), "Corrupted Ironclad"),
+            (ModelDb.Character<Silent>(), "Corrupted Silent"),
+            (ModelDb.Character<Defect>(), "Corrupted Defect"),
+            (ModelDb.Character<Necrobinder>(), "Corrupted Necrobinder"),
+            (ModelDb.Character<Regent>(), "Corrupted Regent")
+        })
+        {
+            var model = (CorruptedChallenger)ArchitectModels.Challenger.ToMutable();
+            model.Configure(character, 80, Array.Empty<JsonElement>(), "name-check");
+            Require(model.Title.GetFormattedText() == name, $"enemy name is exactly {name}");
+        }
+        var energy = (Label)telegraph.FindChild("Energy", true, false);
+        Require(energy.Text == $"Energy {actor.State.Energy}/{actor.State.MaxEnergy}",
+            "current and maximum native energy are displayed");
+        var face = telegraph.FindChild("ChallengerCard", true, false) as Button;
+        Require((face != null) == (actor.State.Hand.Cards.Count > 0), "only hand cards appear in the telegraph");
+        if (face != null)
+        {
+            var miniature = face.GetChildren().OfType<NCard>().Single();
+            Require(face.Size.X >= 120 && face.Size.Y >= 160 &&
+                miniature.Scale.IsEqualApprox(Vector2.One * 0.36f) &&
+                miniature.GetCurrentSize().X <= face.Size.X && miniature.GetCurrentSize().Y <= face.Size.Y,
+                "larger hand cards fit their clickable faces");
+        }
+        var hand = actor.State.Hand.Cards.ToArray();
+        var rng = AllRng(actor.Player);
+        foreach (var (name, pile) in new[]
+        {
+            ("Draw", actor.State.DrawPile),
+            ("Discard", actor.State.DiscardPile),
+            ("Exhaust", actor.State.ExhaustPile)
+        })
+        {
+            var button = (Button)telegraph.FindChild(name + "Pile", true, false);
+            Require(button.Text == $"{name} {pile.Cards.Count}" &&
+                (face == null || button.GetGlobalRect().Position.Y >= face.GetGlobalRect().End.Y),
+                $"{name} count is displayed below the hand");
+            var cards = pile.Cards.ToArray();
+            button.EmitSignal(Button.SignalName.Pressed);
+            await game.AwaitProcessFrame();
+            Require(NCapstoneContainer.Instance?.CurrentCapstoneScreen is NCardPileScreen screen &&
+                ReferenceEquals(screen.Pile, pile), $"{name} button opens the Challenger's native pile browser");
+            Require(pile.Cards.SequenceEqual(cards) && actor.State.Hand.Cards.SequenceEqual(hand) &&
+                AllRng(actor.Player) == rng, $"{name} browsing preserves cards, pile order and RNG");
+            NCapstoneContainer.Instance!.Close();
+            await game.AwaitProcessFrame();
+        }
+        if (NativeDemoSafety.SharedVisible)
+        {
+            game.GetViewport().GuiReleaseFocus();
+            var clear = telegraph.FindChildren("*", "Button", true, false).OfType<Button>()
+                .Single(button => button.Text == "Clear");
+            clear.EmitSignal(Button.SignalName.Pressed);
+            await game.AwaitProcessFrame();
+            var hoverContainer = game.HoverTipsContainer
+                ?? throw new InvalidOperationException("Native hover container missing.");
+            Require(hoverContainer.GetChildren().OfType<Control>()
+                .All(control => control.Name != "ChallengerCardPreview" || !control.Visible),
+                "shared-visible preview dismissed without moving the desktop pointer");
+        }
+    }
+
+    private static void AssertChallengerHandPosition(NativeChallenger actor)
+    {
+        var node = actor.Body.GetCreatureNode()!;
+        var telegraph = node.GetNode<ChallengerTelegraph>("ChallengerTelegraph");
+        var expectedX = Mathf.Clamp(node.Visuals.IntentPosition.GlobalPosition.X - telegraph.Size.X / 2f,
+            16f, Mathf.Max(16f, telegraph.GetViewportRect().Size.X - telegraph.Size.X - 16f));
+        Require(Mathf.IsEqualApprox(telegraph.GlobalPosition.X, expectedX),
+            "Challenger hand stays anchored above its owner regardless of orb positions");
+    }
+
     private static async Task Finish(NGame game, RunState run, NativeChallenger actor, long initialRevision, string outcome)
     {
         await WaitFor(() => NOverlayStack.Instance?.Peek() is NGameOverScreen);
@@ -297,5 +396,7 @@ internal static class NativeDemoPlaytest
         var error = game.GetViewport().GetTexture().GetImage().SavePng(Path.Combine(NativeDemoSafety.RuntimePath, stage + ".png"));
         if (error != Error.Ok)
             throw new InvalidOperationException($"Smoke capture {stage}: {error}");
+        NativeDemoObserver.RecordCapture(stage);
+        MainFile.Logger.Info($"NATIVE CAPTURE stage={stage} focused={game.GetWindow().HasFocus()} frames={Engine.GetProcessFrames()}");
     }
 }

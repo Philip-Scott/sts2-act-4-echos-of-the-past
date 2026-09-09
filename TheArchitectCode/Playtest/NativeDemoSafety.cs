@@ -13,6 +13,7 @@ namespace TheArchitect.TheArchitectCode.Playtest;
 internal static class NativeDemoSafety
 {
     internal static bool Enabled => CommandLineHelper.HasArg("architect-native-test");
+    internal static bool SharedVisible => Enabled && CommandLineHelper.HasArg("architect-shared-visible");
     internal static string RuntimePath { get; private set; } = "";
 
     internal static void Initialize()
@@ -35,6 +36,8 @@ internal static class NativeDemoSafety
         saves.SettingsSave.SkipIntroLogo = true;
         saves.SettingsSave.SeenEaDisclaimer = true;
         saves.SettingsSave.ModSettings = new ModSettings { PlayerAgreedToModLoading = true };
+        if (SharedVisible)
+            saves.SettingsSave.LimitFpsInBackground = false;
         MainFile.Logger.Info($"INPROCESS ISOLATION steam=false stores=memory userData={OS.GetUserDataDir()} pid={Environment.ProcessId}");
     }
 }

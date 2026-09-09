@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${1:-}" != "--exclusive-window" ]]; then
+    exec python3 "$(dirname "$0")/native-demo.py" "$@"
+fi
+
 # Run only in an explicitly reserved game window. The installed mod directory is never modified.
 if [[ "${1:-}" != "--exclusive-window" || $# -lt 2 || $# -gt 3 ]]; then
     echo "Usage: bash scripts/native-demo.sh --exclusive-window /absolute/path/to/game [--loss|--nondefect|--poison|--corruption]" >&2
@@ -30,7 +34,8 @@ mods="$(realpath "${ARCHITECT_MODS_INPUT:-$root/artifacts/mods}")"
 test -f "$mods/TheArchitect/TheArchitect.dll"
 test -f "$game/mods/BaseLib/BaseLib.dll"
 test -f "${XAUTHORITY:?X11 authorization required}"
-runtime="$root/artifacts/native-demo/run-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$root/artifacts/native-demo"
+runtime="$(mktemp -d "$root/artifacts/native-demo/run-$(date +%Y%m%d-%H%M%S)-visible-XXXXXX")"
 mkdir -p "$runtime/home" "$runtime/xdg" "$runtime/tmp" "$runtime/config" "$runtime/cache"
 if [[ -z "${ARCHITECT_MODS_INPUT:-}" ]]; then
     mkdir -p "$mods/BaseLib"

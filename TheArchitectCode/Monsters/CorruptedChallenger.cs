@@ -6,6 +6,7 @@ using MegaCrit.Sts2.Core.Bindings.MegaSpine;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.MonsterMoves.MonsterMoveStateMachine;
@@ -27,6 +28,20 @@ public sealed class CorruptedChallenger : CustomMonsterModel
     private bool _transitioned;
     public NativeChallenger? Native { get; private set; }
     private CharacterModel Character => _character ?? ModelDb.Character<Ironclad>();
+    public override LocString Title
+    {
+        get
+        {
+            if (_character == null)
+                return base.Title;
+            var characterTitle = new LocString("monsters", Id.Entry + ".characters." + _character.Id.Entry);
+            if (characterTitle.Exists())
+                return characterTitle;
+            var title = new LocString("monsters", Id.Entry + ".characterName");
+            title.Add("Character", _character.Title);
+            return title;
+        }
+    }
     public override int MinInitialHp => _maxHp;
     public override int MaxInitialHp => _maxHp;
     public override string? CustomAttackSfx => Character.AttackSfx;
