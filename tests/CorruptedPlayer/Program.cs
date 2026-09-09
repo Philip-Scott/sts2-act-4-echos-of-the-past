@@ -32,6 +32,25 @@ string Json<T>(T value) => JsonSerializer.Serialize(value);
 CorruptedPlayerPlan Plan(params CardDescriptor[] cards) => planner.BuildPlan(State(cards), inputs);
 void Register(string id, Func<CardDescriptor, AdapterContext, AdapterResult> recipe) => registry.Register(new TestAdapter(id, recipe));
 
+foreach (int ascension in new[] { 0, 1, 7, 8, 9, 10 })
+{
+    Test($"maximum HP scales from the original snapshot at A{ascension}", () =>
+    {
+        Check(CorruptedPlayerHealth.CalculateMaxHp(80, ascension) == (ascension >= 8 ? 200 : 160));
+        Check(CorruptedPlayerHealth.CalculateMaxHp(81, ascension) == (ascension >= 8 ? 203 : 162));
+        Check(CorruptedPlayerHealth.CalculateMaxHp(1, ascension) == (ascension >= 8 ? 3 : 2));
+    });
+}
+Test("maximum HP scaling rejects nonpositive snapshot HP", () =>
+{
+    foreach (int hp in new[] { 0, -1 })
+    {
+        try { CorruptedPlayerHealth.CalculateMaxHp(hp, 8); }
+        catch (ArgumentOutOfRangeException) { continue; }
+        throw new InvalidOperationException("Invalid snapshot HP must not produce enemy HP.");
+    }
+});
+
 Test("five-card draw, three energy, original input unchanged", () =>
 {
     var state = State(Enumerable.Range(0, 8).Select(i => Card(i.ToString())).ToArray());
