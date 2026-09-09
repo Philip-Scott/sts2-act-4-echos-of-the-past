@@ -468,7 +468,7 @@ def main():
     cache.add_argument("--cache-from", help="Copy shader caches from this completed run ID.")
     cache.add_argument("--cold", action="store_true", help="Do not seed shader caches from a completed run.")
     scenarios = run.add_mutually_exclusive_group()
-    for scenario in ("loss", "nondefect", "poison", "ancient", "saved-run", "relic-art"):
+    for scenario in ("loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "previews"):
         scenarios.add_argument("--" + scenario, dest="scenario", action="store_const", const=scenario)
     run.set_defaults(scenario="default")
     for action in ("status", "capture", "stop", "pointer", "click", "key", "_serve"):

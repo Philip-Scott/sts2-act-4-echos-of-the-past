@@ -194,12 +194,7 @@ public sealed class NativeCorruptedPlayer
                         _reasons[card] = reason.ToString();
                         continue;
                     }
-                    var candidate = card.TargetType switch
-                    {
-                        TargetType.AnyEnemy => _combat.GetOpponentsOf(Body).FirstOrDefault(c => c.IsHittable),
-                        TargetType.AnyAlly => _combat.GetTeammatesOf(Body).FirstOrDefault(c => c != Body && c.IsAlive),
-                        _ => null
-                    };
+                    var candidate = SelectTarget(card);
                     if (!card.IsValidTarget(candidate))
                     {
                         _reasons[card] = "No valid target";
@@ -372,6 +367,13 @@ public sealed class NativeCorruptedPlayer
         }
     }
 
+    internal Creature? SelectTarget(CardModel card) => card.TargetType switch
+    {
+        TargetType.AnyEnemy => _combat.GetOpponentsOf(Body).FirstOrDefault(c => c.IsHittable),
+        TargetType.AnyAlly => _combat.GetTeammatesOf(Body).FirstOrDefault(c => c != Body && c.IsAlive),
+        _ => null
+    };
+
     public void Show(CorruptedPlayerTelegraph telegraph)
     {
         var pile = State.Hand;
@@ -383,7 +385,8 @@ public sealed class NativeCorruptedPlayer
             var unsupported = UnsupportedReason(card);
             return new CorruptedPlayerTelegraphCard(card, id, card.Id.Entry, null, unsupported != null, [],
                 new Dictionary<string, decimal>(), NativeCurrentState: true,
-                Status: unsupported ?? _reasons.GetValueOrDefault(card));
+                Status: unsupported ?? _reasons.GetValueOrDefault(card),
+                PreviewTarget: unsupported == null ? SelectTarget(card) : null);
         }).ToArray(), false);
         telegraph.SetNativePlayer(Player);
     }

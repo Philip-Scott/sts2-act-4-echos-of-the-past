@@ -72,6 +72,11 @@ An empty hand stays empty in the preview; neither the draw pile nor the discard
 pile is presented as playable cards. Native cards enlarge on hover or keyboard/
 controller focus and dismiss when the pointer or focus leaves. Clicking does not
 pin a preview, so there is no Clear button.
+Supported hand cards and their hover previews use native combat values, including
+the Corrupted Player's Strength/Weak and its current target's Vulnerable.
+All-enemy and random-enemy attacks use native multi-target preview rules.
+Values refresh with live state, without predicting earlier cards' effects,
+future draws or power expiry. Unsupported cards retain unpowered previews.
 The enemy is named for its saved character (for example, "Corrupted Ironclad").
 This is a state preview, **not an exact future-damage forecast**.
 
@@ -118,6 +123,8 @@ bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --label car
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --loss
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --nondefect
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --poison
+# Focused hand/hover modifier coverage, including native damage after preview:
+bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --previews
 ```
 
 The script's historical name does not enable a fixture engine. Its explicit

@@ -24,7 +24,8 @@ public sealed record CorruptedPlayerTelegraphCard(
     IReadOnlyList<CorruptedPlayerTelegraphIntent> Intents,
     IReadOnlyDictionary<string, decimal> PreviewValues,
     bool NativeCurrentState = false,
-    string? Status = null);
+    string? Status = null,
+    Creature? PreviewTarget = null);
 
 public partial class CorruptedPlayerTelegraph : VBoxContainer
 {
@@ -332,7 +333,15 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
 
     private static void UpdateCardText(NCard node, CorruptedPlayerTelegraphCard entry)
     {
+        if (entry.NativeCurrentState && !entry.Unsupported)
+        {
+            node.SetForceUnpoweredPreview(false);
+            node.SetPreviewTarget(entry.PreviewTarget);
+            node.UpdateVisuals(PileType.Hand, CardPreviewMode.MultiCreatureTargeting);
+            return;
+        }
         node.SetForceUnpoweredPreview(true);
+        node.SetPreviewTarget(null);
         node.UpdateVisuals(PileType.Deck, CardPreviewMode.Normal);
         var card = entry.Card!;
         // NCard clears PreviewValue during UpdateVisuals. Apply the frozen values afterwards,

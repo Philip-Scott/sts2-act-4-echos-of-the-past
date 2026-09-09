@@ -148,6 +148,7 @@ internal static class NativeCombatCallSites
         foreach (var type in typeof(CardModel).Assembly.GetTypes().Where(t =>
             t.Namespace?.StartsWith("MegaCrit.Sts2.Core.Models", StringComparison.Ordinal) == true ||
             t.Namespace?.StartsWith("MegaCrit.Sts2.Core.Entities", StringComparison.Ordinal) == true ||
+            t.Namespace?.StartsWith("MegaCrit.Sts2.Core.Localization.DynamicVars", StringComparison.Ordinal) == true ||
             t.Namespace == "MegaCrit.Sts2.Core.Combat" ||
             t.Namespace == "MegaCrit.Sts2.Core.Commands" ||
             t.Namespace == "MegaCrit.Sts2.Core.Nodes.Orbs"))

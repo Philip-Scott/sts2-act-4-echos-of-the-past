@@ -45,9 +45,18 @@ terminal snapshot; relics, Gold, potions, and combat-only Glam do not.
 The Unwritten uses an initial sigil presentation and eight original, individually
 illustrated relic icons, with matching inventory, selection-outline, and large
 inspection textures. Editable SVG sources accompany the PNG assets.
-Mirror can copy all owned relic types, including modded relics, without a
-compatibility list. Only Mirror itself and melted copies are excluded; copied
-relics keep their normal acquisition behavior, requirements, and drawbacks.
+Mirror can copy owned relic types, including modded relics, by default.
+Its blocklist excludes Mirror itself, Touch of Orobas, Pael's Eye, Golden Compass,
+Fur Coat, Lord's Parasol, Archaic Tooth, Paper Krane, Paper Phrog, Lava Rock,
+Winged Boots, and Byrdpip; melted copies are also excluded. At least three
+distinct eligible types are required for Mirror to be offered. The shared
+blocklist in `TheArchitectCode/Relics/MirrorDuplication.cs` applies to both offers
+and duplication. Copied relics keep their normal acquisition behavior,
+requirements, and drawbacks. Dusty Tome retains its prepared card, Sea Glass
+retains its selected character, and Girya retains its current training (including
+all three lifts when fully trained). Other counters still start fresh. When
+several copies of a type are owned, the first non-melted copy in inventory supplies
+this state. All three copies are prepared before any pickup effect runs.
 Older saves already in the Architect Act retain their original three-stop route.
 Interrupted nested rewards inherit native Ancient limitations, not a new
 crash-safe transaction system.
