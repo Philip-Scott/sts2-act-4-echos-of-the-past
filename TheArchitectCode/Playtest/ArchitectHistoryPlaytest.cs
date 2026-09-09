@@ -27,16 +27,14 @@ internal static class ArchitectHistoryPlaytest
     private static bool _started;
     private static bool Enabled => CommandLineHelper.HasArg("architect-history-setup");
     private static bool ResumeEnabled => CommandLineHelper.HasArg("architect-resume-slot2");
-    private static readonly Lazy<Setup> Configuration = new(() =>
+    private static readonly Lazy<ArchitectHistorySetup> Configuration = new(() =>
     {
         var path = CommandLineHelper.GetValue("architect-history-setup");
         if (path == null || !Path.IsPathFullyQualified(path))
             throw new InvalidOperationException("History setup requires an absolute configuration file path.");
-        var setup = JsonSerializer.Deserialize<Setup>(File.ReadAllText(path)) ??
+        var setup = JsonSerializer.Deserialize<ArchitectHistorySetup>(File.ReadAllText(path)) ??
             throw new InvalidDataException("History setup configuration is empty.");
-        if (setup.ProfileId != 2 || setup.MaxEnergy <= 0 || setup.BaseOrbSlotCount < 0 ||
-            !Path.IsPathFullyQualified(setup.OutputDirectory))
-            throw new InvalidDataException("History setup is restricted to Slot 2 and valid base resources.");
+        setup.Validate();
         return setup;
     });
 
@@ -83,7 +81,7 @@ internal static class ArchitectHistoryPlaytest
         var setup = Configuration.Value;
         var saves = SaveManager.Instance;
         if (saves.CurrentProfileId != setup.ProfileId || saves.HasRunSave || saves.HasMultiplayerRunSave)
-            throw new InvalidOperationException("History setup requires empty Slot 2; existing runs are never overwritten.");
+            throw new InvalidOperationException($"History setup requires the selected, empty Slot {setup.ProfileId}; existing runs are never overwritten.");
         if (NativeDemoSafety.Enabled)
             throw new InvalidOperationException("History setup cannot use the in-memory native demo save store.");
 
@@ -127,7 +125,7 @@ internal static class ArchitectHistoryPlaytest
         var snapshot = new CorruptedPlayerSnapshot(opponent.Player.Character.ToString(), opponent.MaxHp,
             snapshotCards, CorruptedPlayerSnapshot.Hash(opponent.Player.Character.ToString(), opponent.MaxHp, snapshotCards));
         if (CorruptedPlayerStore.Commit("history-setup-" + opponent.History.StartTime, "HistoryVictory", snapshot) == null)
-            throw new IOException("Could not persist Slot 2's Corrupted Player.");
+            throw new IOException($"Could not persist Slot {setup.ProfileId}'s Corrupted Player.");
         var player = run.Players.Single();
         if (setup.ForceMirror && !HandheldMirror.CanOffer(player))
             throw new InvalidDataException("The selected victory does not own three distinct Mirror source relics.");
@@ -162,7 +160,7 @@ internal static class ArchitectHistoryPlaytest
             Offers = unwritten.CurrentOptions.Select(option => option.Relic!.Id.ToString()).ToArray(),
             SaveDirectory = ProjectSettings.GlobalizePath(saves.GetProfileScopedPath("saves"))
         }, new JsonSerializerOptions { WriteIndented = true }));
-        MainFile.Logger.Info($"HISTORY SETUP READY: Slot 2, original victory loadout, saved opponent, " +
+        MainFile.Logger.Info($"HISTORY SETUP READY: Slot {setup.ProfileId}, original victory loadout, saved opponent, " +
             $"and {(setup.ForceMirror ? "Mirror offered" : "natural Ancient offers")}.");
     }
 
@@ -203,7 +201,4 @@ internal static class ArchitectHistoryPlaytest
     }
 
     private sealed record Victory(RunHistory History, RunHistoryPlayer Player, int MaxHp, int CurrentHp, int Gold);
-    private sealed record Setup(int ProfileId, string PlayerHistoryPath, string OpponentHistoryPath,
-        string OutputDirectory, string Seed, int MaxEnergy, int BaseOrbSlotCount, bool ForceMirror = true);
-
 }

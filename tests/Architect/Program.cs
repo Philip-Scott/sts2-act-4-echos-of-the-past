@@ -10,6 +10,8 @@ using BaseLib.Utils;
 using System.Reflection;
 using MegaCrit.Sts2.Core.Models.RelicPools;
 using TheArchitect.TheArchitectCode.Relics;
+using TheArchitect.TheArchitectCode.Playtest;
+using System.Text.Json;
 
 int passed = 0;
 
@@ -165,6 +167,44 @@ Test("Unwritten: each relic uses its own small, outline and large icon", () =>
         Check(paths.Add(relic.PackedIconPath), slug);
     }
     Check(paths.Count == 8);
+});
+
+Test("history setup: all native target slots accept a natural-offer configuration", () =>
+{
+    var root = Path.GetTempPath();
+    foreach (var slot in new[] { 1, 2, 3 })
+    {
+        var setup = new ArchitectHistorySetup(slot, Path.Combine(root, "player.run"),
+            Path.Combine(root, "opponent.run"), Path.Combine(root, "ready"), "NATURAL-SEED", 3, 0, false);
+        setup.Validate();
+        var restored = JsonSerializer.Deserialize<ArchitectHistorySetup>(JsonSerializer.Serialize(setup))!;
+        restored.Validate();
+        Check(restored.ProfileId == slot && !restored.ForceMirror && restored.Seed == "NATURAL-SEED");
+    }
+});
+
+Test("history setup: invalid target slots, paths and resource values fail explicitly", () =>
+{
+    var root = Path.GetTempPath();
+    var valid = new ArchitectHistorySetup(2, Path.Combine(root, "player.run"),
+        Path.Combine(root, "opponent.run"), Path.Combine(root, "ready"), "SEED", 3, 0);
+    var invalid = new[]
+    {
+        valid with { ProfileId = 0 }, valid with { ProfileId = 4 },
+        valid with { MaxEnergy = 0 }, valid with { BaseOrbSlotCount = -1 },
+        valid with { PlayerHistoryPath = "relative.run" },
+        valid with { OpponentHistoryPath = "" },
+        valid with { OutputDirectory = "relative" },
+        valid with { Seed = " " }
+    };
+    foreach (var setup in invalid)
+    {
+        var rejected = false;
+        try { setup.Validate(); }
+        catch (InvalidDataException) { rejected = true; }
+        Check(rejected, $"Invalid setup was accepted: {setup}");
+    }
+    Check(valid.ForceMirror, "Legacy Mirror-specific configurations retain their default.");
 });
 
 Console.WriteLine($"{passed} Architect tests passed.");

@@ -93,10 +93,16 @@ It uses disposable saves and the worktree's `artifacts/mods`, never the live mod
 installation. The `architect` command includes The Unwritten; the direct
 boss bootstrap below intentionally remains a combat-only entry.
 
-`--architect-history-setup /absolute/path/to/config.json` prepares a live Slot 2
+The repository skill [`setup-act4`](.github/skills/setup-act4/SKILL.md) coordinates
+this setup from random victory histories: source Slot 1 to modded Slot 2 by
+default, with backups and naturally rolled Ancient offers. Explicit slot
+overrides are supported.
+
+`--architect-history-setup /absolute/path/to/config.json` prepares a live selected-slot
 run from two single-player victory histories and opens The Unwritten with Mirror
-offered by the selected native seed. Select Slot 2 and back it up first; the
-launcher refuses another slot or an active run. The configuration supplies `ProfileId` (2),
+offered by the selected native seed unless disabled below. Select the target and
+back it up first; the launcher refuses a mismatched slot or an active run.
+The configuration supplies `ProfileId` (1, 2 or 3),
 `PlayerHistoryPath`, `OpponentHistoryPath`, `OutputDirectory`, a `Seed` prefix,
 and explicit historical `MaxEnergy` / `BaseOrbSlotCount` values, which run history
 does not store. Deck upgrades, enchantments, relic state, potions, HP and Gold are
