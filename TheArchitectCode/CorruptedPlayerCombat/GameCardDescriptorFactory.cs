@@ -7,7 +7,7 @@ using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
 
-namespace TheArchitect.TheArchitectCode.Challenger;
+namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 /// <summary>Reconstructs detached cards, but never invokes play, previews, global hooks, or calculated values.</summary>
 public sealed class GameCardDescriptorFactory : ICardDescriptorFactory<SerializableCard>

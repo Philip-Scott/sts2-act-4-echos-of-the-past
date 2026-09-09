@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace TheArchitect.TheArchitectCode.Challenger;
+namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 internal static class SavedCardModifierPolicy
 {

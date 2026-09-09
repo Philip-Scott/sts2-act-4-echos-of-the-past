@@ -1,15 +1,15 @@
 using System.Collections.Immutable;
 
-namespace TheArchitect.TheArchitectCode.Challenger;
+namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
-public sealed class ChallengerPlanner(ExactCardAdapterRegistry registry)
+public sealed class CorruptedPlayerPlanner(ExactCardAdapterRegistry registry)
 {
     public const int HandLimit = 10;
     public const int SelectionLimit = 20;
     public const int StartingEnergy = 3;
     public const int DrawPerTurn = 5;
 
-    public ChallengerPlan BuildPlan(ChallengerState state, PlannerInputs inputs)
+    public CorruptedPlayerPlan BuildPlan(CorruptedPlayerState state, PlannerInputs inputs)
     {
         ValidateState(state);
         if (inputs.Opponents.IsDefault || inputs.Opponents.Any(p => p.Slot < 0) ||
@@ -210,20 +210,20 @@ public sealed class ChallengerPlanner(ExactCardAdapterRegistry registry)
                 hand.Remove(card);
             }
         }
-        var next = new ChallengerState(state.Version, checked(state.Turn + 1), rng.State, generatedCount,
+        var next = new CorruptedPlayerState(state.Version, checked(state.Turn + 1), rng.State, generatedCount,
             draw.ToImmutableArray(), hand.ToImmutableArray(), discard.ToImmutableArray(), exhaust.ToImmutableArray());
         return new(next.Turn, cards.ToImmutable(), next, diagnostics.ToImmutable());
     }
 
-    public static void ValidateState(ChallengerState state)
+    public static void ValidateState(CorruptedPlayerState state)
     {
-        if (state.Version != ChallengerState.CurrentVersion || state.Turn < 0 || state.GeneratedCount < 0 ||
+        if (state.Version != CorruptedPlayerState.CurrentVersion || state.Turn < 0 || state.GeneratedCount < 0 ||
             state.Draw.IsDefault || state.Hand.IsDefault || state.Discard.IsDefault || state.Exhaust.IsDefault ||
             state.Hand.Length > HandLimit)
-            throw new ArgumentException("Invalid Challenger state or unsupported RNG schema.");
+            throw new ArgumentException("Invalid Corrupted Player state or unsupported RNG schema.");
         var all = state.Draw.Concat(state.Hand).Concat(state.Discard).Concat(state.Exhaust).ToArray();
         if (all.Any(c => c == null || string.IsNullOrWhiteSpace(c.InstanceId)) ||
             all.Select(c => c.InstanceId).Distinct(StringComparer.Ordinal).Count() != all.Length)
-            throw new ArgumentException("Challenger piles contain duplicate or invalid instances.");
+            throw new ArgumentException("Corrupted Player piles contain duplicate or invalid instances.");
     }
 }

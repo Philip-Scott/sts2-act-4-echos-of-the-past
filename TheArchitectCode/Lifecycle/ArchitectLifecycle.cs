@@ -80,7 +80,7 @@ internal static class EnterArchitectActPatch
 }
 
 [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetActInternal))]
-internal static class CaptureChallengerAtEntryPatch
+internal static class CaptureCorruptedPlayerAtEntryPatch
 {
     private static void Prefix(RunManager __instance, int actIndex)
     {
@@ -129,8 +129,8 @@ internal static class ArchitectOutcomePatch
         {
             state.Outcome = isVictory ? "ArchitectWin" : "ArchitectLoss";
             if (__instance.ShouldSave)
-                state.SnapshotRevision = ChallengerStore.Commit(state.Id, state.Outcome,
-                    ChallengerSnapshot.Capture(run.Players[0]));
+                state.SnapshotRevision = CorruptedPlayerStore.Commit(state.Id, state.Outcome,
+                    CorruptedPlayerSnapshot.Capture(run.Players[0]));
         }
         isVictory = true;
     }

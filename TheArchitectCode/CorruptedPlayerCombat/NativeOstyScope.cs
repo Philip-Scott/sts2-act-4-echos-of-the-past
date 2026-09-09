@@ -7,7 +7,7 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 
-namespace TheArchitect.TheArchitectCode.Challenger;
+namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 [HarmonyPatch]
 internal static class NativeOstyScope
@@ -41,5 +41,5 @@ internal static class NativeOstyScope
     }
 
     private static ICombatState? Scope(Player player) =>
-        NativeChallenger.TryGet(player, out var actor) ? actor.View : player.Creature.CombatState;
+        NativeCorruptedPlayer.TryGet(player, out var actor) ? actor.View : player.Creature.CombatState;
 }

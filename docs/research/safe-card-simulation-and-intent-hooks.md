@@ -52,10 +52,10 @@ for BaseLib itself.
 
 ### Recommended representation
 
-Create a `ChallengerMonsterModel : BaseLib.Abstracts.CustomMonsterModel`.
-Store a read-only `ChallengerSnapshot` (character ID, max/current HP if desired,
+Create a `CorruptedPlayerMonsterModel : BaseLib.Abstracts.CustomMonsterModel`.
+Store a read-only `CorruptedPlayerSnapshot` (character ID, max/current HP if desired,
 serialized deck, and a deterministic simulation seed) on a separate service or
-the monster model. The challenger is visually a former player character, but
+the monster model. The Corrupted Player is visually a former player character, but
 mechanically remains a monster.
 
 This respects the engine's split:
@@ -141,14 +141,14 @@ Dynamic calculations are not generally safe to evaluate: for example,
 ([BodySlam](https://github.com/zhiyue/sts2-rl-agent/blob/1b7e7ce35e608722650763938c153ea8bc370333/decompiled/MegaCrit.Sts2.Core.Models.Cards/BodySlam.cs#L14-L35)).
 
 Never call `TryManualPlay`, `OnPlayWrapper`, or reflected `OnPlay` for the
-challenger. The wrapper spends player resources, moves cards among combat
+Corrupted Player. The wrapper spends player resources, moves cards among combat
 piles, invokes hooks/history, and executes card/enchantment/affliction code
 ([CardModel](https://github.com/zhiyue/sts2-rl-agent/blob/1b7e7ce35e608722650763938c153ea8bc370333/decompiled/MegaCrit.Sts2.Core.Models/CardModel.cs#L1395-L1435),
 [execution](https://github.com/zhiyue/sts2-rl-agent/blob/1b7e7ce35e608722650763938c153ea8bc370333/decompiled/MegaCrit.Sts2.Core.Models/CardModel.cs#L1437-L1507)).
 
 ## 3. Pure simulation and supported action translation
 
-Use a mod-owned, pure `ChallengerPlanner`; do not instantiate a hidden
+Use a mod-owned, pure `CorruptedPlayerPlanner`; do not instantiate a hidden
 `PlayerCombatState`. Its state should be plain data:
 
 ```text
@@ -165,7 +165,7 @@ invoke draw/shuffle hooks, and use the live run RNG
 ([CardPileCmd.Draw](https://github.com/zhiyue/sts2-rl-agent/blob/1b7e7ce35e608722650763938c153ea8bc370333/decompiled/MegaCrit.Sts2.Core.Commands/CardPileCmd.cs#L720-L779),
 [shuffle](https://github.com/zhiyue/sts2-rl-agent/blob/1b7e7ce35e608722650763938c153ea8bc370333/decompiled/MegaCrit.Sts2.Core.Commands/CardPileCmd.cs#L782-L829)).
 
-Likewise, use an explicit challenger energy budget and adapter-declared costs.
+Likewise, use an explicit Corrupted Player energy budget and adapter-declared costs.
 The real cost path can invoke global combat hooks and X-cost reads the owning
 player's energy
 ([CardEnergyCost](https://github.com/zhiyue/sts2-rl-agent/blob/1b7e7ce35e608722650763938c153ea8bc370333/decompiled/MegaCrit.Sts2.Core.Entities.Cards/CardEnergyCost.cs#L56-L100)).
@@ -251,7 +251,7 @@ from the model
 ([binding](https://github.com/zhiyue/sts2-rl-agent/blob/1b7e7ce35e608722650763938c153ea8bc370333/decompiled/MegaCrit.Sts2.Core.Nodes.Cards/NCard.cs#L355-L379),
 [visual reload](https://github.com/zhiyue/sts2-rl-agent/blob/1b7e7ce35e608722650763938c153ea8bc370333/decompiled/MegaCrit.Sts2.Core.Nodes.Cards/NCard.cs#L820-L903)).
 
-Place a mod-owned `Control` above the challenger in its custom visuals scene,
+Place a mod-owned `Control` above the Corrupted Player in its custom visuals scene,
 create one scaled, non-interactive `NCard` per planned card, and return pooled
 nodes correctly when the plan changes. Keep preview models out of all live
 piles and never call `SetPreviewTarget`/`UpdateVisuals` for unsupported cards:
@@ -289,20 +289,20 @@ labels only for attack/status intents
 ## Recommended architecture
 
 ```text
-SavedChallengerSource
+SavedCorruptedPlayerSource
   -> List<SerializableCard>
   -> CardReconstructor (base-game FromSerializable; no owner/piles)
   -> CardDescriptorFactory
        -> exact ModelId adapter registry
        -> structural metadata for display only
        -> Supported | PlannerOnly | Unsupported | MissingModel
-  -> ChallengerPlanner (pure state, own RNG, energy, piles, policy)
+  -> CorruptedPlayerPlanner (pure state, own RNG, energy, piles, policy)
   -> PlannedTurn
        cards[] + translated action DTOs + fallback diagnostics
-  -> ChallengerMonsterModel.GenerateMoveStateMachine()
+  -> CorruptedPlayerMonsterModel.GenerateMoveStateMachine()
        action DTOs -> BaseLib MoveBuilder/MonsterActions
        summaries -> built-in/custom AbstractIntent[]
-  -> ChallengerPreviewControl
+  -> CorruptedPlayerPreviewControl
        detached NCard/custom miniatures + badges
 ```
 
@@ -316,7 +316,7 @@ collects action delegates and intents before constructing the state
 ## Safety constraints
 
 - Never execute a saved card's `OnPlay` or card-play wrapper.
-- Never make the challenger a `Player`, add it to `CombatState.Players`, or
+- Never make the Corrupted Player a `Player`, add it to `CombatState.Players`, or
   borrow the live player's `PlayerCombatState`.
 - Never attach preview card models to live run/combat piles.
 - Allowlist exact `ModelId`s and power types; reject unknown mod versions.
@@ -347,7 +347,7 @@ collects action delegates and intents before constructing the state
    enchanted, X-cost, calculated, and modded cards. Use the custom-thumbnail
    fallback if any accesses `Owner`, `CombatState`, or live hooks.
 5. **Exact simulation semantics:** a pure planner intentionally does not run
-   relic/power/card hooks. Label it a challenger policy, not an exact replay of
+   relic/power/card hooks. Label it a Corrupted Player policy, not an exact replay of
    the original player's combat engine.
 6. **Mixed aggregate damage:** decide between several native attack intents and
    a custom summary intent; never show mathematically false `damage × hits`.
@@ -362,4 +362,4 @@ collects action delegates and intents before constructing the state
    ([base-game Architect](https://github.com/zhiyue/sts2-rl-agent/blob/1b7e7ce35e608722650763938c153ea8bc370333/decompiled/MegaCrit.Sts2.Core.Models.Monsters/Architect.cs#L9-L24)),
    while model entries are slugified from CLR type names
    ([ModelDb](https://github.com/zhiyue/sts2-rl-agent/blob/1b7e7ce35e608722650763938c153ea8bc370333/decompiled/MegaCrit.Sts2.Core.Models/ModelDb.cs#L295-L323)).
-   Use a distinct class/entry such as `PastSelfChallenger`, not `Architect`.
+   Use a distinct class/entry such as `PastSelfCorruptedPlayer`, not `Architect`.

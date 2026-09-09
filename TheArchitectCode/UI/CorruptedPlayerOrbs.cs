@@ -7,14 +7,14 @@ using MegaCrit.Sts2.Core.Nodes.Orbs;
 
 namespace TheArchitect.TheArchitectCode.UI;
 
-internal static class ChallengerOrbs
+internal static class CorruptedPlayerOrbs
 {
     private static readonly ConditionalWeakTable<Creature, NOrbManager> Managers = new();
 
     internal static void Attach(NCreature node)
     {
         if (node.OrbManager != null)
-            throw new InvalidOperationException("The Challenger already has an orb manager.");
+            throw new InvalidOperationException("The Corrupted Player already has an orb manager.");
         var manager = NOrbManager.Create(node, isLocal: false);
         AccessTools.PropertySetter(typeof(NCreature), nameof(NCreature.OrbManager)).Invoke(node, [manager]);
         node.AddChild(manager);

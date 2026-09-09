@@ -13,20 +13,20 @@ using MegaCrit.Sts2.Core.MonsterMoves.MonsterMoveStateMachine;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
-using TheArchitect.TheArchitectCode.Challenger;
+using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using TheArchitect.TheArchitectCode.UI;
 
 namespace TheArchitect.TheArchitectCode.Monsters;
 
-public sealed class CorruptedChallenger : CustomMonsterModel
+public sealed class CorruptedPlayer : CustomMonsterModel
 {
     private CharacterModel? _character;
     private IReadOnlyList<JsonElement>? _deck;
     private string? _seed;
     private int _maxHp = 80;
-    private ChallengerTelegraph? _telegraph;
+    private CorruptedPlayerTelegraph? _telegraph;
     private bool _transitioned;
-    public NativeChallenger? Native { get; private set; }
+    public NativeCorruptedPlayer? Native { get; private set; }
     private CharacterModel Character => _character ?? ModelDb.Character<Ironclad>();
     public override LocString Title
     {
@@ -58,7 +58,7 @@ public sealed class CorruptedChallenger : CustomMonsterModel
     {
         AssertMutable();
         if (_deck != null)
-            throw new InvalidOperationException("A Challenger can only be configured once.");
+            throw new InvalidOperationException("A Corrupted Player can only be configured once.");
         if (maxHp <= 0)
             throw new ArgumentOutOfRangeException(nameof(maxHp));
         _character = character;
@@ -72,7 +72,7 @@ public sealed class CorruptedChallenger : CustomMonsterModel
         var visuals = Character.CreateVisuals();
         var body = visuals.GetNode<Node2D>("%Visuals");
         body.Scale = new Vector2(-body.Scale.X, body.Scale.Y);
-        ChallengerCorruption.Attach(visuals);
+        CorruptedPlayerCorruption.Attach(visuals);
         return visuals;
     }
 
@@ -83,15 +83,15 @@ public sealed class CorruptedChallenger : CustomMonsterModel
     {
         await base.AfterAddedToRoom();
         if (_deck == null || _seed == null)
-            throw new InvalidOperationException("Configure the Challenger snapshot before adding it to combat.");
+            throw new InvalidOperationException("Configure the Corrupted Player snapshot before adding it to combat.");
         Creature.SetMaxHpInternal(_maxHp);
         Creature.SetCurrentHpInternal(_maxHp);
-        Native = new NativeChallenger(Creature, Character, _deck, _seed);
+        Native = new NativeCorruptedPlayer(Creature, Character, _deck, _seed);
         var node = Creature.GetCreatureNode();
         if (node != null)
         {
-            ChallengerOrbs.Attach(node);
-            _telegraph = ChallengerTelegraph.Attach(node, Creature, ShowNativeState);
+            CorruptedPlayerOrbs.Attach(node);
+            _telegraph = CorruptedPlayerTelegraph.Attach(node, Creature, ShowNativeState);
             Native.Changed += ShowNativeState;
             ShowNativeState();
         }
@@ -99,13 +99,13 @@ public sealed class CorruptedChallenger : CustomMonsterModel
 
     protected override MonsterMoveStateMachine GenerateMoveStateMachine()
     {
-        var move = new MoveState("CHALLENGER_NATIVE", ExecuteTurn);
+        var move = new MoveState("CORRUPTED_PLAYER_NATIVE", ExecuteTurn);
         move.FollowUpState = move;
         return new MonsterMoveStateMachine([move], move);
     }
 
     private Task ExecuteTurn(IReadOnlyList<Creature> targets) =>
-        (Native ?? throw new InvalidOperationException("The native Challenger has not been initialized.")).ExecuteTurn();
+        (Native ?? throw new InvalidOperationException("The native Corrupted Player has not been initialized.")).ExecuteTurn();
 
     public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature,
         bool wasRemovalPrevented, float deathAnimLength)

@@ -7,7 +7,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>THROWAWAY - Corrupted Challenger telegraph</title>
+<title>THROWAWAY - Corrupted Player telegraph</title>
 <style>
 * { box-sizing: border-box; }
 :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #111318; color: #f1efe8; }
@@ -30,9 +30,9 @@ button[aria-pressed="true"] { background: #554875; border-color: #decaff; }
 .figure .cloak { position: absolute; inset: 45px 0 0; clip-path: polygon(40% 0, 62% 0, 95% 90%, 72% 100%, 50% 89%, 10% 100%); background: #586d5a; }
 .figure .eye { position: absolute; width: 26px; height: 5px; left: 55px; top: 30px; background: #eeeccf; }
 .player { left: 214px; }
-.challenger { left: 654px; filter: drop-shadow(0 0 18px #b077d0); }
-.challenger .cloak { background: repeating-linear-gradient(115deg, #586d5a 0 27px, #83548d 28px 34px); }
-.challenger .eye { background: #f2b9ff; }
+.corrupted-player { left: 654px; filter: drop-shadow(0 0 18px #b077d0); }
+.corrupted-player .cloak { background: repeating-linear-gradient(115deg, #586d5a 0 27px, #83548d 28px 34px); }
+.corrupted-player .eye { background: #f2b9ff; }
 .architect { left: 1020px; top: 282px; transform: scale(1.17); opacity: .5; }
 .architect .cloak { background: #a38b68; }
 .architect .head { background: #aa966b; }
@@ -114,7 +114,7 @@ pre { white-space: pre-wrap; background: #1b1f28; padding: 12px; font-size: 12px
 </style>
 </head>
 <body>
-<h1>Corrupted Challenger / telegraph study</h1>
+<h1>Corrupted Player / telegraph study</h1>
 <p class="muted">THROWAWAY / approved C. Right-to-left play, per-card intents, card-only hover with keywords. Architect health hidden in Phase 1. Recreated arena and invented effects; not production UI.</p>
 <div class="controls">
   <label>Turn <select id="scene">
@@ -137,12 +137,12 @@ pre { white-space: pre-wrap; background: #1b1f28; padding: 12px; font-size: 12px
     <div class="arch"></div><div class="floor"></div>
     <div class="hud"><span>THE ARCHITECT / ACT IV</span><span>Player 62 / 80 HP &nbsp; | &nbsp; 0 block</span><span>Turn 3</span></div>
     <div class="figure player"><div class="cloak"></div><div class="head"></div><div class="eye"></div></div>
-    <div class="figure challenger"><div class="cloak"></div><div class="head"></div><div class="eye"></div></div>
+    <div class="figure corrupted-player"><div class="cloak"></div><div class="head"></div><div class="eye"></div></div>
     <div class="figure architect"><div class="cloak"></div><div class="head"></div><div class="eye"></div></div>
     <div class="nameplate" style="left:157px">Player / Silent<div class="health"></div>62 / 80</div>
     <div class="nameplate" style="left:597px">Corrupted Silent<div class="health"></div>80 / 80</div>
     <div class="nameplate muted" style="left:967px">The Architect<br><small>Waiting / Phase 1</small></div>
-    <section id="telegraph" class="telegraph" aria-label="Challenger planned turn"></section>
+    <section id="telegraph" class="telegraph" aria-label="Corrupted Player planned turn"></section>
     <aside id="inspector" class="inspector" aria-label="Card and turn inspection"></aside>
     <div class="energy">3 / 3</div>
     <div class="hand"><div>Strike</div><div>Defend</div><div>Skill</div><div>Strike</div><div>Defend</div></div>
@@ -156,7 +156,7 @@ pre { white-space: pre-wrap; background: #1b1f28; padding: 12px; font-size: 12px
 </section>
 <p id="variant-notes"></p>
 <p class="muted">Hover or focus for the card and its keyword tooltips; click to pin. Esc clears. Number badges mean right-to-left play order. Grayed cards keep their drawn positions but do not play and have no number.
-  Sword = attack, shield = Challenger block, up-arrow = Challenger Strength, down-arrow = Weak on player, ? = neutral fallback.
+  Sword = attack, shield = Corrupted Player block, up-arrow = Corrupted Player Strength, down-arrow = Weak on player, ? = neutral fallback.
   Attack values are incoming damage before player block, not HP loss. Each icon belongs only to the card above it.</p>
 <details><summary>Prototype state / approved presentation and fixture assumptions</summary><pre id="state"></pre></details>
 <nav class="switcher" aria-label="Prototype variant"><button id="prev" aria-label="Previous variant">&larr;</button><span id="variant-label"></span><button id="next" aria-label="Next variant">&rarr;</button></nav>
@@ -164,39 +164,39 @@ pre { white-space: pre-wrap; background: #1b1f28; padding: 12px; font-size: 12px
 const card = (name, type, cost, effect, description, hits = [], block = 0, other = '') =>
   ({ name, type, cost, effect, description, hits, block, other });
 const strike = () => card('Strike', 'attack', 1, '6 ATK', 'Deal 6 damage to the player.', [6]);
-const defend = () => card('Defend', 'skill', 1, '5 BLK', 'Gain 5 block on the Challenger.', [], 5);
+const defend = () => card('Defend', 'skill', 1, '5 BLK', 'Gain 5 block on the Corrupted Player.', [], 5);
 const flurry = () => card('Twin Cut', 'attack', 1, '4 x 2', 'Deal 4 damage twice to the player. Two separate hits.', [4, 4]);
-const power = () => card('Sharpen', 'power', 1, '+2 STR', 'Challenger gains 2 Strength before later cards resolve.', [], 0, 'Self +2 Strength');
+const power = () => card('Sharpen', 'power', 1, '+2 STR', 'Corrupted Player gains 2 Strength before later cards resolve.', [], 0, 'Self +2 Strength');
 const mark = () => card('Crippling Mark', 'skill', 1, '2 WEAK', 'Apply 2 Weak to the player. Does not change this incoming attack preview.', [], 0, 'Player 2 Weak');
 const unknown = () => card('Modded Echo', 'fallback', '?', 'NO EFFECT', 'Unsupported mechanic. Visible neutral fallback: this slot does nothing. Not the original card effect.', [], 0, '1 neutral fallback');
 const unplayed = (c, reason) => ({ ...c, unplayedReason: reason });
 const scenes = {
   basic: { cards: [strike(), defend(), strike()], question: 'What does each card do, in order?',
-    answer: 'Strike for 6, Challenger gains 5 block, Strike for 6. Each intent belongs only to the card above it.' },
+    answer: 'Strike for 6, Corrupted Player gains 5 block, Strike for 6. Each intent belongs only to the card above it.' },
   multi: { cards: [flurry(), defend(), strike()], question: 'What does each card do, including the number and size of its hits?',
-    answer: 'Twin Cut hits twice for 4 each. Defend gives the Challenger 5 block. Strike hits once for 6. The shield belongs to Defend, not to either attack.' },
+    answer: 'Twin Cut hits twice for 4 each. Defend gives the Corrupted Player 5 block. Strike hits once for 6. The shield belongs to Defend, not to either attack.' },
   status: { cards: [power(), card('Twin Cut', 'attack', 1, '6 x 2', 'Base 4 per hit + 2 Strength from step 1 = 6 per hit. Already included in the displayed attack value.', [6, 6]), mark()],
     question: 'What acts first, are the displayed hits already buffed, and which character receives the debuff?',
-    answer: 'Sharpen first gives the Challenger +2 Strength. Twin Cut then hits twice for 6 (already buffed). Crippling Mark applies 2 Weak to the player.' },
+    answer: 'Sharpen first gives the Corrupted Player +2 Strength. Twin Cut then hits twice for 6 (already buffed). Crippling Mark applies 2 Weak to the player.' },
   fallback: { startEnergy: 3, cards: [
     unplayed(strike(), 'Drawn first, but not selected to play. The planned X-cost card spends all 3 energy, leaving 0 for this 1-cost card.'),
-    card('Many Blades', 'attack', 'X', '3 x 3', 'First playable card: X equals the Challenger remaining energy, 3. Spend 3 energy and deal three hits of 3. No energy remains.', [3, 3, 3]),
+    card('Many Blades', 'attack', 'X', '3 x 3', 'First playable card: X equals the Corrupted Player remaining energy, 3. Spend 3 energy and deal three hits of 3. No energy remains.', [3, 3, 3]),
     unplayed(defend(), 'Drawn third. Cannot play: costs 1 energy, but 0 remains after the planned X-cost card.')
   ], question: 'Which drawn cards actually play, and what does the numbered card do?',
     answer: 'Only Many Blades plays, numbered 1 despite being in drawn position 2. X = 3 remaining energy, so it hits three times for 3. Strike and Defend remain gray in their original drawn positions, with no play numbers or active intents.' },
   overflow: { startEnergy: 9, cards: [power(), card('Twin Cut', 'attack', 1, '6 x 2', 'Two hits of 6, already including step 1 Strength.', [6, 6]), defend(), mark(), card('Strike', 'attack', 1, '8 ATK', '6 base + 2 Strength = 8 damage.', [8]), defend(), unknown(), card('Strike', 'attack', 1, '8 ATK', '6 base + 2 Strength = 8 damage.', [8]), card('Many Blades', 'attack', 'X', '5 x 2', 'Authored stress example: 9 starting energy, seven 1-cost cards, and a neutral fallback that consumes no energy in this fixture. X = 2 remaining energy; two hits of 5 including Strength. Fallback energy policy is not settled here.', [5, 5])],
     question: 'How many cards are planned, how do you see later cards, and what happens in slot 7?',
     answer: 'Nine planned cards. Scroll the row or inspect the full ordered list. Slot 7 is a neutral fallback with no effect. Each later card carries its own intent; there is no aggregate summary.' },
-  quiet: { cards: [defend(), power(), mark()], question: 'Will the Challenger attack? Who receives each non-damage effect?',
-    answer: 'No attack. Defend gives the Challenger 5 block; Sharpen gives it +2 Strength; Crippling Mark gives the player 2 Weak.' },
+  quiet: { cards: [defend(), power(), mark()], question: 'Will the Corrupted Player attack? Who receives each non-damage effect?',
+    answer: 'No attack. Defend gives the Corrupted Player 5 block; Sharpen gives it +2 Strength; Crippling Mark gives the player 2 Weak.' },
   mixed: { cards: [card('Sapping Cut', 'attack', 1, '7 ATK + 1 WEAK', 'Deal 7 damage, then apply 1 Weak to the player. Both icons belong to this card.', [7], 0, 'Player 1 Weak'), defend(), flurry()],
     question: 'Which card applies Weak, and is that in addition to or instead of its attack?',
-    answer: 'Sapping Cut (slot 1) both attacks for 7 and applies 1 Weak to the player. Defend (slot 2) gives the Challenger 5 block. Twin Cut (slot 3) hits twice for 4 each.' },
+    answer: 'Sapping Cut (slot 1) both attacks for 7 and applies 1 Weak to the player. Defend (slot 2) gives the Corrupted Player 5 block. Twin Cut (slot 3) hits twice for 4 each.' },
   unsupported: { cards: [unknown(), defend()], question: 'How is the unsupported card different from a gray unplayed card?',
     answer: 'The unsupported card is a visible numbered neutral-fallback slot, with a question-mark intent and NO EFFECT, not silently removed or shown with its original effect. A gray unplayed card has no play number or active intent. Fallback energy handling remains a simulation-design question.' }
 };
 const variants = {
-  A: { name: 'Alternate / local peek', note: 'Alternate A / Four miniatures then +N overflow. Per-card intent below each card. Inspection stays near the Challenger but can cover its body.' },
+  A: { name: 'Alternate / local peek', note: 'Alternate A / Four miniatures then +N overflow. Per-card intent below each card. Inspection stays near the Corrupted Player but can cover its body.' },
   B: { name: 'Alternate / side dossier', note: 'Alternate B / Five smaller cards with per-card intents. Inspection uses a right-side dossier; compare the cost to Architect visibility.' },
   C: { name: 'Selected / sliding row', note: 'Revised C / Play right to left. Three-and-a-bit cards in a horizontal rail, each with its own intent directly below. Scroll left for later cards. Hover shows only the card and its keyword tooltips. No aggregate summary; no Architect health bar during Phase 1.' }
 };
@@ -229,7 +229,7 @@ function state() {
   $('state').textContent = JSON.stringify({
     variant, turn: sceneKey, phase: 1, architectHealthVisible: false, startEnergy: current().startEnergy ?? 3, cards: current().cards,
     inspection: { pinned, selected: inspected },
-    decisions: ['Human selected C.', 'No Architect health bar until Phase 2.', 'Per-card intents directly below each card; no aggregate summary.', 'X uses remaining Challenger energy.', 'Unplayable cards stay gray in drawn positions; only playable cards are numbered.', 'Cards play right to left; overflow initially shows the rightmost cards.', 'Hover shows only the card and its keyword tooltips, not a custom explanation.'],
+    decisions: ['Human selected C.', 'No Architect health bar until Phase 2.', 'Per-card intents directly below each card; no aggregate summary.', 'X uses remaining Corrupted Player energy.', 'Unplayable cards stay gray in drawn positions; only playable cards are numbered.', 'Cards play right to left; overflow initially shows the rightmost cards.', 'Hover shows only the card and its keyword tooltips, not a custom explanation.'],
     assumptions: ['Authored examples, not real card data or energy simulation.', 'Damage includes preceding preview buffs, before player block.', 'Neutral fallback is visibly no effect; its energy and simulation semantics remain separate design work.'],
     approval: 'Human approved revised presentation on 2026-09-07 after iterative review.'
   }, null, 2);
@@ -284,7 +284,7 @@ function perCardIntents(c) {
     const text = c.hits.length === 1 ? c.hits[0] : equal ? `${c.hits[0]} x ${c.hits.length}` : c.hits.join('+');
     lines.push(intentLine('attack', text, `Attack player: ${c.hits.join(', ')} damage`));
   }
-  if (c.block) lines.push(intentLine('block', c.block, `Challenger gains ${c.block} block`));
+  if (c.block) lines.push(intentLine('block', c.block, `Corrupted Player gains ${c.block} block`));
   if (c.other.includes('Strength')) lines.push(intentLine('buff', '+2 STR', c.other));
   if (c.other.includes('Weak')) lines.push(intentLine('debuff', c.other.replace('Player ', '').toUpperCase(), c.other));
   if (c.type === 'fallback') lines.push(intentLine('fallback', 'NO EFFECT', c.description));

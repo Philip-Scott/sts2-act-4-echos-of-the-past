@@ -11,7 +11,7 @@ internal static class ArchitectModels
     internal static readonly ModelId ActId = new("ACT", "THEARCHITECT-ARCHITECT_ACT");
     internal static readonly ModelId EncounterId = new("ENCOUNTER", "THEARCHITECT-ARCHITECT_ENCOUNTER");
     private static readonly ModelId BossId = new("MONSTER", "THEARCHITECT-ARCHITECT_BOSS");
-    private static readonly ModelId ChallengerId = new("MONSTER", "THEARCHITECT-CORRUPTED_CHALLENGER");
+    private static readonly ModelId CorruptedPlayerId = new("MONSTER", "THEARCHITECT-CORRUPTED_PLAYER");
     private static readonly ModelId InvincibleId = new("POWER", "THEARCHITECT-ARCHITECT_INVINCIBLE_POWER");
     private static readonly ModelId BeatOfDeathId = new("POWER", "THEARCHITECT-ARCHITECT_BEAT_OF_DEATH_POWER");
 
@@ -20,7 +20,7 @@ internal static class ArchitectModels
     internal static ArchitectAct Act => ModelDb.GetById<ArchitectAct>(ActId);
     internal static ArchitectEncounter Encounter => ModelDb.GetById<ArchitectEncounter>(EncounterId);
     internal static ArchitectBoss Boss => ModelDb.GetById<ArchitectBoss>(BossId);
-    internal static CorruptedChallenger Challenger => ModelDb.GetById<CorruptedChallenger>(ChallengerId);
+    internal static CorruptedPlayer CorruptedPlayer => ModelDb.GetById<CorruptedPlayer>(CorruptedPlayerId);
     internal static ArchitectInvinciblePower Invincible => ModelDb.GetById<ArchitectInvinciblePower>(InvincibleId);
     internal static ArchitectBeatOfDeathPower BeatOfDeath => ModelDb.GetById<ArchitectBeatOfDeathPower>(BeatOfDeathId);
 }

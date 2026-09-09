@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace TheArchitect.TheArchitectCode.Challenger;
+namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 [Flags]
 public enum SimulationKeywords { None = 0, Innate = 1, Retain = 2, Ethereal = 4, Exhaust = 8, Unplayable = 16 }
@@ -65,17 +65,17 @@ public sealed record PlannedCard(
     ImmutableArray<PlannedAction> Actions,
     string? Diagnostic = null);
 
-public sealed record ChallengerPlan(
+public sealed record CorruptedPlayerPlan(
     int Turn,
     ImmutableArray<PlannedCard> Cards,
-    ChallengerState NextState,
+    CorruptedPlayerState NextState,
     ImmutableArray<string> Diagnostics)
 {
     [JsonIgnore]
     public IEnumerable<PlannedCard> SelectedCards => Cards.Where(c => c.SelectionIndex.HasValue);
 }
 
-public sealed record ChallengerState(
+public sealed record CorruptedPlayerState(
     int Version,
     int Turn,
     ulong RngState,
@@ -87,7 +87,7 @@ public sealed record ChallengerState(
 {
     public const int CurrentVersion = 1;
 
-    public static ChallengerState Create(IEnumerable<CardDescriptor> cards, string runSeed, string snapshotIdentity, string encounterIdentity)
+    public static CorruptedPlayerState Create(IEnumerable<CardDescriptor> cards, string runSeed, string snapshotIdentity, string encounterIdentity)
     {
         var deck = cards.ToList();
         if (deck.Select(c => c.InstanceId).Distinct(StringComparer.Ordinal).Count() != deck.Count)
@@ -98,23 +98,23 @@ public sealed record ChallengerState(
     }
 }
 
-public sealed record ChallengerSave(int Version, ChallengerState State, ChallengerPlan? Plan)
+public sealed record CorruptedPlayerSave(int Version, CorruptedPlayerState State, CorruptedPlayerPlan? Plan)
 {
     public const int CurrentVersion = 1;
 
-    public static string Serialize(ChallengerState state, ChallengerPlan? plan) =>
-        JsonSerializer.Serialize(new ChallengerSave(CurrentVersion, state, plan));
+    public static string Serialize(CorruptedPlayerState state, CorruptedPlayerPlan? plan) =>
+        JsonSerializer.Serialize(new CorruptedPlayerSave(CurrentVersion, state, plan));
 
-    public static ChallengerSave Deserialize(string json)
+    public static CorruptedPlayerSave Deserialize(string json)
     {
-        var save = JsonSerializer.Deserialize<ChallengerSave>(json) ?? throw new JsonException("Empty Challenger save.");
-        if (save.Version != CurrentVersion || save.State.Version != ChallengerState.CurrentVersion ||
-            (save.Plan != null && save.Plan.NextState.Version != ChallengerState.CurrentVersion))
-            throw new JsonException("Unsupported Challenger save or RNG schema; refusing to reroll.");
-        ChallengerPlanner.ValidateState(save.State);
+        var save = JsonSerializer.Deserialize<CorruptedPlayerSave>(json) ?? throw new JsonException("Empty Corrupted Player save.");
+        if (save.Version != CurrentVersion || save.State.Version != CorruptedPlayerState.CurrentVersion ||
+            (save.Plan != null && save.Plan.NextState.Version != CorruptedPlayerState.CurrentVersion))
+            throw new JsonException("Unsupported Corrupted Player save or RNG schema; refusing to reroll.");
+        CorruptedPlayerPlanner.ValidateState(save.State);
         if (save.Plan != null)
         {
-            ChallengerPlanner.ValidateState(save.Plan.NextState);
+            CorruptedPlayerPlanner.ValidateState(save.Plan.NextState);
             if (save.Plan.Turn != save.State.Turn + 1 || save.Plan.NextState.Turn != save.Plan.Turn)
                 throw new JsonException("Installed plan does not belong to saved state.");
             if (save.Plan.Cards.IsDefault || save.Plan.Diagnostics.IsDefault ||
@@ -122,15 +122,15 @@ public sealed record ChallengerSave(int Version, ChallengerState State, Challeng
                     c.Actions.IsDefault || c.EnergySpent < 0 || c.X < 0 ||
                     c.Actions.Any(a => a == null || !Enum.IsDefined(a.Kind) || a.Amount < 0 || a.Hits < 0 ||
                         (a.TargetSlot.HasValue && a.TargetSlot.Value < 0))))
-                throw new JsonException("Installed Challenger plan is malformed.");
+                throw new JsonException("Installed Corrupted Player plan is malformed.");
             int expectedSelection = 0;
             for (int position = 0; position < save.Plan.Cards.Length; position++)
             {
                 var card = save.Plan.Cards[position];
                 if (card.Position != position || (card.SelectionIndex.HasValue &&
-                    (card.SelectionIndex.Value != ++expectedSelection || expectedSelection > ChallengerPlanner.SelectionLimit)) ||
+                    (card.SelectionIndex.Value != ++expectedSelection || expectedSelection > CorruptedPlayerPlanner.SelectionLimit)) ||
                     (card.Disposition == CardDisposition.Unplayed) == card.SelectionIndex.HasValue)
-                    throw new JsonException("Installed Challenger plan has an invalid card order.");
+                    throw new JsonException("Installed Corrupted Player plan has an invalid card order.");
             }
         }
         return save;

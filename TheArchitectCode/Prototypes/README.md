@@ -1,4 +1,4 @@
-# Corrupted Challenger prototypes
+# Corrupted Player prototypes
 
 ## Corruption effect lab (B + C combination)
 
@@ -38,24 +38,24 @@ implementation. The pre-integration prototype is preserved in commit `82cd318`
 on `philip-scott-corrupted-effect-redesign`; A/B/C remain comparison material,
 not game modes.
 
-Production uses [ChallengerCorruption](../UI/ChallengerCorruption.cs) to composite
+Production uses [CorruptedPlayerCorruption](../UI/CorruptedPlayerCorruption.cs) to composite
 the native animated body through a `CanvasGroup` and
-[ChallengerBinding](../UI/ChallengerBinding.cs) for independent back/front geometry.
+[CorruptedPlayerBinding](../UI/CorruptedPlayerBinding.cs) for independent back/front geometry.
 It retains the original Spine node and materials rather than replacing the body
 with the browser stand-ins or applying a shader to each attachment. Native death
 VFX can still take ownership of the body after the corruption fades.
 Enemy-owned Osty receives a separate instance of the same effect when its native
 visuals are created; the human's Osty and both creatures' health UI are unaffected.
 
-## Corrupted Challenger telegraph prototype
+## Corrupted Player telegraph prototype
 
 Approved by the human on 2026-09-07 for
-[Prototype the Corrupted Challenger telegraph](https://github.com/Philip-Scott/slay-the-spire-the-architect/issues/5),
+[Prototype the Corrupted Player telegraph](https://github.com/Philip-Scott/slay-the-spire-the-architect/issues/5),
 under [Build the Architect Act 4 vertical slice](https://github.com/Philip-Scott/slay-the-spire-the-architect/issues/2).
 
 ## Artifact
 
-Open [challenger-telegraph.html](challenger-telegraph.html) directly, or serve this
+Open [corrupted-player-telegraph.html](corrupted-player-telegraph.html) directly, or serve this
 directory with `python3 -m http.server 8765 --bind 127.0.0.1`.
 Choose `?variant=C` for the approved presentation. A and B remain alternatives
 on this throwaway branch; the original iterations are preserved in git.
@@ -68,7 +68,7 @@ placeholders; authored effects are not real game card definitions.
 
 ## Settled presentation
 
-- Use C's compact, horizontally scrollable miniature-card row above the Challenger.
+- Use C's compact, horizontally scrollable miniature-card row above the Corrupted Player.
   Cards always play **right to left**. The rightmost playable card is numbered 1.
   Overflow initially exposes the right end; scroll left for later cards. Keep the
   ordered full-card inspection affordance rather than widening over the arena.
@@ -78,9 +78,9 @@ placeholders; authored effects are not real game card definitions.
 - Put each card's attack number and relevant intent icons directly beneath that
   card. **No aggregate summary**, including in full-turn inspection. Multi-hit
   attacks show damage per hit and hit count; mixed-effect cards show every relevant
-  icon under the same card. Block and buffs refer to the Challenger; offensive
+  icon under the same card. Block and buffs refer to the Corrupted Player; offensive
   debuffs refer to the player in these examples.
-- X uses the Challenger's remaining energy at the time that card acts. A first
+- X uses the Corrupted Player's remaining energy at the time that card acts. A first
   playable X-cost card with 3 energy therefore previews X=3. Card-specific effects
   determine what that value does; X is not universally a hit count.
 - Hover/focus shows only the enlarged card and its ordinary keyword tooltips.
@@ -90,7 +90,7 @@ placeholders; authored effects are not real game card definitions.
   a question-mark/no-effect intent rather than their unsupported original effect.
   Distinguish these from gray cards that will not play.
 - The Architect has **no health bar during Phase 1**. Show its health bar only
-  when Phase 2 begins. Preserve the Challenger's normal lower health/status area.
+  when Phase 2 begins. Preserve the Corrupted Player's normal lower health/status area.
 - Per-card intent values reflect earlier planned modifiers; the enlarged card
   retains its card text. This prototype illustrates that distinction with
   Strength before a multi-hit attack.
@@ -100,7 +100,7 @@ placeholders; authored effects are not real game card definitions.
 The human selected C over the local-peek and side-dossier layouts, then removed
 the aggregate summary and Architect's Phase 1 health bar. They correctly read
 the mixed example as Sapping Cut dealing 7 and applying 1 Weak, Defend giving
-the Challenger 5 block, and Twin Cut dealing two hits of 4.
+the Corrupted Player 5 block, and Twin Cut dealing two hits of 4.
 
 The X-cost example prompted the remaining-energy rule and gray unplayed cards.
 The human chose to retain original drawn positions, then specified right-to-left
@@ -116,7 +116,7 @@ of in-game testing or a guarantee for arbitrary UI scales or character models.
 ## Remaining simulation and integration questions
 
 Carry these into
-[Define the Corrupted Challenger simulation](https://github.com/Philip-Scott/slay-the-spire-the-architect/issues/9);
+[Define the Corrupted Player simulation](https://github.com/Philip-Scott/slay-the-spire-the-architect/issues/9);
 this prototype does not resolve them:
 
 - How selection decides which drawn cards are playable while preserving the

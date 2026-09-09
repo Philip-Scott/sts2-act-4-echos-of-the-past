@@ -7,6 +7,6 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../../TheArchitectCode/Challenger/*.cs" Exclude="../../TheArchitectCode/Challenger/GameCardDescriptorFactory.cs;../../TheArchitectCode/Challenger/Native*.cs" Link="Challenger/%(Filename)%(Extension)" />
+    <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/*.cs" Exclude="../../TheArchitectCode/CorruptedPlayerCombat/GameCardDescriptorFactory.cs;../../TheArchitectCode/CorruptedPlayerCombat/Native*.cs" Link="CorruptedPlayer/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

@@ -30,7 +30,7 @@ using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
 using MegaCrit.Sts2.Core.ValueProps;
-using TheArchitect.TheArchitectCode.Challenger;
+using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using TheArchitect.TheArchitectCode.Monsters;
 using TheArchitect.TheArchitectCode.Persistence;
 using TheArchitect.TheArchitectCode.UI;
@@ -84,7 +84,7 @@ internal static class NativeDemoPlaytest
             [], "ARCHITECT-NATIVE-INTEGRATION", GameMode.Standard);
         Require(RunManager.Instance.ShouldSave, "disposable native save path enabled");
         var input = Path.Combine(NativeDemoSafety.RuntimePath, "snapshot-input.json");
-        var destination = ProjectSettings.GlobalizePath(SaveManager.Instance.GetProfileScopedPath("TheArchitect/challenger_snapshot.json"));
+        var destination = ProjectSettings.GlobalizePath(SaveManager.Instance.GetProfileScopedPath("TheArchitect/corrupted_player_snapshot.json"));
         Require(destination.StartsWith(NativeDemoSafety.RuntimePath + "/", StringComparison.Ordinal),
             "snapshot destination is disposable");
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
@@ -96,10 +96,10 @@ internal static class NativeDemoPlaytest
             var cards = probe.Select(c => JsonSerializer.SerializeToElement(c.ToSerializable(),
                 JsonSerializationUtility.GetTypeInfo<SerializableCard>())).ToArray();
             var character = ModelDb.Character<Ironclad>().Id.ToString();
-            ChallengerStore.Commit("non-defect-probe", "Probe", new ChallengerSnapshot(character, 80, cards,
-                ChallengerSnapshot.Hash(character, 80, cards)));
+            CorruptedPlayerStore.Commit("non-defect-probe", "Probe", new CorruptedPlayerSnapshot(character, 80, cards,
+                CorruptedPlayerSnapshot.Hash(character, 80, cards)));
         }
-        var expected = ChallengerStore.Load() ?? throw new InvalidOperationException("Snapshot input not loaded.");
+        var expected = CorruptedPlayerStore.Load() ?? throw new InvalidOperationException("Snapshot input not loaded.");
         await Task.Delay(1500);
         var result = new DevConsole(shouldAllowDebugCommands: true).ProcessCommand("architect");
         if (!result.success || result.task == null)
@@ -119,11 +119,11 @@ internal static class NativeDemoPlaytest
         await RunManager.Instance.EnterMapCoord(run.Map.BossMapPoint.coord);
         await PlayerTurn(human, 1);
         var combat = human.Creature.CombatState!;
-        var monster = (CorruptedChallenger)combat.Enemies.Single().Monster!;
+        var monster = (CorruptedPlayer)combat.Enemies.Single().Monster!;
         var actor = monster.Native ?? throw new InvalidOperationException("Native actor not bound.");
         actor.AssertIdentity();
         Require(actor.HandPrepared && actor.State.Hand.Cards.Count > 0,
-            "opening Challenger hand is already drawn during the first human turn");
+            "opening Corrupted Player hand is already drawn during the first human turn");
         Require(actor.Player.Character.Id.ToString() == expected.Snapshot.CharacterId &&
             actor.Player.Deck.Cards.Count == expected.Snapshot.Deck.Length, "saved character and entire deck restored");
         Require(actor.Player.Deck.Cards.Select(c => (Id: (ModelId?)c.Id, c.CurrentUpgradeLevel))
@@ -133,12 +133,12 @@ internal static class NativeDemoPlaytest
         Require(actor.Body.GetCreatureNode()?.OrbManager is { } manager &&
             manager.GetNode<Control>("%Orbs").GetChildCount() == actor.State.OrbQueue.Capacity,
             "native orb manager and initial slots attached for the saved character");
-        await InspectChallengerDisplay(game, actor);
+        await InspectCorruptedPlayerDisplay(game, actor);
         game.GetViewport().GuiReleaseFocus();
         if (!NativeDemoSafety.SharedVisible)
             Input.WarpMouse(game.GetViewportRect().Size / 2f);
         await Task.Delay(2500);
-        await Capture("challenger-display");
+        await Capture("corrupted-player-display");
         var rngBefore = "";
         actor.TurnStarting += () => rngBefore = AllRng(human);
         actor.TurnFinished += () => Require(rngBefore == AllRng(human), "actor turn left human run/player RNG unchanged");
@@ -157,9 +157,9 @@ internal static class NativeDemoPlaytest
                 actor.State.OrbQueue.Orbs.All(orb => orbNodes.Any(node => node.Model == orb)),
                 "native orb slots and live orb models are rendered");
             actor.AssertIdentity();
-            AssertChallengerHandPosition(actor);
+            AssertCorruptedPlayerHandPosition(actor);
             if (turn == 1)
-                await InspectChallengerDisplay(game, actor);
+                await InspectCorruptedPlayerDisplay(game, actor);
             await Capture($"turn-{turn}");
             await CreatureCmd.Heal(human.Creature, human.Creature.MaxHp);
         }
@@ -198,7 +198,7 @@ internal static class NativeDemoPlaytest
         human = run.Players.Single();
         await PlayerTurn(human, 1);
         combat = human.Creature.CombatState!;
-        actor = ((CorruptedChallenger)combat.Enemies.Single(c => c.Monster is CorruptedChallenger).Monster!).Native!;
+        actor = ((CorruptedPlayer)combat.Enemies.Single(c => c.Monster is CorruptedPlayer).Monster!).Native!;
         actor.TurnStarting += () => rngBefore = AllRng(human);
         actor.TurnFinished += () => Require(rngBefore == AllRng(human), "reloaded actor turn left human run/player RNG unchanged");
         Require(actor.CompletedTurns == 0 && actor.HandPrepared &&
@@ -256,12 +256,12 @@ internal static class NativeDemoPlaytest
         await Finish(game, run, actor, expected.Revision, "ArchitectWin");
     }
 
-    private static async Task InspectChallengerDisplay(NGame game, NativeChallenger actor)
+    private static async Task InspectCorruptedPlayerDisplay(NGame game, NativeCorruptedPlayer actor)
     {
         await game.AwaitProcessFrame();
-        AssertChallengerHandPosition(actor);
-        var telegraph = actor.Body.GetCreatureNode()!.GetNode<ChallengerTelegraph>("ChallengerTelegraph");
-        Require((Control)telegraph is not PanelContainer, "Challenger hand has no background panel");
+        AssertCorruptedPlayerHandPosition(actor);
+        var telegraph = actor.Body.GetCreatureNode()!.GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph");
+        Require((Control)telegraph is not PanelContainer, "Corrupted Player hand has no background panel");
         foreach (var (character, name) in new (CharacterModel, string)[]
         {
             (ModelDb.Character<Ironclad>(), "Corrupted Ironclad"),
@@ -271,14 +271,14 @@ internal static class NativeDemoPlaytest
             (ModelDb.Character<Regent>(), "Corrupted Regent")
         })
         {
-            var model = (CorruptedChallenger)ArchitectModels.Challenger.ToMutable();
+            var model = (CorruptedPlayer)ArchitectModels.CorruptedPlayer.ToMutable();
             model.Configure(character, 80, Array.Empty<JsonElement>(), "name-check");
             Require(model.Title.GetFormattedText() == name, $"enemy name is exactly {name}");
         }
         var energy = (Label)telegraph.FindChild("Energy", true, false);
         Require(energy.Text == $"Energy {actor.State.Energy}/{actor.State.MaxEnergy}",
             "current and maximum native energy are displayed");
-        var face = telegraph.FindChild("ChallengerCard", true, false) as Button;
+        var face = telegraph.FindChild("CorruptedPlayerCard", true, false) as Button;
         Require((face != null) == (actor.State.Hand.Cards.Count > 0), "only hand cards appear in the telegraph");
         if (face != null)
         {
@@ -305,7 +305,7 @@ internal static class NativeDemoPlaytest
             button.EmitSignal(Button.SignalName.Pressed);
             await game.AwaitProcessFrame();
             Require(NCapstoneContainer.Instance?.CurrentCapstoneScreen is NCardPileScreen screen &&
-                ReferenceEquals(screen.Pile, pile), $"{name} button opens the Challenger's native pile browser");
+                ReferenceEquals(screen.Pile, pile), $"{name} button opens the Corrupted Player's native pile browser");
             Require(pile.Cards.SequenceEqual(cards) && actor.State.Hand.Cards.SequenceEqual(hand) &&
                 AllRng(actor.Player) == rng, $"{name} browsing preserves cards, pile order and RNG");
             NCapstoneContainer.Instance!.Close();
@@ -321,30 +321,30 @@ internal static class NativeDemoPlaytest
             var hoverContainer = game.HoverTipsContainer
                 ?? throw new InvalidOperationException("Native hover container missing.");
             Require(hoverContainer.GetChildren().OfType<Control>()
-                .All(control => control.Name != "ChallengerCardPreview" || !control.Visible),
+                .All(control => control.Name != "CorruptedPlayerCardPreview" || !control.Visible),
                 "shared-visible preview dismissed without moving the desktop pointer");
         }
     }
 
-    private static void AssertChallengerHandPosition(NativeChallenger actor)
+    private static void AssertCorruptedPlayerHandPosition(NativeCorruptedPlayer actor)
     {
         var node = actor.Body.GetCreatureNode()!;
-        var telegraph = node.GetNode<ChallengerTelegraph>("ChallengerTelegraph");
+        var telegraph = node.GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph");
         var expectedX = Mathf.Clamp(node.Visuals.IntentPosition.GlobalPosition.X - telegraph.Size.X / 2f,
             16f, Mathf.Max(16f, telegraph.GetViewportRect().Size.X - telegraph.Size.X - 16f));
         Require(Mathf.IsEqualApprox(telegraph.GlobalPosition.X, expectedX),
-            "Challenger hand stays anchored above its owner regardless of orb positions");
+            "Corrupted Player hand stays anchored above its owner regardless of orb positions");
     }
 
-    private static async Task Finish(NGame game, RunState run, NativeChallenger actor, long initialRevision, string outcome)
+    private static async Task Finish(NGame game, RunState run, NativeCorruptedPlayer actor, long initialRevision, string outcome)
     {
         await WaitFor(() => NOverlayStack.Instance?.Peek() is NGameOverScreen);
         Require(ArchitectRun.Get(run).Outcome == outcome, $"native outcome preserved: {outcome}");
         Require(actor.Cleaned, "actor cleaned after terminal outcome");
-        var committed = ChallengerStore.Load() ?? throw new InvalidOperationException("Terminal snapshot missing.");
+        var committed = CorruptedPlayerStore.Load() ?? throw new InvalidOperationException("Terminal snapshot missing.");
         Require(committed.Revision == initialRevision + 1 && committed.Outcome == outcome &&
             committed.TerminalRunId == ArchitectRun.Get(run).Id, "terminal snapshot committed exactly once");
-        Require(ChallengerStore.Commit(committed.TerminalRunId!, outcome, committed.Snapshot!) == committed.Revision,
+        Require(CorruptedPlayerStore.Commit(committed.TerminalRunId!, outcome, committed.Snapshot!) == committed.Revision,
             "terminal commit deduplicated");
         await Task.Delay(1500);
         await Capture("result");
@@ -371,7 +371,7 @@ internal static class NativeDemoPlaytest
         player.PlayerCombatState is { Phase: PlayerTurnPhase.Play } state && state.TurnNumber == turn &&
         CombatManager.Instance.IsPartOfPlayerTurn(player) && !CombatManager.Instance.IsStarting &&
         player.Creature.CombatState is { CurrentSide: CombatSide.Player } combat &&
-        NativeChallenger.In(combat).All(actor => actor.State.Phase == PlayerTurnPhase.None && actor.HandPrepared));
+        NativeCorruptedPlayer.In(combat).All(actor => actor.State.Phase == PlayerTurnPhase.None && actor.HandPrepared));
     private static void Require(bool condition, string description)
     {
         if (!condition)

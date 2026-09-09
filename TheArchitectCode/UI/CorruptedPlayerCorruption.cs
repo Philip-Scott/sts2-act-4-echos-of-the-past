@@ -3,7 +3,7 @@ using MegaCrit.Sts2.Core.Nodes.Combat;
 
 namespace TheArchitect.TheArchitectCode.UI;
 
-public partial class ChallengerCorruption : Node
+public partial class CorruptedPlayerCorruption : Node
 {
     private const float Intensity = 0.75f;
     private static readonly StringName EffectTime = "effect_time";
@@ -80,15 +80,15 @@ public partial class ChallengerCorruption : Node
     private NCreatureVisuals _visuals = null!;
     private Control _bounds = null!;
     private NCreature? _creature;
-    private ChallengerBinding _back = null!;
-    private ChallengerBinding _front = null!;
+    private CorruptedPlayerBinding _back = null!;
+    private CorruptedPlayerBinding _front = null!;
     private readonly List<(Node2D Body, CanvasGroup Group, ShaderMaterial Material)> _bodies = [];
     private double _time;
     private float _strength = Intensity;
 
     public static void Attach(NCreatureVisuals visuals)
     {
-        var effect = new ChallengerCorruption
+        var effect = new CorruptedPlayerCorruption
         {
             Name = "BoundEcho",
             _visuals = visuals,
@@ -101,11 +101,11 @@ public partial class ChallengerCorruption : Node
 
         var group = effect._bodies[0].Group;
         var parent = group.GetParent();
-        effect._back = new ChallengerBinding
+        effect._back = new CorruptedPlayerBinding
         {
             Name = "BoundEchoBack", ZIndex = group.ZIndex, ZAsRelative = group.ZAsRelative
         };
-        effect._front = new ChallengerBinding
+        effect._front = new CorruptedPlayerBinding
         {
             Name = "BoundEchoFront", Front = true, ZIndex = group.ZIndex, ZAsRelative = group.ZAsRelative
         };

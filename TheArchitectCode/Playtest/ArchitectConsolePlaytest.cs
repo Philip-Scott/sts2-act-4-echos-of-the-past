@@ -40,10 +40,10 @@ internal static class ArchitectConsolePlaytest
         if (run.Act is not ArchitectAct || run.Acts.Count != 4)
             throw new InvalidOperationException("Architect console command did not enter Act 4.");
         if (CommandLineHelper.HasArg("architect-repeat"))
-            ArchitectRun.Get(run).EntrySnapshot = new ChallengerEnvelope
+            ArchitectRun.Get(run).EntrySnapshot = new CorruptedPlayerEnvelope
             {
                 Revision = 1,
-                Snapshot = ChallengerSnapshot.Capture(run.Players[0])
+                Snapshot = CorruptedPlayerSnapshot.Capture(run.Players[0])
             };
         MainFile.Logger.Info("Architect console smoke: normal main menu -> new run -> architect command passed.");
         await ArchitectPlaytest.SmokeMapAndRooms(run.Players[0]);

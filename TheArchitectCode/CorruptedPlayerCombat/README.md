@@ -1,6 +1,6 @@
-# Native in-process Challenger
+# Native in-process Corrupted Player
 
-`CorruptedChallenger` uses `NativeChallenger` in ordinary single-player gameplay.
+`CorruptedPlayer` uses `NativeCorruptedPlayer` in ordinary single-player gameplay.
 It restores the previous-character snapshot, not a fixed demo deck. No launch
 flag selects an alternative production engine. There is no RPC worker, scalar
 damage replay, manual card-effect adapter fallback or singleton-state swapping.
@@ -9,7 +9,7 @@ damage replay, manual card-effect adapter fallback or singleton-state swapping.
 
 The actor has a private native `Player`, `RunState`, `PlayerCombatState`, deck,
 energy, stars, RNG and card piles. Its player's Creature backing reference is
-bound once to the actual Challenger enemy. Neither the private player nor its
+bound once to the actual Corrupted Player enemy. Neither the private player nor its
 run becomes a real party member, and `LocalContext` is unchanged.
 
 Native save restoration preserves card IDs, upgrades, native enchantments and
@@ -21,7 +21,7 @@ movement, generated cards, choices, X costs and automatic plays.
 `NativeCombatView` supplies owner-relative opponent/ally collections and private
 run RNG while delegating actual combat mutations and absolute-side operations to
 the live encounter. This prevents player-oriented native helpers such as random
-enemy targeting from attacking their own Challenger. Native pets use the
+enemy targeting from attacking their own Corrupted Player. Native pets use the
 private owner's RNG for creature creation as well.
 
 Native call sites are rewritten as well as getters: BaseLib pre-JIT and native
@@ -33,7 +33,7 @@ The real turn loop owns side hooks. Actor energy and hand draw are prepared at
 the start of the human turn, including the opening turn, so the human can inspect
 the actual upcoming hand. The base draw is five, with native draw modifiers,
 Innate, retention and the hand limit preserved. Extra human turns do not draw
-another Challenger hand. After its block clears on the enemy turn, the actor
+another Corrupted Player hand. After its block clears on the enemy turn, the actor
 uses that prepared hand without resetting energy or drawing again; native
 player-start hooks still run then. Orb start effects, pre-play, manual play and
 post-play occur in its move. End-hand effects, Ethereal, retain/discard and orb passives resolve before
@@ -41,7 +41,7 @@ side-end completion. Native extra-turn hooks run additional actor turns before
 the human side resumes, preparing their own hands because no human turn
 intervenes. Powers and card-local mutations persist between turns.
 
-The Challenger retains its monster lifecycle listener. Death adds the Architect
+The Corrupted Player retains its monster lifecycle listener. Death adds the Architect
 before removing owned pets and actor state, preserving continuous combat and
 human hand/energy/HP. Native terminal outcomes, snapshot deduplication and atomic
 replacement remain in the existing lifecycle/persistence implementation.
@@ -72,7 +72,7 @@ This is a state preview, **not an exact future-damage forecast**.
 
 The actual native `NOrbManager` renders slots, passive/evoke effects and native
 orb hover tips for every character, including characters initially having zero
-slots. Challenger-owned Osty uses the enemy container and mirrored owner-relative
+slots. Corrupted Player-owned Osty uses the enemy container and mirrored owner-relative
 position, with native health, hitbox, summon/revive and scaling behavior. Ordinary
 human pet layout is unchanged.
 
@@ -107,7 +107,7 @@ BaseLib 3.4.5 and .NET 9.
 
 ```sh
 scripts/build.sh --mods-path artifacts/mods
-export ARCHITECT_SNAPSHOT_INPUT=/absolute/path/to/challenger_snapshot.json
+export ARCHITECT_SNAPSHOT_INPUT=/absolute/path/to/corrupted_player_snapshot.json
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --label cards
 # Alternative scenarios (each invocation creates a new isolated instance):
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --loss
@@ -124,7 +124,7 @@ The non-Defect scenario writes an explicitly labelled disposable Ironclad orb
 deck through the normal snapshot format, exercising zero-to-first-slot capacity.
 Winning scenarios transition with two live lightning orbs and verify that the
 dead actor's orb UI is cleared even after its creature node leaves the room lookup.
-The poison scenario kills the Challenger at enemy turn start instead of using
+The poison scenario kills the Corrupted Player at enemy turn start instead of using
 direct damage, then waits for the next player turn to cover deferred UI refreshes.
 
 ### Parallel instances: shared assets, private display
@@ -264,7 +264,7 @@ GPU-rendered windows can run together without desktop mouse automation:
 
 ```sh
 scripts/build.sh --mods-path artifacts/mods
-export ARCHITECT_SNAPSHOT_INPUT=/absolute/path/to/challenger_snapshot.json
+export ARCHITECT_SNAPSHOT_INPUT=/absolute/path/to/corrupted_player_snapshot.json
 # DISPLAY and XAUTHORITY must describe your existing local X11 desktop.
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --shared-visible --label agent-A --nondefect
 # Run another invocation in a separate terminal / attached agent command:
@@ -298,7 +298,7 @@ unfocused-frame counts, focus state, title and observed desktop pointer
 coordinates. Native stage captures also log focus and frame counts.
 
 On the tested Bazzite/Intel desktop, two simultaneous instances reached
-`challenger-display.png` at **39.8-39.9 seconds**, and `opening.png` at
+`corrupted-player-display.png` at **39.8-39.9 seconds**, and `opening.png` at
 **41.2-41.3 seconds** (versus 173 seconds with the four-thread software display).
 The unfocused instance completed native pile checks and turns, remained
 capturable after its peer was stopped, and passed the full poison/native
@@ -337,5 +337,5 @@ and Impervious with native modifiers; generated cards, choices, persistent power
 Rage/Thorns/Flame Barrier reactions, saved Genetic Algorithm properties and Sharp
 enchantment, private RNG, orb rendering, Osty placement/revival, extra turns,
 exclusion/error reporting, reload, cleanup, handoff and native terminal outcomes.
-The old `ChallengerPlanner`, exact-adapter classes and pure tests are retained as
+The old `CorruptedPlayerPlanner`, exact-adapter classes and pure tests are retained as
 historical regression/reference code, but are not the production execution path.

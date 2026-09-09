@@ -8,11 +8,11 @@ using MegaCrit.Sts2.Core.Models.Singleton;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Runs;
 
-namespace TheArchitect.TheArchitectCode.Challenger;
+namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 // A card's perspective, not a second combat. Creature identity, hooks, mutations and
 // absolute sides stay in the real combat; player-oriented collections are relative.
-internal sealed class NativeCombatView(NativeChallenger actor, ICombatState live) : ICombatState, ICardScope
+internal sealed class NativeCombatView(NativeCorruptedPlayer actor, ICombatState live) : ICombatState, ICardScope
 {
     internal ICombatState Live => live;
     public IRunState RunState => actor.Player.RunState;
@@ -40,7 +40,7 @@ internal sealed class NativeCombatView(NativeChallenger actor, ICombatState live
     public void AddCard(CardModel card, Player owner) => live.AddCard(card, owner);
     public void RemoveCard(CardModel card) => live.RemoveCard(card);
     public bool ContainsCard(CardModel card) => live.ContainsCard(card);
-    public void AddPlayer(Player player) => throw new NotSupportedException("The Challenger is not a party participant.");
+    public void AddPlayer(Player player) => throw new NotSupportedException("The Corrupted Player is not a party participant.");
     public Creature CreateCreature(MonsterModel monster, CombatSide side, string? slot)
     {
         NativePetFactory.Register(monster, actor.Player);
@@ -69,7 +69,7 @@ internal static class NativeCardCombatViewPatch
     private static void Postfix(CardModel __instance, ref ICombatState? __result)
     {
         if (__result != null && __instance.IsMutable && __instance.Owner is { } player &&
-            NativeChallenger.TryGet(player, out var actor))
+            NativeCorruptedPlayer.TryGet(player, out var actor))
             __result = actor.View;
     }
 }
@@ -79,7 +79,7 @@ internal static class NativePowerCombatViewPatch
 {
     private static void Postfix(PowerModel __instance, ref ICombatState __result)
     {
-        if (__instance.Owner is { } owner && NativeChallenger.TryGet(owner, out var actor))
+        if (__instance.Owner is { } owner && NativeCorruptedPlayer.TryGet(owner, out var actor))
             __result = actor.View;
     }
 }
@@ -89,7 +89,7 @@ internal static class NativeOrbCombatViewPatch
 {
     private static void Postfix(OrbModel __instance, ref ICombatState __result)
     {
-        if (__instance.Owner is { } owner && NativeChallenger.TryGet(owner, out var actor))
+        if (__instance.Owner is { } owner && NativeCorruptedPlayer.TryGet(owner, out var actor))
             __result = actor.View;
     }
 }
@@ -162,7 +162,7 @@ internal static class NativeCombatCallSites
                 patched++;
             }
         }
-        MainFile.Logger.Info($"Native Challenger installed {patched} owner-scoped combat call sites.");
+        MainFile.Logger.Info($"Native Corrupted Player installed {patched} owner-scoped combat call sites.");
     }
 
     private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
@@ -179,14 +179,14 @@ internal static class NativeCombatCallSites
     }
 
     private static ICombatState? CardScope(CardModel card) =>
-        card.IsMutable && card.Owner is { } owner && NativeChallenger.TryGet(owner, out var actor) &&
+        card.IsMutable && card.Owner is { } owner && NativeCorruptedPlayer.TryGet(owner, out var actor) &&
         card.CombatState != null ? actor.View : card.CombatState;
     private static ICombatState PowerScope(PowerModel power) =>
-        power.Owner is { } owner && NativeChallenger.TryGet(owner, out var actor) ? actor.View : power.CombatState;
+        power.Owner is { } owner && NativeCorruptedPlayer.TryGet(owner, out var actor) ? actor.View : power.CombatState;
     private static ICombatState OrbScope(OrbModel orb) =>
-        orb.Owner is { } owner && NativeChallenger.TryGet(owner, out var actor) ? actor.View : orb.CombatState;
+        orb.Owner is { } owner && NativeCorruptedPlayer.TryGet(owner, out var actor) ? actor.View : orb.CombatState;
     private static Player? CreatureOwner(Creature creature) =>
-        NativeChallenger.TryGet(creature, out var actor) ? actor.Player : creature.Player;
+        NativeCorruptedPlayer.TryGet(creature, out var actor) ? actor.Player : creature.Player;
     private static bool IsPartyPlayer(Creature creature) =>
-        !NativeChallenger.TryGet(creature, out _) && creature.IsPlayer;
+        !NativeCorruptedPlayer.TryGet(creature, out _) && creature.IsPlayer;
 }

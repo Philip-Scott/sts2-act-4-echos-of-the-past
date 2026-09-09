@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
 
-namespace TheArchitect.TheArchitectCode.Challenger;
+namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 internal static class NativeCardSupport
 {
@@ -70,22 +70,22 @@ internal static class NativeCardSupport
             }
             catch (JsonException error)
             {
-                return $"Cannot read a saved Challenger card: {error.Message}";
+                return $"Cannot read a saved Corrupted Player card: {error.Message}";
             }
             if (saved.Id == null || ModelDb.GetByIdOrNull<CardModel>(saved.Id) == null)
-                return $"Saved Challenger card is not installed: {saved.Id}. Install the matching game/mod version before entering.";
+                return $"Saved Corrupted Player card is not installed: {saved.Id}. Install the matching game/mod version before entering.";
             if (saved.Enchantment is { } enchantment &&
                 (enchantment.Id == null || ModelDb.GetByIdOrNull<EnchantmentModel>(enchantment.Id) == null))
-                return $"Saved Challenger enchantment is not installed: {enchantment.Id}. Install its matching mod before entering.";
+                return $"Saved Corrupted Player enchantment is not installed: {enchantment.Id}. Install its matching mod before entering.";
             if (raw.TryGetProperty("save_dict_List[BaseLib.Abstracts.CardModifier+ModifierSave]", out var extension) &&
                 extension.ValueKind == JsonValueKind.Object && extension.TryGetProperty("BaseLibCardModifiers", out var modifiers))
             {
                 if (modifiers.ValueKind != JsonValueKind.Array)
-                    return "Cannot read the saved Challenger card modifiers. Restore a valid snapshot backup.";
+                    return "Cannot read the saved Corrupted Player card modifiers. Restore a valid snapshot backup.";
                 foreach (var modifier in modifiers.EnumerateArray())
                 {
                     if (modifier.ValueKind != JsonValueKind.Object || !modifier.TryGetProperty("Id", out var id))
-                        return "A saved Challenger card modifier has no model ID. Restore a valid snapshot backup.";
+                        return "A saved Corrupted Player card modifier has no model ID. Restore a valid snapshot backup.";
                     ModelId? model;
                     try
                     {
@@ -93,10 +93,10 @@ internal static class NativeCardSupport
                     }
                     catch (JsonException error)
                     {
-                        return $"Cannot read a saved Challenger modifier ID: {error.Message}";
+                        return $"Cannot read a saved Corrupted Player modifier ID: {error.Message}";
                     }
                     if (model == null || ModelDb.GetByIdOrNull<CardModifier>(model) == null)
-                        return $"Saved Challenger card modifier is not installed: {model}. Install its matching mod before entering.";
+                        return $"Saved Corrupted Player card modifier is not installed: {model}. Install its matching mod before entering.";
                 }
             }
         }
@@ -109,7 +109,7 @@ internal static class NativeUnsupportedPlayPatch
 {
     private static bool Prefix(CardModel card, ref bool __result, ref AbstractModel? preventer)
     {
-        if (!card.IsMutable || card.Owner is not { } owner || !NativeChallenger.TryGet(owner, out var actor) ||
+        if (!card.IsMutable || card.Owner is not { } owner || !NativeCorruptedPlayer.TryGet(owner, out var actor) ||
             actor.UnsupportedReason(card) == null)
             return true;
         __result = false;

@@ -31,7 +31,7 @@ def required_file(path):
 def tool(name):
     found = shutil.which(name)
     if not found:
-        raise ValueError(f"Missing {name}; see native Challenger README dependency setup.")
+        raise ValueError(f"Missing {name}; see native Corrupted Player README dependency setup.")
     return str(Path(found).resolve())
 
 
