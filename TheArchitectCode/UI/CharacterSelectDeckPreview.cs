@@ -148,7 +148,6 @@ internal partial class CharacterSelectDeckPreview : Control
     {
         snapshots = decks;
         status = information;
-        button.TooltipText = information ?? CorruptedDeckButton.Localize("TITLE");
         if (GodotObject.IsInstanceValid(preview))
             preview!.SetPreview(decks, information);
     }
