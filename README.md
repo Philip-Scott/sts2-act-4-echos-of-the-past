@@ -22,8 +22,10 @@ appears only after every member is defeated, without restarting combat.
 The Corrupted Player starts at twice that character's saved maximum HP, or
 2.5 times at Ascension 8 (Tough Enemies) and above in the current run (rounded up).
 These values do not receive an additional multiplayer HP multiplier: the extra
-Corrupted Players provide the party-size scaling. The Architect uses the native
-final-act boss multiplayer scaling tier.
+Corrupted Players provide the party-size scaling. The Architect's HP and shared
+per-turn damage cap use the native final-act boss multiplayer scaling tier
+(base value times player count times 1.3). Solo damage caps remain 300, or 200
+at Ascension 8 and above.
 The compact map fits all four nodes without scrolling, using neutral-ink
 icons and an original Architect boss silhouette. Rest and Shop share the
 supplied tower-approach illustration; the boss fight retains the

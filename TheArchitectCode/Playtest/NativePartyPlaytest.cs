@@ -20,6 +20,7 @@ using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using TheArchitect.TheArchitectCode.Lifecycle;
 using TheArchitect.TheArchitectCode.Monsters;
 using TheArchitect.TheArchitectCode.Persistence;
+using TheArchitect.TheArchitectCode.Powers;
 using TheArchitect.TheArchitectCode.UI;
 
 namespace TheArchitect.TheArchitectCode.Playtest;
@@ -152,6 +153,23 @@ internal static class NativePartyPlaytest
             players[0].PlayerCombatState!.Energy == energy && players.Select(player => player.Creature.CurrentHp).SequenceEqual(hp),
             $"{count}: handoff preserves human hands, energy and HP");
         await NativeDemoPlaytest.Capture($"party-{count}-handoff");
+        var limit = (int)Creature.ScaleHpForMultiplayer(ascension >= 8 ? 200 : 300,
+            combat.Encounter, count, 2);
+        var invincible = boss.GetPower<ArchitectInvinciblePower>()!;
+        Require(invincible.Amount == limit && invincible.DisplayAmount == limit &&
+            invincible.DynamicVars["Remaining"].IntValue == limit,
+            $"{count}: Architect damage cap uses the same native final-act boss scaling as HP ({limit})");
+        var bossHp = boss.CurrentHp;
+        foreach (var player in players)
+            await CreatureCmd.Damage(context, boss, limit - 1, ValueProp.Unpowered | ValueProp.Unblockable,
+                player.Creature);
+        Require(boss.CurrentHp == bossHp - limit && invincible.DisplayAmount == 0 &&
+            invincible.DynamicVars["Remaining"].IntValue == 0 && boss.HpDisplay == HpDisplay.InfiniteWithNumbers,
+            $"{count}: human players share one scaled damage budget");
+        await EndTurn(players, 4);
+        Require(invincible.Amount == limit && invincible.DisplayAmount == limit &&
+            invincible.DynamicVars["Remaining"].IntValue == limit && boss.HpDisplay == HpDisplay.Normal,
+            $"{count}: the next Architect turn restores the scaled budget without scaling it again");
         await game.ReturnToMainMenu();
     }
 

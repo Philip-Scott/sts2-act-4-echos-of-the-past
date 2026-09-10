@@ -14,6 +14,7 @@ using TheArchitect.TheArchitectCode.Playtest;
 using System.Text.Json;
 
 int passed = 0;
+const int ownerMaxHp = 10000;
 
 void Test(string name, Action action)
 {
@@ -29,8 +30,8 @@ void Check(bool condition, string message = "Assertion failed")
 (Creature, ArchitectInvinciblePower) Power(int limit)
 {
     var owner = new Creature(new TenHpMonster().ToMutable(), CombatSide.Enemy, null);
-    owner.SetMaxHpInternal(1000);
-    owner.SetCurrentHpInternal(1000);
+    owner.SetMaxHpInternal(ownerMaxHp);
+    owner.SetCurrentHpInternal(ownerMaxHp);
     var power = (ArchitectInvinciblePower)new ArchitectInvinciblePower().ToMutable();
     power.ApplyInternal(owner, limit);
     power.AfterApplied(null, null).GetAwaiter().GetResult();
@@ -43,15 +44,21 @@ decimal Capped(ArchitectInvinciblePower power, Creature owner, decimal amount, V
 void Hit(ArchitectInvinciblePower power, Creature owner, decimal amount, ValueProp props = ValueProp.Move) =>
     owner.LoseHpInternal(Capped(power, owner, amount, props), props);
 
-foreach (int limit in new[] { 200, 300 })
+Test("cap: opts into native multiplayer power scaling", () =>
+{
+    Check(new ArchitectInvinciblePower().ShouldScaleInMultiplayer);
+});
+
+// Solo caps and native final-act boss caps for parties of two through four.
+foreach (int limit in new[] { 200, 300, 520, 780, 1040, 1170, 1560 })
 {
     Test($"cap {limit}: consecutive hits cannot exceed the shared budget", () =>
     {
         var (owner, power) = Power(limit);
-        Hit(power, owner, 175);
-        Hit(power, owner, 175);
-        Hit(power, owner, 175);
-        Check(owner.CurrentHp == 1000 - limit && power.DisplayAmount == 0);
+        Hit(power, owner, limit - 25);
+        Hit(power, owner, limit - 25);
+        Hit(power, owner, limit - 25);
+        Check(owner.CurrentHp == ownerMaxHp - limit && power.DisplayAmount == 0);
         Check(power.DynamicVars["Remaining"].IntValue == 0);
         Check(owner.HpDisplay == HpDisplay.InfiniteWithNumbers);
     });
@@ -66,16 +73,16 @@ foreach (int limit in new[] { 200, 300 })
         Check(owner.HpDisplay == HpDisplay.Normal);
         Hit(power, owner, 1, ValueProp.Unpowered | ValueProp.Unblockable);
         Check(owner.HpDisplay == HpDisplay.InfiniteWithNumbers);
-        owner.SetCurrentHpInternal(1000);
+        owner.SetCurrentHpInternal(ownerMaxHp);
         Check(owner.HpDisplay == HpDisplay.InfiniteWithNumbers, "Healing must not clear the capped display.");
         Hit(power, owner, 10);
-        Check(owner.CurrentHp == 1000 && owner.HpDisplay == HpDisplay.InfiniteWithNumbers);
+        Check(owner.CurrentHp == ownerMaxHp && owner.HpDisplay == HpDisplay.InfiniteWithNumbers);
     });
 
     Test($"cap {limit}: preview does not spend budget; poison and power damage do", () =>
     {
         var (owner, power) = Power(limit);
-        Check(Capped(power, owner, 500) == limit && Capped(power, owner, 500) == limit);
+        Check(Capped(power, owner, ownerMaxHp) == limit && Capped(power, owner, ownerMaxHp) == limit);
         Check(power.DisplayAmount == limit);
         Hit(power, owner, 70, ValueProp.Unpowered | ValueProp.Unblockable);
         Hit(power, owner, 90, ValueProp.Unpowered);
@@ -86,16 +93,16 @@ foreach (int limit in new[] { 200, 300 })
     {
         var (owner, power) = Power(limit);
         Hit(power, owner, 100);
-        owner.SetCurrentHpInternal(1000);
+        owner.SetCurrentHpInternal(ownerMaxHp);
         Check(power.DisplayAmount == limit - 100);
-        Hit(power, owner, 1000);
-        Check(owner.CurrentHp == 1000 - (limit - 100));
+        Hit(power, owner, ownerMaxHp);
+        Check(owner.CurrentHp == ownerMaxHp - (limit - 100));
     });
 
     Test($"cap {limit}: reset only before an owner turn, not player or absent-owner turns", () =>
     {
         var (owner, power) = Power(limit);
-        Hit(power, owner, 1000);
+        Hit(power, owner, ownerMaxHp);
         power.BeforeSideTurnStart(null!, CombatSide.Player, [owner], null!).GetAwaiter().GetResult();
         Check(power.DisplayAmount == 0);
         Check(owner.HpDisplay == HpDisplay.InfiniteWithNumbers);
