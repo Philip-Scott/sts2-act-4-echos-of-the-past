@@ -182,6 +182,22 @@ and saves/rejoins retain that same selection. Missing content or failed
 synchronization blocks entry with an error rather than loading a partial party.
 Host migration is not supported.
 
+On the single-player and multiplayer character-select screens, **View Corrupted
+Deck** (or **View Corrupted Decks**) appears beneath the confirm checkmark.
+Browse the saved deck, including upgrades and enchantments, and click a card to
+inspect it. Multiplayer previews use the host's lineage for the current complete
+group, with one deck tab per Corrupted Player; joining or leaving refreshes the
+preview for everyone. First Visits and unavailable previews are explained rather
+than showing a different opponent. Browsing does not change saved decks or ready
+the player.
+
+The isolated menu scenario is
+`bash scripts/native-demo.sh run "/path/to/Slay the Spire 2" --deck-preview`.
+It creates only disposable snapshots and covers both menu modes, First Visit,
+saved upgrades, card inspection, and party deck selection.
+Set `ARCHITECT_SNAPSHOT_INPUT` to an existing Corrupted Player snapshot to capture
+its single-player deck instead of the sample deck; the source file is only copied.
+
 This is an early playtest build, not completion of every item in #2. Full
 crash-transaction recovery between snapshot capture and base-game progression/history
 is still tracked in #12. Avoid force-closing the game during the result transition.

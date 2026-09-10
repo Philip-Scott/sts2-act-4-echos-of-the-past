@@ -9,6 +9,7 @@ var inputs = new PlannerInputs { Opponents = [new(0)] };
 
 MultiplayerPersistenceTests.Run(Test);
 MultiplayerSynchronizationTests.Run(Test);
+LobbyPreviewTests.Run(Test);
 
 void Test(string name, Action action)
 {

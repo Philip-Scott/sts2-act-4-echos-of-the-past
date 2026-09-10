@@ -13,5 +13,6 @@
     <Compile Include="../../TheArchitectCode/Persistence/SuccessorStores.cs" Link="Persistence/SuccessorStores.cs" />
     <Compile Include="../../TheArchitectCode/Multiplayer/PartyEntryConsensus.cs" Link="Multiplayer/PartyEntryConsensus.cs" />
     <Compile Include="../../TheArchitectCode/Multiplayer/PartySynchronizer.cs" Link="Multiplayer/PartySynchronizer.cs" />
+    <Compile Include="../../TheArchitectCode/Multiplayer/LobbyPreviewSynchronizer.cs" Link="Multiplayer/LobbyPreviewSynchronizer.cs" />
   </ItemGroup>
 </Project>

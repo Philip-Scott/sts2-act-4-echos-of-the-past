@@ -1,0 +1,14 @@
+{
+  "THEARCHITECT.DECK_PREVIEW.BUTTON": "View Corrupted Deck",
+  "THEARCHITECT.DECK_PREVIEW.BUTTON_PARTY": "View Corrupted Decks",
+  "THEARCHITECT.DECK_PREVIEW.TITLE": "Corrupted Player Deck",
+  "THEARCHITECT.DECK_PREVIEW.CLOSE": "Back",
+  "THEARCHITECT.DECK_PREVIEW.CARDS": "cards",
+  "THEARCHITECT.DECK_PREVIEW.EMPTY_DECK": "This Corrupted Player has an empty deck.",
+  "THEARCHITECT.DECK_PREVIEW.FIRST_VISIT": "First Visit: no Corrupted Player is saved for this profile.\nYou will fight the Architect directly.",
+  "THEARCHITECT.DECK_PREVIEW.FIRST_VISIT_PARTY": "First Visit: no Corrupted Party is saved for this host and group.\nYou will fight the Architect directly.",
+  "THEARCHITECT.DECK_PREVIEW.UNAVAILABLE_CHARACTER": "The saved Corrupted Player's character is unavailable.\nThis run will be a First Visit: you will fight the Architect directly.",
+  "THEARCHITECT.DECK_PREVIEW.LOADING": "Loading the host's Corrupted Party...",
+  "THEARCHITECT.DECK_PREVIEW.WAITING": "Waiting for other players to join.\nCorrupted Party decks depend on the host and the complete group.",
+  "THEARCHITECT.DECK_PREVIEW.ERROR": "The Corrupted Player deck preview is unavailable."
+}
