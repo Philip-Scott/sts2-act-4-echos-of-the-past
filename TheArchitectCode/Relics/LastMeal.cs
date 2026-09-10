@@ -14,7 +14,7 @@ public sealed class LastMeal : UnwrittenRelic
     public override bool HasUponPickupEffect => true;
 
     protected override IEnumerable<DynamicVar> CanonicalVars =>
-        [new MaxHpVar(20), new HealVar(20), new DynamicVar("Potions", 2), new CardsVar(3)];
+        [new MaxHpVar(20), new DynamicVar("Potions", 2), new CardsVar(3)];
 
     public override async Task AfterObtained()
     {

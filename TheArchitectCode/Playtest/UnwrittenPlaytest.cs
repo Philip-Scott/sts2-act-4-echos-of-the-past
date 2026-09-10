@@ -217,8 +217,8 @@ internal static class UnwrittenPlaytest
                 $"Borrowed Tomorrow energy on turn {turn}: {combat.Energy}, native Void penalty {voidPenalty}");
             Check(combat.Hand.Cards.Count == (turn <= 3 ? 6 : 5), $"Loose Thread draw on turn {turn}");
             Check(player.Deck.Cards.All(card => card.Enchantment == null), "Glam never modifies the permanent deck");
-            Check(combat.AllCards.Count(card => card.Enchantment is Glam) == (turn + 1) / 2,
-                $"Diamond Hand enchants only on odd turns, including turn {turn}");
+            Check(combat.AllCards.Count(card => card.Enchantment is Glam) == 1,
+                $"Diamond Hand enchants only at combat start, still one card on turn {turn}");
             if (turn == 1)
             {
                 Check(player.Creature.GetPowerAmount<StrengthPower>() == 1 &&

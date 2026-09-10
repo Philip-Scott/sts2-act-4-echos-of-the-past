@@ -35,7 +35,6 @@ internal static class UnwrittenBonusTests
                 (Canonical<DiamondHand>(), "Cards", 1),
                 (Canonical<UnspentPossibility>(), "Gold", 150),
                 (Canonical<LastMeal>(), "MaxHp", 20),
-                (Canonical<LastMeal>(), "Heal", 20),
                 (Canonical<LastMeal>(), "Potions", 2),
                 (Canonical<LastMeal>(), "Cards", 3),
                 (Canonical<BorrowedTomorrow>(), "Energy", 1),
@@ -87,6 +86,26 @@ internal static class UnwrittenBonusTests
             relic.AfterPlayerTurnStart(null!, owner).GetAwaiter().GetResult();
             owner.PlayerCombatState!.IncrementTurnNumber();
             relic.AfterPlayerTurnStart(null!, owner).GetAwaiter().GetResult();
+            Check(owner.PlayerRng.Rewards.NextInt(1000) == expected.Rewards.NextInt(1000));
+        });
+
+        test("Diamond Hand: skips later turns even if the opening hand had no eligible card", () =>
+        {
+            var owner = Player();
+            var relic = Owned<DiamondHand>(owner);
+            var expected = new PlayerRngSet(100);
+            relic.AfterPlayerTurnStart(null!, owner).GetAwaiter().GetResult();
+
+            var card = ModelDb.Card<StrikeIronclad>().ToMutable();
+            card.Owner = owner;
+            owner.PlayerCombatState!.Hand.AddInternal(card, silent: true);
+            Check(card.Enchantment == null && ModelDb.Enchantment<Glam>().CanEnchant(card));
+            for (var turn = 2; turn <= 5; turn++)
+            {
+                owner.PlayerCombatState.IncrementTurnNumber();
+                relic.AfterPlayerTurnStart(null!, owner).GetAwaiter().GetResult();
+                Check(card.Enchantment == null, $"No Glam on turn {turn}.");
+            }
             Check(owner.PlayerRng.Rewards.NextInt(1000) == expected.Rewards.NextInt(1000));
         });
 

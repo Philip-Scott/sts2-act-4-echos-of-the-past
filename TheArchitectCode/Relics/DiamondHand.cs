@@ -19,7 +19,7 @@ public sealed class DiamondHand : UnwrittenRelic
     public override Task AfterPlayerTurnStart(PlayerChoiceContext choiceContext, Player player)
     {
         var combat = Owner.PlayerCombatState;
-        if (player != Owner || combat == null || combat.TurnNumber < 1 || combat.TurnNumber % 2 == 0)
+        if (player != Owner || combat == null || combat.TurnNumber != 1)
             return Task.CompletedTask;
 
         var glam = ModelDb.Enchantment<Glam>();

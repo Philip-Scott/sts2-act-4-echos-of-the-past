@@ -47,11 +47,11 @@ use the native multiplayer synchronization. Candidates have equal weights within
 | Build | Loose Thread | Draw +1 on your first three turns. |
 | Build | Crooked Needle | Start combat with 1 Strength and 1 Dexterity. |
 | Build | Orange Pearl | Start combat with 1 Artifact. |
-| Build | Diamond Hand | After drawing on odd-numbered turns, apply combat-only Glam to a random eligible unenchanted card in hand. |
+| Build | Diamond Hand | After the opening draw, apply combat-only Glam to a random eligible unenchanted card in hand. |
 | Recovery | Unspent Possibility | Gain 150 Gold. |
-| Recovery | Last Meal | Gain 20 maximum HP, heal 20, and receive two potion rewards and one rare-card reward. |
+| Recovery | Last Meal | Gain 20 maximum HP and receive two potion rewards and one rare-card reward. |
 | Bargain | Borrowed Tomorrow | Gain +1 Energy on your first three turns; start combat with 2 ordinary Vulnerable. |
-| Bargain | Handheld Mirror | Acquire fresh copies of three different eligible owned relic types, with no additional cost. |
+| Bargain | Handheld Mirror | Acquire a copy of 3 random relics. |
 
 First and Repeat Visits use the same pool. Turn counts include extra turns, and
 the Corrupted Player-to-Architect transition does not restart bonuses or copied
