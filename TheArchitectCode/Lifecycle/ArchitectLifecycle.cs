@@ -64,8 +64,20 @@ internal static class ArchitectRoomsPatch
     }
 }
 
-[HarmonyPatch(typeof(RunManager), nameof(RunManager.WinRun))]
+[HarmonyPatch(typeof(RunManager), nameof(RunManager.EnterNextAct))]
 internal static class EnterArchitectActPatch
+{
+    private static void Prefix(RunManager __instance)
+    {
+        var run = __instance.DebugOnlyGetState();
+        if (run is { CurrentActIndex: 2, Acts.Count: 3 } && !__instance.IsAbandoned)
+            ArchitectLifecycle.AppendAct(run);
+    }
+}
+
+// Older saves can already be inside the vanilla Act 3 ending event.
+[HarmonyPatch(typeof(RunManager), nameof(RunManager.WinRun))]
+internal static class ResumeLegacyArchitectEntryPatch
 {
     private static bool Prefix(RunManager __instance, ref Task __result)
     {
@@ -147,7 +159,7 @@ internal static class FinishArchitectWithoutRewardsPatch
     {
         if (!ArchitectLifecycle.IsEncounter(room.CombatState.RunState))
             return true;
-        // Let the engine finish its combat-end notifications before opening the native summary.
+        // Let combat-end notifications finish before recording the result and starting the ending.
         Callable.From(ArchitectLifecycle.FinishVictory).CallDeferred();
         return false;
     }
@@ -177,6 +189,7 @@ internal static class ArchitectOutcomePatch
         var state = ArchitectRun.Get(run);
         if (state.Outcome == null)
         {
+            ArchitectEnding.CaptureProgress(run);
             state.Outcome = isVictory ? "ArchitectWin" : "ArchitectLoss";
             if (__instance.ShouldSave)
             {

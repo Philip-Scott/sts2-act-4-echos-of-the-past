@@ -13,7 +13,7 @@ It supports single-player and multiplayer runs. All participants must use matchi
 game, mod and content versions. Disable other fourth-act mods, including Act4Heart,
 before playing.
 
-After Act 3, the run continues to **Act 4 — The Architect** with a fixed
+After Act 3, the run continues directly to **Act 4 — The Architect** with a fixed
 Ancient → Rest Site → Shop → boss route. The first visit fights the Architect; later
 visits first fight a corrupted version of the previous completed character.
 In multiplayer, repeat visits fight the **entire last saved party** for the same
@@ -101,7 +101,12 @@ Co-op-only cards and third-party card/modifier effects are visibly
 Missing saved models block entry with an actionable error rather than silently
 dropping cards. This is not a claim that every vanilla card combination has been
 audited. See [native Corrupted Player behavior and boundaries](TheArchitectCode/CorruptedPlayerCombat/README.md).
-Terminal outcomes open the native victory screen directly.
+The vanilla post-Act 3 dialogue and attack sequence now plays after **either**
+Architect outcome. After the Architect's final attack, the whole party is bound
+and gradually takes on the Bound Echo corruption effect instead of playing the
+usual ending death animation, then the native victory screen opens. Defeated
+party members appear in the sequence without being revived; the actual combat
+outcome, terminal HP, and saved successor builds remain unchanged.
 
 For fast feedback, start a disposable modded single-player run, open the
 developer console with the **backtick (`)** key, and enter `architect`. This skips to the Act 4
@@ -159,6 +164,11 @@ captures, and reject external mouse/keyboard commands. Desktop focus is still
 shared; see the native Corrupted Player README for the tradeoff and measured timings.
 **Changing XDG_DATA_HOME alone
 does not isolate Steam Cloud or real saves.**
+
+The ending scenario needs no snapshot input:
+`bash scripts/native-demo.sh run "/path/to/Slay the Spire 2" --ending`.
+It covers the direct Act 3 handoff, both outcomes, and full-party binding using
+all five base characters. Its simulated multiplayer party is not a live network test.
 
 To reproduce an existing Corrupted Player fight without touching its profile,
 set `ARCHITECT_RUN_INPUT` to the saved `current_run.save` and run

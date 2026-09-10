@@ -90,7 +90,7 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
     {
         var run = player.RunState;
         await WaitFor(() => run.CurrentRoom is EventRoom);
-        for (var step = 0; step < 10 && run.Acts.Count == 3; step++)
+        for (var step = 0; step < 10 && run.CurrentActIndex == 2; step++)
         {
             await WaitFor(() => run.CurrentRoom is EventRoom room && room.LocalMutableEvent.CurrentOptions.Count > 0);
             RunManager.Instance.EventSynchronizer.ChooseLocalOption(0);
@@ -239,6 +239,7 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
         await terminal;
         await CombatManager.Instance.CheckWinCondition();
         await WaitFor(() => ArchitectRun.Get(player.RunState).Outcome != null);
+        await ArchitectEndingPlaytest.Complete(player.RunState, "bootstrap");
         await WaitFor(() => NOverlayStack.Instance?.Peek() is NGameOverScreen);
         await Capture(".result");
         if (player.RunState.CurrentRoom?.IsVictoryRoom != true)

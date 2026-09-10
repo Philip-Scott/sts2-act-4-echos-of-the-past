@@ -14,10 +14,12 @@ Game assemblies and decompiled game source are not redistributed in this repo.
 
 ## Act entry and fixed map
 
-- Preserve the vanilla Act 3 Architect event. Its final callback awaits
-  `RunManager.WinRun()`. Intercept that call only for the ordinary three-act,
-  single-player route, append the custom act, and queue
-  `ActChangeSynchronizer.SetLocalPlayerReady()`. Do not await the transition in
+- Append the custom act at `RunManager.EnterNextAct()` for an ordinary
+  three-act run leaving Act 3. The native synchronized handoff then enters Act 4
+  instead of opening the vanilla Architect ending event. The ending is deferred
+  until either terminal Architect outcome. Older saves already inside the Act 3
+  ending retain a `WinRun()` compatibility hook that queues
+  `ActChangeSynchronizer.SetLocalPlayerReady()`. Do not await that transition in
   the event callback: `EventRoom.Exit()` awaits pending option tasks.
   Sources: `MegaCrit.Sts2.Core.Runs/RunManager.cs`, `WinRun` and `EnterNextAct`
   (1308-1341); `MegaCrit.Sts2.Core.Rooms/EventRoom.cs`, `Exit` (90-102);
@@ -49,14 +51,23 @@ Game assemblies and decompiled game source are not redistributed in this repo.
   Sources: `MegaCrit.Sts2.Core.Combat/CombatManager.cs`, `EndCombatInternal`
   (1300-1362); `MegaCrit.Sts2.Core.Nodes.Combat/NCombatUi.cs` (363-378).
 - Loss calls `RunManager.OnEnded(false)` inside `CreatureCmd.Kill`. Capture the
-  actual outcome before forcing the base-game victory flag. Exclude abandon
-  and multiplayer. Source: `MegaCrit.Sts2.Core.Commands/CreatureCmd.cs`
+  actual outcome before forcing the base-game victory flag. Exclude abandon;
+  multiplayer uses the host-owned complete-party successor store.
+  Source: `MegaCrit.Sts2.Core.Commands/CreatureCmd.cs`
   (476-489).
-- Terminal outcomes open the native `NRun.ShowGameOverScreen(SerializableRun)`
-  directly, without an intermediate custom dialog. The game-over and
-  victory-room overrides are scoped to a terminal Architect encounter.
+- Terminal outcomes capture the native `SerializableRun` and progression before
+  opening the native Architect ending event. `NRun.ShowGameOverScreen` is deferred
+  until that event finishes. The result and successor snapshot are already
+  recorded from the real encounter, not the presentation event; dialogue selection
+  uses the pre-completion win counts so it does not skip a visit.
+  The event's final attack always includes the Architect, then the party gains
+  the existing Bound Echo visuals instead of `WinRun` killing every player again.
+  Defeated players use standing/attack visuals without modifying their HP.
+  Ordinary death handling and non-Architect results are unchanged.
+  The game-over and victory-room overrides remain scoped to the terminal encounter.
   Source: `MegaCrit.Sts2.Core.Nodes/NRun.cs`, `ShowGameOverScreen`;
-  implementation: `TheArchitectCode/Lifecycle/ArchitectLifecycle.cs`.
+  implementation: `TheArchitectCode/Lifecycle/ArchitectLifecycle.cs` and
+  `TheArchitectCode/Lifecycle/ArchitectEnding.cs`.
 - The beta has no fourth-act character epoch. Act 3 already awards the final
   character epoch, so skip only that unsupported lookup for this encounter,
   not the rest of combat or run progression.
@@ -105,6 +116,8 @@ expected revision, and separate snapshot/finalization dispositions. Recovery
 must not blindly call `OnEnded` again or assume an existing history file
 proves completion. A write-ahead adapter around intended local save contents
 is a possible direction, but requires implementation and fault injection.
+The deferred ending is presentation after finalization, not a resumable run
+checkpoint: closing the game during it does not replay it on launch.
 
 Verified seams for that follow-up are `GodotFileIo.WriteFile(string, byte[])`,
 `ProgressSaveManager.SaveProgress()`, and

@@ -74,6 +74,11 @@ internal static class NativeDemoPlaytest
             game.AddChild(new NativeDemoObserver());
         }
         await Task.Delay(2000);
+        if (CommandLineHelper.HasArg("architect-native-ending"))
+        {
+            await ArchitectEndingPlaytest.Run(game);
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-native-deck-preview"))
         {
             await DeckPreviewPlaytest.Run(game);
@@ -409,6 +414,7 @@ internal static class NativeDemoPlaytest
 
     private static async Task Finish(NGame game, RunState run, NativeCorruptedPlayer actor, long initialRevision, string outcome)
     {
+        await ArchitectEndingPlaytest.Complete(run, outcome);
         await WaitFor(() => NOverlayStack.Instance?.Peek() is NGameOverScreen);
         Require(ArchitectRun.Get(run).Outcome == outcome, $"native outcome preserved: {outcome}");
         Require(actor.Cleaned, "actor cleaned after terminal outcome");

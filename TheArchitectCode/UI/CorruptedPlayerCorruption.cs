@@ -85,14 +85,19 @@ public partial class CorruptedPlayerCorruption : Node
     private readonly List<(Node2D Body, CanvasGroup Group, ShaderMaterial Material)> _bodies = [];
     private double _time;
     private float _strength = Intensity;
+    private bool _animateBinding;
+    private bool _persistAfterDeath;
 
-    public static void Attach(NCreatureVisuals visuals)
+    public static void Attach(NCreatureVisuals visuals, bool animateBinding = false, bool persistAfterDeath = false)
     {
         var effect = new CorruptedPlayerCorruption
         {
             Name = "BoundEcho",
             _visuals = visuals,
-            _bounds = visuals.GetNode<Control>("%Bounds")
+            _bounds = visuals.GetNode<Control>("%Bounds"),
+            _animateBinding = animateBinding,
+            _persistAfterDeath = persistAfterDeath,
+            _strength = animateBinding ? 0f : Intensity
         };
         var body = visuals.GetNode<Node2D>("%Visuals");
         effect.Wrap(body, "BoundEchoBody");
@@ -147,8 +152,13 @@ public partial class CorruptedPlayerCorruption : Node
     public override void _Process(double delta)
     {
         _time += delta;
-        bool alive = _creature?.Entity.IsDead != true;
-        _strength = Mathf.MoveToward(_strength, alive ? Intensity : 0f, (float)delta * 3f);
+        bool alive = _persistAfterDeath || _creature?.Entity.IsDead != true;
+        _strength = _animateBinding && alive
+            ? Intensity * Mathf.SmoothStep(0f, 1f, (float)(_time - 0.5) / 1.2f)
+            : Mathf.MoveToward(_strength, alive ? Intensity : 0f, (float)delta * 3f);
+        var bindingStrength = _animateBinding && alive
+            ? Intensity * Mathf.SmoothStep(0f, 1f, (float)_time / 0.8f)
+            : _strength;
         foreach (var (body, group, material) in _bodies)
         {
             // Native death VFX take the original body into their own viewport.
@@ -164,13 +174,13 @@ public partial class CorruptedPlayerCorruption : Node
             material.SetShaderParameter(EffectTime, (float)_time);
             material.SetShaderParameter(Strength, _strength);
         }
-        bool visible = _strength > 0 && _bodies.Any(entry => entry.Group.Visible);
+        bool visible = bindingStrength > 0 && _bodies.Any(entry => entry.Group.Visible);
         _back.Visible = visible;
         _front.Visible = visible;
         if (visible)
         {
-            _back.UpdateEffect(BoundsIn(_back), (float)_time, _strength);
-            _front.UpdateEffect(BoundsIn(_front), (float)_time, _strength);
+            _back.UpdateEffect(BoundsIn(_back), (float)_time, bindingStrength);
+            _front.UpdateEffect(BoundsIn(_front), (float)_time, bindingStrength);
         }
     }
 

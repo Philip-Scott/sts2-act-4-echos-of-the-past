@@ -20,6 +20,7 @@ using MegaCrit.Sts2.Core.Saves.Runs;
 using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using TheArchitect.TheArchitectCode.UI;
 using TheArchitect.TheArchitectCode.Encounters;
+using TheArchitect.TheArchitectCode.Lifecycle;
 
 namespace TheArchitect.TheArchitectCode.Monsters;
 
@@ -162,8 +163,7 @@ public sealed class CorruptedPlayer : CustomMonsterModel
         {
             if (__instance.Monster is CorruptedPlayer)
                 return false;
-            if (encounter is ArchitectEncounter && actIndex == 3)
-                actIndex = 2;
+            actIndex = ArchitectMultiplayerScaling.GetActIndex(encounter, actIndex);
             return true;
         }
     }

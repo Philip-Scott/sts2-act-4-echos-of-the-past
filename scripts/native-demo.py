@@ -155,7 +155,7 @@ def sandbox_command(game, run, xvfb, render_threads=4, shared_display=None, rend
 
 def launch(args):
     game = required_file(Path(args.game) / "SlayTheSpire2").parent
-    requires_snapshot = args.scenario not in ("ancient", "saved-run", "relic-art", "party", "party-layout", "attack-vfx", "deck-preview")
+    requires_snapshot = args.scenario not in ("ancient", "saved-run", "relic-art", "party", "party-layout", "attack-vfx", "deck-preview", "ending")
     if requires_snapshot and not os.environ.get("ARCHITECT_SNAPSHOT_INPUT"):
         raise ValueError("Set ARCHITECT_SNAPSHOT_INPUT to the captured snapshot to copy (never modified).")
     snapshot = required_file(os.environ["ARCHITECT_SNAPSHOT_INPUT"]) if (
@@ -470,7 +470,7 @@ def main():
     cache.add_argument("--cache-from", help="Copy shader caches from this completed run ID.")
     cache.add_argument("--cold", action="store_true", help="Do not seed shader caches from a completed run.")
     scenarios = run.add_mutually_exclusive_group()
-    for scenario in ("loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "previews", "party", "party-layout", "attack-vfx", "deck-preview"):
+    for scenario in ("loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "previews", "party", "party-layout", "attack-vfx", "deck-preview", "ending"):
         scenarios.add_argument("--" + scenario, dest="scenario", action="store_const", const=scenario)
     run.set_defaults(scenario="default")
     for action in ("status", "capture", "stop", "pointer", "click", "key", "_serve"):
