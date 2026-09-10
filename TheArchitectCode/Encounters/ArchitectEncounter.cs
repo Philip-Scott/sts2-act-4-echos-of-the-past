@@ -60,11 +60,14 @@ public sealed class ArchitectEncounter : CustomEncounterModel
         for (var index = 0; index < snapshots.Count; index++)
         {
             var snapshot = snapshots[index];
+            var counterpart = state.EncounterCounterpartNetId(index) is { } netId
+                ? run.Players.Single(player => player.NetId == netId)
+                : null;
             var corruptedPlayer = (CorruptedPlayer)ArchitectModels.CorruptedPlayer.ToMutable();
             corruptedPlayer.Configure(characters[index]!,
                 CorruptedPlayerHealth.CalculateMaxHp(snapshot.MaxHp, run.AscensionLevel), snapshot.Deck,
                 $"{run.Rng.StringSeed}|{state.EncounterRevision}|{snapshot.ContentHash}|{Id}" +
-                (snapshots.Count > 1 ? $"|party:{index}" : ""));
+                (snapshots.Count > 1 ? $"|party:{index}" : ""), counterpart);
             corruptedPlayer.JoinParty(phase, index);
             monsters.Add((corruptedPlayer, null));
         }

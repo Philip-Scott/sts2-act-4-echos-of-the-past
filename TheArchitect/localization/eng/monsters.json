@@ -1,5 +1,6 @@
 {
   "THEARCHITECT-CORRUPTED_PLAYER.name": "Corrupted Player",
+  "THEARCHITECT-CORRUPTED_PLAYER.playerName": "Corrupted {Player}",
   "THEARCHITECT-CORRUPTED_PLAYER.characterName": "Corrupted {Character}",
   "THEARCHITECT-CORRUPTED_PLAYER.characters.IRONCLAD": "Corrupted Ironclad",
   "THEARCHITECT-CORRUPTED_PLAYER.characters.SILENT": "Corrupted Silent",

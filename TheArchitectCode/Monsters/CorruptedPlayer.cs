@@ -6,12 +6,15 @@ using MegaCrit.Sts2.Core.Animation;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.MonsterMoves.MonsterMoveStateMachine;
 using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Platform;
+using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
 using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
@@ -30,12 +33,20 @@ public sealed class CorruptedPlayer : CustomMonsterModel
     private bool _deathHandled;
     private CorruptedPartyPhase? _party;
     private int _partyIndex;
+    private Player? _counterpart;
     public NativeCorruptedPlayer? Native { get; private set; }
     private CharacterModel Character => _character ?? ModelDb.Character<Ironclad>();
     public override LocString Title
     {
         get
         {
+            if (_counterpart != null)
+            {
+                var playerTitle = new LocString("monsters", Id.Entry + ".playerName");
+                playerTitle.Add("Player", PlatformUtil.GetPlayerName(RunManager.Instance.NetService.Platform,
+                    _counterpart.NetId));
+                return playerTitle;
+            }
             if (_character == null)
                 return base.Title;
             var characterTitle = new LocString("monsters", Id.Entry + ".characters." + _character.Id.Entry);
@@ -58,7 +69,8 @@ public sealed class CorruptedPlayer : CustomMonsterModel
         Configure(character, maxHp, deck.Select(card =>
             JsonSerializer.SerializeToElement(card, JsonSerializationUtility.GetTypeInfo<SerializableCard>())).ToArray(), seed);
 
-    public void Configure(CharacterModel character, int maxHp, IReadOnlyList<JsonElement> deck, string seed)
+    public void Configure(CharacterModel character, int maxHp, IReadOnlyList<JsonElement> deck, string seed,
+        Player? counterpart = null)
     {
         AssertMutable();
         if (_deck != null)
@@ -69,6 +81,7 @@ public sealed class CorruptedPlayer : CustomMonsterModel
         _maxHp = maxHp;
         _deck = deck.Select(card => card.Clone()).ToArray();
         _seed = seed;
+        _counterpart = counterpart;
     }
 
     internal void JoinParty(CorruptedPartyPhase party, int index)
@@ -97,7 +110,7 @@ public sealed class CorruptedPlayer : CustomMonsterModel
             throw new InvalidOperationException("Configure the Corrupted Player snapshot before adding it to combat.");
         Creature.SetMaxHpInternal(_maxHp);
         Creature.SetCurrentHpInternal(_maxHp);
-        Native = new NativeCorruptedPlayer(Creature, Character, _deck, _seed);
+        Native = new NativeCorruptedPlayer(Creature, Character, _deck, _seed, _counterpart?.Creature);
         var node = Creature.GetCreatureNode();
         if (node != null)
         {

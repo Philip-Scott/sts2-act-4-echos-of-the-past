@@ -7,12 +7,14 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Acts;
+using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.Multiplayer;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Platform;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Unlocks;
 using MegaCrit.Sts2.Core.ValueProps;
@@ -33,7 +35,7 @@ internal static class NativePartyPlaytest
         foreach (var (count, ascension) in layoutOnly ? new[] { (4, 8) } : [(2, 0), (3, 8), (4, 8)])
             await Exercise(game, count, ascension, layoutOnly);
         MainFile.Logger.Info(layoutOnly ? "NATIVE PARTY LAYOUT PASSED" :
-            "NATIVE PARTY PASSED: 2-4 humans and saved enemies; fixed HP, independent turns, sequential/AoE handoff.");
+            "NATIVE PARTY PASSED: 2-4 humans and saved enemies; counterpart names/targets, AOE, fixed HP, independent turns, sequential/AoE handoff.");
         game.GetTree().Quit();
     }
 
@@ -72,7 +74,7 @@ internal static class NativePartyPlaytest
                 HostProfileUuid = origin.HostProfileUuid, GroupKey = origin.GroupKey, Revision = 1,
                 TerminalRunId = "prior-" + origin.RunId, Outcome = "ArchitectWin",
                 Members = participants.Select((participant, index) =>
-                    new CorruptedPartyMember(participant.ProfileUuid, snapshots[index])).ToArray()
+                    new CorruptedPartyMember(participant.ProfileUuid, snapshots[index])).Reverse().ToArray()
             }
         };
         frozen.Validate(players.Select(player => player.NetId).ToArray(), 1);
@@ -100,10 +102,39 @@ internal static class NativePartyPlaytest
         for (var index = 0; index < count; index++)
         {
             actors[index].AssertIdentity();
-            var expected = CorruptedPlayerHealth.CalculateMaxHp(snapshots[index].MaxHp, ascension);
+            var expected = CorruptedPlayerHealth.CalculateMaxHp(snapshots[count - index - 1].MaxHp, ascension);
             Require(enemies[index].MaxHp == expected, $"{count}: member {index} has exactly {expected} HP");
             enemies[index].ScaleMonsterHpForMultiplayer(combat.Encounter, count, 3);
             Require(enemies[index].MaxHp == expected, $"{count}: native multiplayer cannot add HP scaling");
+            var counterpart = players[count - index - 1];
+            Require(enemies[index].Monster!.Title.GetFormattedText() ==
+                $"Corrupted {PlatformUtil.GetPlayerName(manager.NetService.Platform, counterpart.NetId)}",
+                $"{count}: member {index} is named for its matched human, not its saved character");
+            var strike = combat.CreateCard<StrikeIronclad>(actors[index].Player);
+            var area = combat.CreateCard<DaggerSpray>(actors[index].Player);
+            var random = combat.CreateCard<SwordBoomerang>(actors[index].Player);
+            Require(actors[index].SelectTarget(strike) == counterpart.Creature,
+                $"{count}: reordered member {index} targets its own human");
+            Require(actors[index].SelectTarget(area) == null && actors[index].SelectTarget(random) == null &&
+                players.All(player => actors[index].View.HittableEnemies.Contains(player.Creature)),
+                $"{count}: AOE and random effects retain the complete opponent pool");
+            var counterpartHp = counterpart.Creature.CurrentHp;
+            try
+            {
+                counterpart.Creature.SetCurrentHpInternal(0);
+                Require(actors[index].SelectTarget(strike) ==
+                    players.First(player => player != counterpart).Creature,
+                    $"{count}: dead counterpart falls back to a living human");
+            }
+            finally
+            {
+                counterpart.Creature.SetCurrentHpInternal(counterpartHp);
+            }
+            Require(actors[index].SelectTarget(strike) == counterpart.Creature,
+                $"{count}: revived counterpart is preferred again");
+            combat.RemoveCard(strike);
+            combat.RemoveCard(area);
+            combat.RemoveCard(random);
         }
         await NativeDemoPlaytest.Capture($"party-{count}-opening");
         var panels = enemies.Select(enemy => enemy.GetCreatureNode()!
@@ -121,7 +152,9 @@ internal static class NativePartyPlaytest
             return;
         }
 
+        var finishTargetingProbe = count == 2 ? PrepareTargetingProbe(players, actors) : null;
         await EndTurn(players, 2);
+        finishTargetingProbe?.Invoke();
         Require(actors.All(actor => actor.CompletedTurns == 1), $"{count}: every saved member plays one native turn");
         var context = new ThrowingPlayerChoiceContext();
         await PowerCmd.Apply<AmbergrisPower>(context, enemies[0], 1, enemies[0], null);
@@ -176,6 +209,54 @@ internal static class NativePartyPlaytest
     private static bool HasEnergyCounter(CorruptedPlayerTelegraph panel) =>
         GodotObject.IsInstanceValid(panel) &&
         panel.FindChild("Energy", true, false).GetChildren().OfType<NEnergyCounter>().Any();
+
+    private static Action PrepareTargetingProbe(Player[] players, NativeCorruptedPlayer[] actors)
+    {
+        var combat = players[0].Creature.CombatState!;
+        var completed = new List<Action>();
+        var hp = Array.Empty<int>();
+        foreach (var actor in actors)
+        {
+            foreach (var pile in actor.State.AllPiles)
+                foreach (var card in pile.Cards.ToArray())
+                {
+                    pile.RemoveInternal(card);
+                    combat.RemoveCard(card);
+                }
+            var strike = combat.CreateCard<StrikeIronclad>(actor.Player);
+            var area = combat.CreateCard<DaggerSpray>(actor.Player);
+            actor.State.Hand.AddInternal(strike);
+            actor.State.Hand.AddInternal(area);
+            var counterpart = players[actors.Length - Array.IndexOf(actors, actor) - 1];
+            var played = 0;
+            void BeforeTurn() => hp = players.Select(player => player.Creature.CurrentHp).ToArray();
+            void AfterCard(CardModel card)
+            {
+                Require(card == strike || card == area, "targeting probe plays only its prepared cards");
+                for (var index = 0; index < players.Length; index++)
+                {
+                    var expected = card == area ? 8 : players[index] == counterpart ? 6 : 0;
+                    Require(hp[index] - players[index].Creature.CurrentHp == expected,
+                        $"{card.Id.Entry}: player {players[index].NetId} receives exactly {expected} damage");
+                }
+                hp = players.Select(player => player.Creature.CurrentHp).ToArray();
+                played++;
+            }
+            actor.TurnStarting += BeforeTurn;
+            actor.CardPlayed += AfterCard;
+            completed.Add(() =>
+            {
+                actor.TurnStarting -= BeforeTurn;
+                actor.CardPlayed -= AfterCard;
+                Require(played == 2, "each actor executes both its targeted attack and its AOE attack");
+            });
+        }
+        return () =>
+        {
+            foreach (var finish in completed)
+                finish();
+        };
+    }
 
     private static async Task EndTurn(Player[] players, int nextTurn)
     {

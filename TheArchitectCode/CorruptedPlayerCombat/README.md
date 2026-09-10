@@ -58,8 +58,11 @@ replacement remain in the existing lifecycle/persistence implementation.
 
 - Play the first currently playable supported card from left to right, then
   reconsider the current hand after each native effect.
-- Use the first live valid opponent for targeted attacks. Native random effects
-  retain native randomness using the private actor RNG.
+- Target the saved member's human counterpart, matched by persistent profile
+  identity rather than party order or character. If that human cannot be hit,
+  use the first hittable human in the live party. Single-player uses its sole
+  human. AOE attacks still target everyone; native random effects retain native
+  randomness using the private actor RNG.
 - Resolve native choices in their offered order, selecting the minimum required
   count, or one when a choice is optional; choose the first offered bundle.
 - Human attack intent, where a native effect requests it, means **the targeted
@@ -89,7 +92,8 @@ the Corrupted Player's Strength/Weak and its current target's Vulnerable.
 All-enemy and random-enemy attacks use native multi-target preview rules.
 Values refresh with live state, without predicting earlier cards' effects,
 future draws or power expiry. Unsupported cards retain unpowered previews.
-The enemy is named for its saved character (for example, "Corrupted Ironclad").
+Multiplayer enemies are named `Corrupted <Player Name>` for their matched human.
+Single-player keeps the saved character's name (for example, "Corrupted Ironclad").
 Party previews are compact, with full-size hover inspection; three or four
 Corrupted Players use a two-row enemy layout.
 This is a state preview, **not an exact future-damage forecast**.
@@ -157,7 +161,9 @@ bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --attack-vf
 The script's historical name does not enable a fixture engine. Its explicit
 `--architect-native-test` gate controls disposable storage and automation only.
 The party scenario uses the native test run service with multiple human players,
-not a live network connection. It exercises full-party generation, fixed HP,
+not a live network connection. It exercises full-party generation with reordered
+saved members, counterpart names and targets, dead/revived target fallback,
+single-target versus AOE damage, fixed HP,
 independent native/extra turns, preview layout, and sequential/AoE deaths through
 the production encounter and handoff. Transport consensus, host ownership, and
 frozen save/rejoin behavior have separate deterministic regression coverage.

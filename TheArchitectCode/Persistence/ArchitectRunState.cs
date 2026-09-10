@@ -27,6 +27,16 @@ public sealed partial class ArchitectRun
         ? party.Lineage?.Revision ?? 0
         : EntrySnapshot?.Revision ?? 0;
 
+    public ulong? EncounterCounterpartNetId(int index)
+    {
+        if (EntryParty == null)
+            return null;
+        var lineage = EntryParty.Lineage ??
+            throw new InvalidOperationException("A First Visit has no Corrupted Player counterpart.");
+        var profile = lineage.Members[index].ProfileUuid;
+        return EntryParty.Participants.Single(participant => participant.ProfileUuid == profile).NetId;
+    }
+
     public void BindNetworkOrigin(ulong[] participants, ulong host)
     {
         if (participants.Length is < 2 or > 4 || participants.Distinct().Count() != participants.Length ||

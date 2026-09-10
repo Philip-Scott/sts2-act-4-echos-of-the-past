@@ -19,6 +19,10 @@ visits first fight a corrupted version of the previous completed character.
 In multiplayer, repeat visits fight the **entire last saved party** for the same
 host and group membership. All Corrupted Players enter together, and the Architect
 appears only after every member is defeated, without restarting combat.
+Each multiplayer enemy is named **Corrupted &lt;Player Name&gt;** and directs
+explicitly targeted cards at its matching human, falling back to another living
+player if that counterpart cannot be hit. AOE attacks still hit the whole party,
+and random-target cards and orbs retain native randomness.
 The Corrupted Player starts at twice that character's saved maximum HP, or
 2.5 times at Ascension 8 (Tough Enemies) and above in the current run (rounded up).
 These values do not receive an additional multiplayer HP multiplier: the extra

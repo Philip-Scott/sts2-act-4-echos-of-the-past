@@ -39,6 +39,7 @@ public sealed class NativeCorruptedPlayer
     internal event Action? TurnFinished;
     internal NativeCombatView View { get; }
     private readonly ICombatState _combat;
+    private readonly Creature? _counterpart;
     private readonly NativeChoiceContext _context;
     private readonly Dictionary<CardModel, string> _cardIds = new();
     private readonly Dictionary<CardModel, string> _reasons = new();
@@ -47,13 +48,17 @@ public sealed class NativeCorruptedPlayer
     private bool _endTurnRequested;
     internal event Action<CardModel>? CardPlayed;
 
-    public NativeCorruptedPlayer(Creature body, CharacterModel character, IReadOnlyList<JsonElement> deck, string seed)
+    public NativeCorruptedPlayer(Creature body, CharacterModel character, IReadOnlyList<JsonElement> deck, string seed,
+        Creature? counterpart = null)
     {
         if (body.Monster is not CorruptedPlayer || body.CombatState is not CombatState combat ||
             combat.Players.Count == 0 || body.CombatId == null)
             throw new InvalidOperationException("Native Corrupted Player requires a live enemy with a combat identity.");
+        if (counterpart != null && !combat.PlayerCreatures.Contains(counterpart))
+            throw new InvalidOperationException("A Corrupted Player counterpart must belong to the human party.");
         Body = body;
         _combat = combat;
+        _counterpart = counterpart;
         // Avoid CreateForNewRun's discovery/save notifications and starter relic acquisition.
         var constructor = AccessTools.GetDeclaredConstructors(typeof(Player)).Single(c => c.GetParameters().Length == 15);
         var privateId = ulong.MaxValue - 17;
@@ -376,7 +381,9 @@ public sealed class NativeCorruptedPlayer
 
     internal Creature? SelectTarget(CardModel card) => card.TargetType switch
     {
-        TargetType.AnyEnemy => _combat.GetOpponentsOf(Body).FirstOrDefault(c => c.IsHittable),
+        TargetType.AnyEnemy => _counterpart is { IsHittable: true } && _combat.PlayerCreatures.Contains(_counterpart)
+            ? _counterpart
+            : _combat.PlayerCreatures.FirstOrDefault(c => c.IsHittable),
         TargetType.AnyAlly => _combat.GetTeammatesOf(Body).FirstOrDefault(c => c != Body && c.IsAlive),
         _ => null
     };

@@ -102,8 +102,27 @@ internal static class MultiplayerPersistenceTests
             var json = JsonSerializer.Serialize(new { Id = "legacy", Entered = true, EntrySnapshot = envelope });
             var state = JsonSerializer.Deserialize<ArchitectRun>(json)!;
             Check(state.EntryParty == null && state.EncounterSnapshots.Count == 1 && state.EncounterRevision == 7);
+            Check(state.EncounterCounterpartNetId(0) == null);
             state.EntrySnapshot = envelope with { Snapshot = Snapshot(90), Revision = 8 };
             Check(state.EncounterSnapshots[0].MaxHp == 90 && state.EncounterRevision == 8);
+        });
+        test("encounter counterparts follow profile identity across reordered members and reloads", () =>
+        {
+            var reordered = frozen with
+            {
+                Participants = participants.Reverse().ToArray(),
+                Lineage = lineage with { Members = members.Reverse().ToArray() }
+            };
+            reordered.Validate([20, 10], 10);
+            var state = new ArchitectRun { Entered = true, EntryParty = reordered };
+            Check(state.EncounterSnapshots[0].MaxHp == 99 && state.EncounterCounterpartNetId(0) == 20);
+            Check(state.EncounterSnapshots[1].MaxHp == 80 && state.EncounterCounterpartNetId(1) == 10);
+            var restored = JsonSerializer.Deserialize<ArchitectRun>(JsonSerializer.Serialize(state))!;
+            Check(restored.EncounterCounterpartNetId(0) == 20 && restored.EncounterCounterpartNetId(1) == 10);
+            restored.EntryParty = reordered with { Participants = participants };
+            Check(restored.EncounterCounterpartNetId(0) == 20 && restored.EncounterCounterpartNetId(1) == 10);
+            restored.EntryParty = reordered with { Participants = [participants[0]] };
+            Reject(() => restored.EncounterCounterpartNetId(0));
         });
         test("host entry waits for all exact party acknowledgements", () =>
         {
