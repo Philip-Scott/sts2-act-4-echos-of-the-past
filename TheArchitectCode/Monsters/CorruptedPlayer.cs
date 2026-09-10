@@ -1,6 +1,7 @@
 using System.Text.Json;
 using BaseLib.Abstracts;
 using Godot;
+using HarmonyLib;
 using MegaCrit.Sts2.Core.Animation;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
 using MegaCrit.Sts2.Core.Commands;
@@ -15,6 +16,7 @@ using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
 using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using TheArchitect.TheArchitectCode.UI;
+using TheArchitect.TheArchitectCode.Encounters;
 
 namespace TheArchitect.TheArchitectCode.Monsters;
 
@@ -25,7 +27,9 @@ public sealed class CorruptedPlayer : CustomMonsterModel
     private string? _seed;
     private int _maxHp = 80;
     private CorruptedPlayerTelegraph? _telegraph;
-    private bool _transitioned;
+    private bool _deathHandled;
+    private CorruptedPartyPhase? _party;
+    private int _partyIndex;
     public NativeCorruptedPlayer? Native { get; private set; }
     private CharacterModel Character => _character ?? ModelDb.Character<Ironclad>();
     public override LocString Title
@@ -65,6 +69,13 @@ public sealed class CorruptedPlayer : CustomMonsterModel
         _maxHp = maxHp;
         _deck = deck.Select(card => card.Clone()).ToArray();
         _seed = seed;
+    }
+
+    internal void JoinParty(CorruptedPartyPhase party, int index)
+    {
+        AssertMutable();
+        _party = party;
+        _partyIndex = index;
     }
 
     public override NCreatureVisuals CreateCustomVisuals()
@@ -110,17 +121,33 @@ public sealed class CorruptedPlayer : CustomMonsterModel
     public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature,
         bool wasRemovalPrevented, float deathAnimLength)
     {
-        if (creature != Creature || wasRemovalPrevented || _transitioned ||
-            Creature.CombatState is not { } combat || !combat.PlayerCreatures.Any(player => player.IsAlive))
+        if (creature != Creature || wasRemovalPrevented || _deathHandled ||
+            Creature.CombatState is not { } combat)
             return;
-        _transitioned = true;
+        _deathHandled = true;
+        // Count confirmed deaths, not zero HP: another member in a lethal AoE may still revive.
+        var lastMember = (_party ??= new CorruptedPartyPhase(1)).Defeat(_partyIndex);
         if (GodotObject.IsInstanceValid(_telegraph))
             _telegraph!.Hide();
-        await CreatureCmd.Add(ArchitectModels.Boss.ToMutable(), combat, slotName: Creature.SlotName);
+        if (lastMember && combat.PlayerCreatures.Any(player => player.IsAlive))
+            await CreatureCmd.Add(ArchitectModels.Boss.ToMutable(), combat);
         if (Native != null)
             foreach (var pet in Native.State.Pets.ToArray())
                 await CreatureCmd.Kill(pet, true);
         Native?.Cleanup();
+    }
+
+    [HarmonyPatch(typeof(Creature), nameof(Creature.ScaleMonsterHpForMultiplayer))]
+    internal static class CorruptedPlayerPartyHealthPatch
+    {
+        private static bool Prefix(Creature __instance, EncounterModel? encounter, ref int actIndex)
+        {
+            if (__instance.Monster is CorruptedPlayer)
+                return false;
+            if (encounter is ArchitectEncounter && actIndex == 3)
+                actIndex = 2;
+            return true;
+        }
     }
 
     private void ShowNativeState()

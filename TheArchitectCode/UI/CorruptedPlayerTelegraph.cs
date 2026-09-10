@@ -14,6 +14,7 @@ using MegaCrit.Sts2.Core.Nodes.HoverTips;
 using MegaCrit.Sts2.Core.Nodes.Screens;
 using MegaCrit.Sts2.Core.Nodes.Screens.Capstones;
 using MegaCrit.Sts2.addons.mega_text;
+using TheArchitect.TheArchitectCode.Monsters;
 
 namespace TheArchitect.TheArchitectCode.UI;
 
@@ -49,6 +50,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     private NCard? _enlarged;
     private NHoverTipSet? _tips;
     private bool _nativeDisplay;
+    private bool _partyDisplay;
 
     private sealed class CardCell(CorruptedPlayerTelegraphCard entry, Button face, HBoxContainer intents)
     {
@@ -67,6 +69,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             ZIndex = 30,
             _anchor = anchor,
             _creature = creature,
+            _partyDisplay = creature.CombatState?.Enemies.Count(enemy => enemy.Monster is CorruptedPlayer) > 1,
             _refreshPlan = refreshPlan
         };
         anchor.AddChild(panel);
@@ -75,6 +78,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
 
     public override void _Ready()
     {
+        if (_partyDisplay)
+            Scale = Vector2.One * 0.55f;
         var toolbar = new HBoxContainer();
         toolbar.AddThemeConstantOverride("separation", 8);
         _heading = new Label { Text = "Corrupted Player · play →", ClipText = true, SizeFlagsHorizontal = SizeFlags.ExpandFill };
@@ -420,7 +425,9 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         if (_preview == null || _enlarged == null || _inspected == null)
             return;
         var viewport = GetViewportRect().Size;
-        var source = _inspected.Face.GetGlobalRect();
+        var source = _partyDisplay
+            ? _inspected.Face.GetGlobalTransform() * new Rect2(Vector2.Zero, _inspected.Face.Size)
+            : _inspected.Face.GetGlobalRect();
         float scale = Mathf.Min(1f, Mathf.Min((viewport.X - 24f) / NCard.defaultSize.X,
             (viewport.Y - 24f) / NCard.defaultSize.Y));
         _enlarged.Scale = Vector2.One * Mathf.Max(0.1f, scale);
@@ -452,9 +459,22 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         CustomMinimumSize = new Vector2(width, 248);
         Size = new Vector2(width, 248);
         var above = _anchor.Visuals.IntentPosition.GlobalPosition;
+        if (_partyDisplay && _creature.CombatState is { } combat)
+        {
+            var spacing = combat.Enemies.Where(enemy => enemy != _creature && enemy.Monster is CorruptedPlayer)
+                .Select(enemy => enemy.GetCreatureNode()).Where(node => node != null &&
+                    Math.Abs(node.Position.Y - _anchor.Position.Y) < 120f)
+                .Select(node => Math.Abs(node!.Visuals.IntentPosition.GlobalPosition.X - above.X))
+                .DefaultIfEmpty(float.PositiveInfinity).Min();
+            var fit = (spacing - 16f) / (Size.X * _anchor.GetGlobalTransform().Scale.X);
+            Scale = Vector2.One * Mathf.Clamp(fit, 0.1f, 0.55f);
+        }
+        var displaySize = _partyDisplay ? (GetGlobalTransform() * new Rect2(Vector2.Zero, Size)).Size : Size;
+        var topMargin = _partyDisplay ? 100f : 12f;
         GlobalPosition = new Vector2(
-            Mathf.Clamp(above.X - width / 2f, 16f, Mathf.Max(16f, viewport.X - width - 16f)),
-            Mathf.Clamp(above.Y - Size.Y + (_nativeDisplay ? 24f : -24f), 12f, Mathf.Max(12f, viewport.Y - Size.Y - 12f)));
+            Mathf.Clamp(above.X - displaySize.X / 2f, 16f, Mathf.Max(16f, viewport.X - displaySize.X - 16f)),
+            Mathf.Clamp(above.Y - displaySize.Y + (_nativeDisplay ? 24f : -24f), topMargin,
+                Mathf.Max(topMargin, viewport.Y - displaySize.Y - 12f)));
         if (!IsVisibleInTree() || NCapstoneContainer.Instance?.InUse == true || NHoverTipSet.shouldBlockHoverTips)
             ClearPreview();
         else

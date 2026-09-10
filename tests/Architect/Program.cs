@@ -133,6 +133,7 @@ foreach (var hasAncient in new[] { true, false })
 
 UnwrittenBonusTests.Run(Test);
 HandheldMirrorTests.Run(Test, Check);
+CorruptedPartyTests.Run(Test, Check);
 
 Test("Unwritten: all eight relics declare the pool required by native descriptions", () =>
 {

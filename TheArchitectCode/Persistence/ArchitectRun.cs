@@ -5,28 +5,40 @@ using MegaCrit.Sts2.Core.Runs;
 
 namespace TheArchitect.TheArchitectCode.Persistence;
 
-public sealed class ArchitectRun
+public sealed partial class ArchitectRun
 {
     private static readonly ConditionalWeakTable<IRunState, ArchitectRun> States = new();
-    public string Id { get; set; } = Guid.NewGuid().ToString("N");
-    public bool Entered { get; set; }
-    public CorruptedPlayerEnvelope? EntrySnapshot { get; set; }
-    public string? Outcome { get; set; }
-    public long? SnapshotRevision { get; set; }
-
     public static ArchitectRun Get(IRunState run) => States.GetOrCreateValue(run);
 
     public static void Register()
     {
         ExtendedSaveTypes.RegisterSavedValue<IRunState, string>(
             "TheArchitect.Run.v1",
-            run => run.Players.Count == 1 ? JsonSerializer.Serialize(Get(run)) : null,
+            run => JsonSerializer.Serialize(Get(run)),
             (run, json) =>
             {
                 if (string.IsNullOrEmpty(json))
                     return;
                 var state = JsonSerializer.Deserialize<ArchitectRun>(json) ??
                     throw new JsonException("Architect run state is null.");
+                if (state.StartingHostNetId is { } startingHost)
+                    state.BindNetworkOrigin(run.Players.Select(player => player.NetId).ToArray(), startingHost);
+                if (state.Origin is { } origin)
+                    origin.Validate(run.Players.Select(player => player.NetId).ToArray(), origin.HostNetId);
+                if (state.PendingParty is { } pending)
+                {
+                    pending.Validate(run.Players.Select(player => player.NetId).ToArray(), pending.HostNetId);
+                    if (state.Id != pending.RunId || state.Origin == null ||
+                        state.Origin.GroupKey != pending.GroupKey || state.Origin.HostNetId != pending.HostNetId)
+                        throw new JsonException("Architect pending party does not match its saved run lineage.");
+                }
+                if (state.EntryParty is { } party)
+                {
+                    party.Validate(run.Players.Select(player => player.NetId).ToArray(), party.HostNetId);
+                    if (!state.Entered || state.Id != party.RunId || state.Origin == null ||
+                        state.Origin.GroupKey != party.GroupKey || state.Origin.HostNetId != party.HostNetId)
+                        throw new JsonException("Architect saved frozen party does not match its run lineage.");
+                }
                 States.Remove(run);
                 States.Add(run, state);
             },
@@ -38,6 +50,8 @@ public sealed class ArchitectRun
     {
         if (Entered)
             return;
+        if (Origin != null)
+            throw new InvalidOperationException("Multiplayer entry requires the host's synchronized party.");
         EntrySnapshot = CorruptedPlayerStore.Load();
         if (EntrySnapshot?.Snapshot?.ResolveCharacter() == null && EntrySnapshot != null)
         {
@@ -46,4 +60,5 @@ public sealed class ArchitectRun
         }
         Entered = true;
     }
+
 }

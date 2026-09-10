@@ -9,12 +9,21 @@ and depends on BaseLib.
 
 This development build targets Steam's **public-beta**, game **v0.111.0**
 (Steam build `24724944`, game commit `41cef1ea`), with **BaseLib 3.4.5**.
-It is single-player only. Disable other fourth-act mods, including Act4Heart,
-before playing; multiplayer runs retain the vanilla route.
+It supports single-player and multiplayer runs. All participants must use matching
+game, mod and content versions. Disable other fourth-act mods, including Act4Heart,
+before playing.
 
 After Act 3, the run continues to **Act 4 — The Architect** with a fixed
 Ancient → Rest Site → Shop → boss route. The first visit fights the Architect; later
 visits first fight a corrupted version of the previous completed character.
+In multiplayer, repeat visits fight the **entire last saved party** for the same
+host and group membership. All Corrupted Players enter together, and the Architect
+appears only after every member is defeated, without restarting combat.
+The Corrupted Player starts at twice that character's saved maximum HP, or
+2.5 times at Ascension 8 (Tough Enemies) and above in the current run (rounded up).
+These values do not receive an additional multiplayer HP multiplier: the extra
+Corrupted Players provide the party-size scaling. The Architect uses the native
+final-act boss multiplayer scaling tier.
 The compact map fits all four nodes without scrolling, using neutral-ink
 icons and an original Architect boss silhouette. Rest and Shop share the
 supplied tower-approach illustration; the boss fight retains the
@@ -24,8 +33,8 @@ interactions remain intact.
 **The Unwritten**, the Architect's rival and patron of imperfection, offers one
 mandatory choice from three personal relic offers: a build gift, a recovery gift,
 and a bargain-slot gift. Native Ancient entry healing, choices, reward screens,
-and save behavior are retained; there is no decline, reroll, or special
-multiplayer protocol. Candidates have equal weights within each category.
+and save behavior are retained; there is no decline or reroll. Ancient choices
+use the native multiplayer synchronization. Candidates have equal weights within each category.
 
 | Category | Relic | Effect |
 | --- | --- | --- |
@@ -160,7 +169,18 @@ with disposable data and Steam disabled. Its captures and log go under
 Corrupted Players are stored locally in the active **modded** profile's
 `TheArchitect/corrupted_player_snapshot.json`, with an atomic replacement and backup.
 They are not synchronized through Steam Cloud. Keep the same character/content
-mods enabled for the next visit; an unavailable character produces a First Visit.
+mods enabled for the next visit; in single-player, an unavailable character produces a First Visit.
+
+Multiplayer lineages are separate, host-owned files under
+`TheArchitect/multiplayer/<host-profile-uuid>/<group-key>.json`. A group is an
+order-independent set of persistent profile identities; changing a participant
+or host starts a separate lineage. Both Architect wins and losses replace the
+complete saved party atomically, including participants who died. Clients never
+replace their own single-player snapshots with the host's party.
+Act 4 waits for every original participant to validate the host's frozen party,
+and saves/rejoins retain that same selection. Missing content or failed
+synchronization blocks entry with an error rather than loading a partial party.
+Host migration is not supported.
 
 This is an early playtest build, not completion of every item in #2. Full
 crash-transaction recovery between snapshot capture and base-game progression/history

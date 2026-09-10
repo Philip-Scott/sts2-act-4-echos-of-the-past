@@ -1,5 +1,7 @@
+using System.IO;
 using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.DevConsole;
@@ -16,6 +18,7 @@ using MegaCrit.Sts2.Core.Saves.Managers;
 using MegaCrit.Sts2.Core.Saves.Runs;
 using TheArchitect.TheArchitectCode.Acts;
 using TheArchitect.TheArchitectCode.Encounters;
+using TheArchitect.TheArchitectCode.Multiplayer;
 using TheArchitect.TheArchitectCode.Persistence;
 
 namespace TheArchitect.TheArchitectCode.Lifecycle;
@@ -26,14 +29,14 @@ public static class ArchitectLifecycle
         ?? throw new MissingMethodException("The beta RunState.Acts setter changed.");
 
     public static bool IsEncounter([NotNullWhen(true)] IRunState? run) =>
-        run is { Players.Count: 1, CurrentRoom: CombatRoom { Encounter: ArchitectEncounter } };
+        run is { CurrentRoom: CombatRoom { Encounter: ArchitectEncounter } };
 
     public static void AppendAct(RunState run)
     {
-        if (run.Players.Count != 1 || run.Acts.Any(act => act is ArchitectAct))
+        if (run.Acts.Any(act => act is ArchitectAct))
             return;
         if (run.Acts.Count != 3)
-            throw new InvalidOperationException("The Architect requires an ordinary three-act single-player run.");
+            throw new InvalidOperationException("The Architect requires an ordinary three-act run.");
         var act = (ArchitectAct)ArchitectModels.Act.ToMutable();
         act.InitializeRooms();
         SetActs.Invoke(run, [run.Acts.Append(act).ToArray()]);
@@ -67,7 +70,7 @@ internal static class EnterArchitectActPatch
     private static bool Prefix(RunManager __instance, ref Task __result)
     {
         var run = __instance.DebugOnlyGetState();
-        if (run is not { CurrentActIndex: 2, Players.Count: 1, Acts.Count: 3,
+        if (run is not { CurrentActIndex: 2,
                 CurrentRoom: EventRoom { CanonicalEvent: MegaCrit.Sts2.Core.Models.Events.TheArchitect } } ||
             __instance.IsAbandoned)
             return true;
@@ -79,13 +82,60 @@ internal static class EnterArchitectActPatch
     }
 }
 
+[HarmonyPatch(typeof(RunManager), nameof(RunManager.EnterAct))]
+internal static class SynchronizeArchitectEntryPatch
+{
+    private static bool Prefix(RunManager __instance, int currentActIndex, bool doTransition, ref Task __result)
+    {
+        var run = __instance.DebugOnlyGetState();
+        if (run?.Acts[currentActIndex] is not ArchitectAct || !ArchitectMultiplayer.IsMultiplayer(__instance) ||
+            ArchitectMultiplayer.Get(run).IsReady)
+            return true;
+        __result = Enter();
+        return false;
+
+        async Task Enter()
+        {
+            await ArchitectMultiplayer.Get(run).EnsureEntry();
+            await __instance.EnterAct(currentActIndex, doTransition);
+        }
+    }
+}
+
+[HarmonyPatch(typeof(RunManager), nameof(RunManager.LoadIntoLatestMapCoord))]
+internal static class SynchronizeArchitectReloadPatch
+{
+    private static bool Prefix(RunManager __instance, AbstractRoom? preFinishedRoom, ref Task __result)
+    {
+        var run = __instance.DebugOnlyGetState();
+        if (run?.Act is not ArchitectAct || !ArchitectMultiplayer.IsMultiplayer(__instance) ||
+            ArchitectMultiplayer.Get(run).IsReady)
+            return true;
+        __result = Load();
+        return false;
+
+        async Task Load()
+        {
+            await ArchitectMultiplayer.Get(run).EnsureEntry();
+            await __instance.LoadIntoLatestMapCoord(preFinishedRoom);
+        }
+    }
+}
+
 [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetActInternal))]
 internal static class CaptureCorruptedPlayerAtEntryPatch
 {
     private static void Prefix(RunManager __instance, int actIndex)
     {
         var run = __instance.DebugOnlyGetState();
-        if (run?.Acts[actIndex] is ArchitectAct && run.Players.Count == 1)
+        if (run?.Acts[actIndex] is not ArchitectAct)
+            return;
+        if (ArchitectMultiplayer.IsMultiplayer(__instance))
+        {
+            if (!ArchitectMultiplayer.Get(run).IsReady)
+                throw new InvalidOperationException("Act 4 cannot start before every peer validates the host's frozen party.");
+        }
+        else
             ArchitectRun.Get(run).Enter();
     }
 }
@@ -129,8 +179,21 @@ internal static class ArchitectOutcomePatch
         {
             state.Outcome = isVictory ? "ArchitectWin" : "ArchitectLoss";
             if (__instance.ShouldSave)
-                state.SnapshotRevision = CorruptedPlayerStore.Commit(state.Id, state.Outcome,
-                    CorruptedPlayerSnapshot.Capture(run.Players[0]));
+            {
+                try
+                {
+                    state.SnapshotRevision = ArchitectMultiplayer.IsMultiplayer(__instance)
+                        ? ArchitectMultiplayer.RecordOutcome(run, state.Outcome)
+                        : CorruptedPlayerStore.Commit(state.Id, state.Outcome,
+                            CorruptedPlayerSnapshot.Capture(run.Players.Single()));
+                }
+                catch (Exception error) when (error is JsonException or IOException or UnauthorizedAccessException or
+                    InvalidOperationException or NotSupportedException or OverflowException)
+                {
+                    MainFile.Logger.Error($"Architect successor was not recorded; previous lineage preserved: {error}");
+                    NativeCorruptedPlayerPreflight.Show("The terminal party could not be recorded: " + error.Message);
+                }
+            }
         }
         isVictory = true;
     }

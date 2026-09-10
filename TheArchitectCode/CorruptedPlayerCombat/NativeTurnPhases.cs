@@ -25,9 +25,10 @@ internal static class NativeTurnPhases
 
     internal static async Task BeforeSideTurnEnd(ICombatState combatState, CombatSide side, IEnumerable<Creature> participants)
     {
-        await Hook.BeforeSideTurnEnd(combatState, side, participants);
+        var acting = participants.ToArray();
+        await Hook.BeforeSideTurnEnd(combatState, side, acting);
         if (side == CombatSide.Enemy)
-            foreach (var actor in NativeCorruptedPlayer.In(combatState))
+            foreach (var actor in NativeCorruptedPlayer.In(combatState).Where(actor => acting.Contains(actor.Body)))
                 await actor.FinishHand();
     }
 
@@ -45,8 +46,9 @@ internal static class NativeTurnPhases
 
     internal static async Task FinishExtraTurn(ICombatState combatState, IEnumerable<Creature> participants)
     {
-        await Hook.AfterSideTurnEnd(combatState, CombatSide.Enemy, participants);
-        foreach (var actor in NativeCorruptedPlayer.In(combatState))
+        var acting = participants.ToArray();
+        await Hook.AfterSideTurnEnd(combatState, CombatSide.Enemy, acting);
+        foreach (var actor in NativeCorruptedPlayer.In(combatState).Where(actor => acting.Contains(actor.Body)))
             actor.FinishTurn();
     }
 }

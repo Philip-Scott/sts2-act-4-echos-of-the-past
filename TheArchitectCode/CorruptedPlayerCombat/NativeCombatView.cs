@@ -7,6 +7,8 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Singleton;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Runs;
+using TheArchitect.TheArchitectCode.Lifecycle;
+using TheArchitect.TheArchitectCode.UI;
 
 namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
@@ -111,6 +113,8 @@ internal static class NativeCombatCallSites
 {
     private static readonly Dictionary<MethodInfo, MethodInfo> Replacements = new()
     {
+        [AccessTools.Method(typeof(MultiplayerScalingModel), nameof(MultiplayerScalingModel.GetMultiplayerScaling))] =
+            AccessTools.Method(typeof(ArchitectMultiplayerScaling), nameof(ArchitectMultiplayerScaling.GetScaling)),
         [AccessTools.PropertyGetter(typeof(CardModel), nameof(CardModel.CombatState))] =
             AccessTools.Method(typeof(NativeCombatCallSites), nameof(CardScope)),
         [AccessTools.PropertyGetter(typeof(PowerModel), nameof(PowerModel.CombatState))] =
@@ -133,10 +137,12 @@ internal static class NativeCombatCallSites
     private static readonly MethodInfo AddPet = typeof(MegaCrit.Sts2.Core.Commands.PlayerCmd).GetMethods()
         .Single(m => m.Name == "AddPet" && m.IsGenericMethodDefinition);
 
-    private static MethodInfo? Replacement(MethodInfo called)
+    private static MethodInfo? Replacement(MethodInfo called, bool cardEffect)
     {
         if (Replacements.TryGetValue(called, out var replacement))
             return replacement;
+        if (cardEffect && CorruptedPlayerAttackVfx.Replacement(called) is { } visual)
+            return visual;
         return called.IsGenericMethod && called.GetGenericMethodDefinition() == AddPet
             ? AccessTools.Method(typeof(NativePetFactory), nameof(NativePetFactory.AddPet)).MakeGenericMethod(called.GetGenericArguments())
             : null;
@@ -157,7 +163,8 @@ internal static class NativeCombatCallSites
                 !m.ContainsGenericParameters && m.GetMethodBody() != null))
             {
                 if (!PatchProcessor.GetOriginalInstructions(method).Any(instruction =>
-                    instruction.operand is MethodInfo called && Replacement(called) != null))
+                    instruction.operand is MethodInfo called &&
+                    Replacement(called, type.Namespace == "MegaCrit.Sts2.Core.Models.Cards") != null))
                     continue;
                 harmony.Patch(method, transpiler: new HarmonyMethod(typeof(NativeCombatCallSites), nameof(Transpiler)));
                 patched++;
@@ -166,11 +173,14 @@ internal static class NativeCombatCallSites
         MainFile.Logger.Info($"Native Corrupted Player installed {patched} owner-scoped combat call sites.");
     }
 
-    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions,
+        MethodBase __originalMethod)
     {
         foreach (var instruction in instructions)
         {
-            if (instruction.operand is MethodInfo called && Replacement(called) is { } replacement)
+            if (instruction.operand is MethodInfo called &&
+                Replacement(called, __originalMethod.DeclaringType?.Namespace == "MegaCrit.Sts2.Core.Models.Cards")
+                    is { } replacement)
             {
                 instruction.opcode = System.Reflection.Emit.OpCodes.Call;
                 instruction.operand = replacement;
