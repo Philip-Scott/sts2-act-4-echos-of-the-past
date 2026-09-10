@@ -76,6 +76,10 @@ hand, using the player's HUD artwork, count badges and typography. Energy shows
 current/maximum resources; each pile opens the native read-only pile browser,
 which keeps draw order hidden and reflects live pile contents.
 The enemy's pile icons do not register or override the human's pile hotkeys.
+On death or actor cleanup, the native energy counter leaves the scene tree
+synchronously, disconnecting its combat callbacks before its owner's combat state
+is removed. Hiding the hand alone is not sufficient. Each party member stops only
+its own HUD, and later refreshes cannot recreate a defeated member's counter.
 An empty hand stays empty in the preview; neither the draw pile nor the discard
 pile is presented as playable cards. Native cards enlarge on hover or keyboard/
 controller focus and dismiss when the pointer or focus leaves. Clicking does not

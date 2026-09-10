@@ -305,6 +305,8 @@ public sealed class NativeCorruptedPlayer
     {
         if (Cleaned)
             return;
+        if (Body.Monster is CorruptedPlayer monster)
+            monster.StopTelegraph();
         // A lethal native card may defer state cleanup, but its orb UI must stop immediately.
         CorruptedPlayerOrbs.Hide(Body);
         if (Executing)

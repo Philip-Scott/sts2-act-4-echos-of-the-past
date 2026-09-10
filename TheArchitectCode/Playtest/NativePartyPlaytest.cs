@@ -11,6 +11,7 @@ using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.Multiplayer;
 using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Unlocks;
@@ -133,6 +134,8 @@ internal static class NativePartyPlaytest
         await CreatureCmd.Kill(enemies[0], force: true);
         Require(actors[0].Cleaned && actors.Skip(1).All(actor => !actor.Cleaned),
             $"{count}: an early death cleans only its own actor");
+        Require(!HasEnergyCounter(panels[0]) && panels.Skip(1).All(HasEnergyCounter),
+            $"{count}: an early death detaches only its own native energy counter");
         Require(!combat.Enemies.Any(creature => creature.Monster is ArchitectBoss),
             $"{count}: Architect is absent while any corrupted member remains");
         await CreatureCmd.Damage(context, enemies.Skip(1), 10000, ValueProp.Unpowered | ValueProp.Unblockable,
@@ -140,6 +143,8 @@ internal static class NativePartyPlaytest
         Require(combat.Enemies.Count(creature => creature.Monster is ArchitectBoss) == 1 &&
             !combat.Enemies.Any(creature => creature.Monster is CorruptedPlayer) && actors.All(actor => actor.Cleaned),
             $"{count}: the final AoE produces exactly one Architect and cleans every actor");
+        Require(panels.All(panel => !HasEnergyCounter(panel)),
+            $"{count}: the final AoE detaches all defeated native energy counters");
         var boss = combat.Enemies.Single(creature => creature.Monster is ArchitectBoss);
         Require(boss.MaxHp == (int)Creature.ScaleHpForMultiplayer(boss.Monster!.MaxInitialHp, combat.Encounter, count, 2),
             $"{count}: Architect uses the native final-act boss HP tier");
@@ -149,6 +154,10 @@ internal static class NativePartyPlaytest
         await NativeDemoPlaytest.Capture($"party-{count}-handoff");
         await game.ReturnToMainMenu();
     }
+
+    private static bool HasEnergyCounter(CorruptedPlayerTelegraph panel) =>
+        GodotObject.IsInstanceValid(panel) &&
+        panel.FindChild("Energy", true, false).GetChildren().OfType<NEnergyCounter>().Any();
 
     private static async Task EndTurn(Player[] players, int nextTurn)
     {

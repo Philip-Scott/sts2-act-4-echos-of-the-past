@@ -127,14 +127,19 @@ public sealed class CorruptedPlayer : CustomMonsterModel
         _deathHandled = true;
         // Count confirmed deaths, not zero HP: another member in a lethal AoE may still revive.
         var lastMember = (_party ??= new CorruptedPartyPhase(1)).Defeat(_partyIndex);
-        if (GodotObject.IsInstanceValid(_telegraph))
-            _telegraph!.Hide();
+        StopTelegraph();
         if (lastMember && combat.PlayerCreatures.Any(player => player.IsAlive))
             await CreatureCmd.Add(ArchitectModels.Boss.ToMutable(), combat);
         if (Native != null)
             foreach (var pet in Native.State.Pets.ToArray())
                 await CreatureCmd.Kill(pet, true);
         Native?.Cleanup();
+    }
+
+    internal void StopTelegraph()
+    {
+        if (GodotObject.IsInstanceValid(_telegraph))
+            _telegraph!.Stop();
     }
 
     [HarmonyPatch(typeof(Creature), nameof(Creature.ScaleMonsterHpForMultiplayer))]

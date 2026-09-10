@@ -2,18 +2,24 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using Godot;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards;
+using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
+using MegaCrit.Sts2.Core.ValueProps;
 using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using TheArchitect.TheArchitectCode.Monsters;
+using TheArchitect.TheArchitectCode.UI;
 
 namespace TheArchitect.TheArchitectCode.Playtest;
 
@@ -59,14 +65,59 @@ internal static class NativeSavedRunPlaytest
                 await SaveManager.Instance.SaveRun(null);
                 save = SaveManager.Instance.LoadRunSave().SaveData ??
                     throw new InvalidDataException("Disposable saved-fight roundtrip is missing.");
+                await AssertHandoff(game, player, actor, reactiveDamage: false);
                 await game.ReturnToMainMenu();
                 run = RunState.FromSerializable(save);
                 await RunManager.Instance.SetUpSavedSingleplayer(run, save);
                 await game.LoadRun(run, save.PreFinishedRoom);
             }
+            else
+            {
+                await AssertHandoff(game, player, actor, reactiveDamage: true);
+            }
         }
-        MainFile.Logger.Info("SAVED RUN SMOKE PASSED: opponent preview, human cards, power play, and reload.");
+        MainFile.Logger.Info("SAVED RUN SMOKE PASSED: preview, power play, reload, direct and reactive lethal handoffs.");
         game.GetTree().Quit();
+    }
+
+    private static async Task AssertHandoff(NGame game, Player player, NativeCorruptedPlayer actor, bool reactiveDamage)
+    {
+        var combat = player.Creature.CombatState!;
+        var context = new ThrowingPlayerChoiceContext();
+        var telegraph = actor.Body.GetCreatureNode()!.GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph");
+        var counter = telegraph.FindChild("Energy", true, false).GetChildren().OfType<NEnergyCounter>().Single();
+        if (reactiveDamage)
+        {
+            player.PlayerCombatState!.Energy = 99;
+            await NativeDemoPlaytest.HumanPlay<SleightOfFlesh>(player, null);
+            await NativeDemoPlaytest.HumanPlay<SleightOfFlesh>(player, null);
+            await NativeDemoPlaytest.HumanPlay<Defy>(player, actor.Body);
+            var damage = player.Creature.GetPowerAmount<SleightOfFleshPower>();
+            if (damage <= 0 || actor.Body.IsDead)
+                throw new InvalidOperationException("Reactive lethal handoff setup did not produce a live target and damage.");
+            actor.Body.SetCurrentHpInternal(Math.Min(actor.Body.MaxHp, damage));
+            await NativeDemoPlaytest.HumanPlay<EnfeeblingTouch>(player, actor.Body);
+        }
+        else
+        {
+            await CreatureCmd.Damage(context, actor.Body, actor.Body.CurrentHp,
+                ValueProp.Unblockable | ValueProp.Unpowered, player.Creature);
+        }
+        if (!actor.Cleaned || combat.Enemies.Count(creature => creature.Monster is ArchitectBoss) != 1 ||
+            (GodotObject.IsInstanceValid(counter) && counter.IsInsideTree()))
+            throw new InvalidOperationException("Lethal handoff must detach the native energy counter and create one Architect.");
+        if (GodotObject.IsInstanceValid(telegraph))
+        {
+            actor.Show(telegraph);
+            if (telegraph.Visible || telegraph.FindChild("Energy", true, false).GetChildren().OfType<NEnergyCounter>().Any())
+                throw new InvalidOperationException("A stopped hand preview must not recreate its native energy counter.");
+        }
+        actor.State.Energy++;
+        await PowerCmd.Apply<StrengthPower>(context, player.Creature, 1, player.Creature, null);
+        await game.AwaitProcessFrame();
+        await game.AwaitProcessFrame();
+        await NativeDemoPlaytest.Capture(reactiveDamage ? "handoff-reactive" : "handoff-direct");
+        MainFile.Logger.Info($"SAVED RUN HANDOFF PASS: reactive={reactiveDamage}, counter detached, later combat updates survived.");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]

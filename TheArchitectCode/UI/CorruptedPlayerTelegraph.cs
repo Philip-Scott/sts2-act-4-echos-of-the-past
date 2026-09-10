@@ -51,6 +51,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     private NHoverTipSet? _tips;
     private bool _nativeDisplay;
     private bool _partyDisplay;
+    private bool _stopped;
 
     private sealed class CardCell(CorruptedPlayerTelegraphCard entry, Button face, HBoxContainer intents)
     {
@@ -126,6 +127,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
 
     public void ShowPlan(IReadOnlyList<CorruptedPlayerTelegraphCard> cards, bool limited)
     {
+        if (_stopped)
+            return;
         _heading.Text = limited ? "Corrupted Player · play → · plan limit" : "Corrupted Player · play →";
         if (_row.GetChildCount() > 0 && _cells.Count == cards.Count && _cells.Select(cell =>
                 (cell.Entry.InstanceId, cell.Entry.PlayOrder, cell.Entry.Unsupported))
@@ -228,6 +231,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
 
     public void SetNativePlayer(Player player)
     {
+        if (_stopped)
+            return;
         var state = player.PlayerCombatState
             ?? throw new InvalidOperationException("The Corrupted Player HUD requires an active combat state.");
         _nativeDisplay = true;
@@ -247,6 +252,24 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         _draw.SetTextAutoSize(state.DrawPile.Cards.Count.ToString());
         _discard.SetTextAutoSize(state.DiscardPile.Cards.Count.ToString());
         _exhaust.SetTextAutoSize(state.ExhaustPile.Cards.Count.ToString());
+    }
+
+    internal void Stop()
+    {
+        if (_stopped)
+            return;
+        _stopped = true;
+        SetProcess(false);
+        Hide();
+        ClearPreview();
+        if (GodotObject.IsInstanceValid(_energy))
+        {
+            // Hiding or QueueFree alone leaves native combat callbacks subscribed
+            // until after the owner's CombatState is gone. Exit the tree now.
+            _energySlot.RemoveChild(_energy!);
+            _energy!.QueueFree();
+        }
+        _energy = null;
     }
 
     private void AddCard(CorruptedPlayerTelegraphCard entry)
@@ -446,8 +469,15 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
 
     public override void _Process(double delta)
     {
-        if (!GodotObject.IsInstanceValid(_anchor) || _creature.IsDead ||
-            (_nativeDisplay && CombatManager.Instance.IsOverOrEnding))
+        if (_stopped)
+            return;
+        if (!GodotObject.IsInstanceValid(_anchor) ||
+            (_nativeDisplay && (_creature.CombatState == null || CombatManager.Instance.IsOverOrEnding)))
+        {
+            Stop();
+            return;
+        }
+        if (_creature.IsDead)
         {
             Hide();
             ClearPreview();
