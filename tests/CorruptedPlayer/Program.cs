@@ -7,6 +7,9 @@ var registry = new ExactCardAdapterRegistry();
 var planner = new CorruptedPlayerPlanner(registry);
 var inputs = new PlannerInputs { Opponents = [new(0)] };
 
+MultiplayerPersistenceTests.Run(Test);
+MultiplayerSynchronizationTests.Run(Test);
+
 void Test(string name, Action action)
 {
     try { action(); passed++; Console.WriteLine($"PASS {name}"); }

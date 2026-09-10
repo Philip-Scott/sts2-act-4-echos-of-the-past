@@ -1,8 +1,6 @@
 using System.IO;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
@@ -11,7 +9,7 @@ using MegaCrit.Sts2.Core.Saves.Runs;
 
 namespace TheArchitect.TheArchitectCode.Persistence;
 
-public sealed record CorruptedPlayerSnapshot(string CharacterId, int MaxHp, JsonElement[] Deck, string ContentHash)
+public sealed partial record CorruptedPlayerSnapshot
 {
     public static CorruptedPlayerSnapshot Capture(Player player)
     {
@@ -29,24 +27,6 @@ public sealed record CorruptedPlayerSnapshot(string CharacterId, int MaxHp, Json
     public CharacterModel? ResolveCharacter() =>
         ModelDb.GetByIdOrNull<CharacterModel>(ModelId.Deserialize(CharacterId));
 
-    internal static string Hash(string character, int hp, JsonElement[] cards)
-    {
-        var content = character + "|" + hp.ToString(System.Globalization.CultureInfo.InvariantCulture) + "|" +
-            string.Join("|", cards.Select(card => JsonSerializer.Serialize(card)));
-        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(content)));
-    }
-}
-
-public sealed record CorruptedPlayerEnvelope
-{
-    [JsonRequired] public int SchemaVersion { get; init; } = 1;
-    [JsonRequired] public long Revision { get; init; }
-    [JsonRequired] public Guid ProfileUuid { get; init; } = Guid.NewGuid();
-    public string WrittenByModVersion { get; init; } = "0.1.0";
-    public string GameVersion { get; init; } = "0.111.0";
-    public string? TerminalRunId { get; init; }
-    public string? Outcome { get; init; }
-    [JsonRequired] public CorruptedPlayerSnapshot? Snapshot { get; init; }
 }
 
 public static class CorruptedPlayerStore
@@ -54,6 +34,11 @@ public static class CorruptedPlayerStore
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
     private static string FilePath => ProjectSettings.GlobalizePath(
         SaveManager.Instance.GetProfileScopedPath("TheArchitect/corrupted_player_snapshot.json"));
+
+    internal static string ProfileDirectory => Path.GetDirectoryName(FilePath)!;
+
+    public static Guid GetProfileUuid() => ProfileIdentityStore.GetOrCreate(
+        Path.Combine(ProfileDirectory, "profile_identity.json"), () => Load()?.ProfileUuid);
 
     public static CorruptedPlayerEnvelope? Load(bool forWrite = false) => Load(FilePath, forWrite);
 
@@ -90,16 +75,17 @@ public static class CorruptedPlayerStore
     }
 
     public static long? Commit(string terminalRunId, string outcome, CorruptedPlayerSnapshot snapshot) =>
-        Commit(FilePath, terminalRunId, outcome, snapshot);
+        Commit(FilePath, terminalRunId, outcome, snapshot, GetProfileUuid());
 
-    internal static long? Commit(string path, string terminalRunId, string outcome, CorruptedPlayerSnapshot snapshot)
+    internal static long? Commit(string path, string terminalRunId, string outcome, CorruptedPlayerSnapshot snapshot,
+        Guid? profileUuid = null)
     {
         try
         {
             var prior = Load(path, forWrite: true);
             if (prior?.TerminalRunId == terminalRunId)
                 return prior.Revision;
-            var next = (prior ?? new CorruptedPlayerEnvelope()) with
+            var next = (prior ?? new CorruptedPlayerEnvelope { ProfileUuid = profileUuid ?? Guid.NewGuid() }) with
             {
                 Revision = checked((prior?.Revision ?? 0) + 1),
                 TerminalRunId = terminalRunId,
@@ -145,9 +131,6 @@ public static class CorruptedPlayerStore
             envelope.Snapshot is not { MaxHp: > 0, Deck: not null, CharacterId: not null } snapshot)
             throw new JsonException("Invalid Corrupted Player envelope.");
         _ = ModelId.Deserialize(snapshot.CharacterId);
-        if (snapshot.Deck.Any(card => card.ValueKind != JsonValueKind.Object))
-            throw new JsonException("Invalid Corrupted Player deck.");
-        if (snapshot.ContentHash != CorruptedPlayerSnapshot.Hash(snapshot.CharacterId, snapshot.MaxHp, snapshot.Deck))
-            throw new JsonException("Corrupted Player snapshot content hash does not match.");
+        snapshot.Validate();
     }
 }

@@ -25,7 +25,7 @@ An Architect Act entered when no compatible Corrupted Player Snapshot exists for
 _Avoid_: First attempt, first run, empty lineage
 
 **Repeat Visit**:
-An Architect Act entered with a compatible Corrupted Player Snapshot, producing a continuous Corrupted Player-to-Architect encounter.
+An Architect Act entered with a compatible Corrupted Player Snapshot or complete saved Successor Group, producing a continuous Corrupted Player-to-Architect encounter.
 _Avoid_: Rematch, second visit
 
 **Corrupted Player Snapshot**:
@@ -49,8 +49,12 @@ The profile that hosted a multiplayer run and exclusively persists and advances 
 _Avoid_: Party owner, server
 
 **Corrupted Player**:
-The corrupted version of a previous player character, selected from a compatible Corrupted Player Snapshot, that confronts the current party before the Architect. This is the enemy, not the human player challenging the Architect.
+The corrupted version of a previous player character, restored from a compatible Corrupted Player Snapshot, that confronts the current party before the Architect. This is the enemy, not the human player challenging the Architect.
 _Avoid_: Challenger, Corrupted Challenger, player clone, ghost player
+
+**Corrupted Party**:
+The complete set of Corrupted Players from the latest saved Successor Lineage, fought together before the Architect. The Architect appears only after every member has been defeated.
+_Avoid_: Random member, representative character
 
 **Corrupted Player Simulation**:
 The Corrupted Player's private, deterministic model of its snapshot deck, card piles, and energy. It resembles player combat enough to preserve deck identity but is not a live player or a complete emulation of one.

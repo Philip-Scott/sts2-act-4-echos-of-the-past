@@ -14,7 +14,7 @@ internal static class ArchitectRoomBackgrounds
         "res://TheArchitect/images/backgrounds/architect_approach/tower.png";
     internal const string ShopBackgroundPath = RestBackgroundPath;
 
-    internal static bool Applies(IRunState? run) => run is { Players.Count: 1, Act: ArchitectAct };
+    internal static bool Applies(IRunState? run) => run is { Act: ArchitectAct };
 
     internal static void AddBackdrop(Control parent, string texturePath)
     {

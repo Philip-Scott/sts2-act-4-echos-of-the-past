@@ -90,15 +90,21 @@ class NativeDemoTests(unittest.TestCase):
                     ancient_result = demo.launch(SimpleNamespace(game=str(game), label="ancient", scenario="ancient",
                                                                  cache_from=None, cold=True, render_threads=4,
                                                                  shared_visible=False, render_device="/dev/dri/renderD128"))
+                    party_result = demo.launch(SimpleNamespace(game=str(game), label="party", scenario="party",
+                                                               cache_from=None, cold=True, render_threads=4,
+                                                               shared_visible=False, render_device="/dev/dri/renderD128"))
                     saved_result = demo.launch(SimpleNamespace(game=str(game), label="saved", scenario="saved-run",
                                                                cache_from=None, cold=True, render_threads=4,
                                                                shared_visible=False, render_device="/dev/dri/renderD128"))
             self.assertEqual(result, 0)
             self.assertEqual(ancient_result, 0)
+            self.assertEqual(party_result, 0)
             self.assertEqual(saved_result, 0)
             run = next((root / "runs").glob("run-*-test-*"))
             ancient = next((root / "runs").glob("run-*-ancient-*"))
             self.assertFalse((ancient / "snapshot-input.json").exists())
+            party = next((root / "runs").glob("run-*-party-*"))
+            self.assertFalse((party / "snapshot-input.json").exists())
             self.assertIsNone(json.loads((ancient / "run.json").read_text())["snapshot_sha256"])
             saved = next((root / "runs").glob("run-*-saved-*"))
             self.assertEqual((saved / "run-input.json").read_text(), run_save.read_text())

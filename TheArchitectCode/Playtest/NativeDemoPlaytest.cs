@@ -73,6 +73,11 @@ internal static class NativeDemoPlaytest
             game.AddChild(new NativeDemoObserver());
         }
         await Task.Delay(2000);
+        if (CommandLineHelper.HasArg("architect-native-party") || CommandLineHelper.HasArg("architect-native-party-layout"))
+        {
+            await NativePartyPlaytest.Run(game, CommandLineHelper.HasArg("architect-native-party-layout"));
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-native-relic-art"))
         {
             await UnwrittenPlaytest.RenderRelicArt(game);

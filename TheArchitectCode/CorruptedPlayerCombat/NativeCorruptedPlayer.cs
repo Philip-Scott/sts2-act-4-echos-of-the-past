@@ -50,13 +50,18 @@ public sealed class NativeCorruptedPlayer
     public NativeCorruptedPlayer(Creature body, CharacterModel character, IReadOnlyList<JsonElement> deck, string seed)
     {
         if (body.Monster is not CorruptedPlayer || body.CombatState is not CombatState combat ||
-            combat.Players.Count != 1)
-            throw new InvalidOperationException("Native Corrupted Player requires a live single-player enemy.");
+            combat.Players.Count == 0 || body.CombatId == null)
+            throw new InvalidOperationException("Native Corrupted Player requires a live enemy with a combat identity.");
         Body = body;
         _combat = combat;
         // Avoid CreateForNewRun's discovery/save notifications and starter relic acquisition.
         var constructor = AccessTools.GetDeclaredConstructors(typeof(Player)).Single(c => c.GetParameters().Length == 15);
-        Player = (Player)constructor.Invoke([character, ulong.MaxValue - 17, (int)body.CurrentHp,
+        var privateId = ulong.MaxValue - 17;
+        var reservedIds = combat.RunState.Players.Select(player => player.NetId)
+            .Concat(In(combat).Select(actor => actor.Player.NetId)).ToHashSet();
+        while (reservedIds.Contains(privateId))
+            privateId = checked(privateId - 1);
+        Player = (Player)constructor.Invoke([character, privateId, (int)body.CurrentHp,
             (int)body.MaxHp, character.MaxEnergy, 0, 0, character.BaseOrbSlotCount,
             new RelicGrabBag(), UnlockState.all, null, null, null, null, null]);
         var run = RunState.CreateForNewRun([Player], [ModelDb.Act<Glory>().ToMutable()], [],
@@ -98,8 +103,8 @@ public sealed class NativeCorruptedPlayer
             NativeCombatCallSites.CreatureOwner(Body) != Player || NativeCombatCallSites.IsPartyPlayer(Body) ||
             !Body.IsMonster || Body.Side != CombatSide.Enemy ||
             _combat.Players.Contains(Player) || _combat.RunState.Players.Contains(Player) ||
-            _combat.Players.Count != 1 || _combat.RunState.Players.Count != 1)
-            throw new InvalidOperationException("Native Corrupted Player violated actor/thread/single-player isolation: " +
+            _combat.Players.Any(player => !_combat.RunState.Players.Contains(player)))
+            throw new InvalidOperationException("Native Corrupted Player violated actor/thread/party isolation: " +
                 $"thread={Environment.CurrentManagedThreadId}/{_threadId}, playerBody={Player.Creature == Body}, " +
                 $"bodyOwner={NativeCombatCallSites.CreatureOwner(Body) == Player}, " +
                 $"isPlayer={NativeCombatCallSites.IsPartyPlayer(Body)}, isMonster={Body.IsMonster}, " +
@@ -350,7 +355,7 @@ public sealed class NativeCorruptedPlayer
             if (extra == 20)
                 throw new InvalidOperationException("Native Corrupted Player exceeded the 20-extra-turn safety limit.");
             await Hook.AfterTakingExtraTurn(_combat, Player);
-            var participants = _combat.GetTeammatesOf(Body).Where(c => c.IsAlive).ToArray();
+            var participants = new[] { Body }.Concat(State.Pets).Where(c => c.IsAlive).ToArray();
             foreach (var creature in participants)
                 creature.BeforeTurnStart(CombatSide.Enemy);
             await Hook.BeforeSideTurnStart(_combat, CombatSide.Enemy, participants);

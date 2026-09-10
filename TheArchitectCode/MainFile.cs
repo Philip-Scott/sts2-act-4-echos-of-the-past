@@ -2,6 +2,7 @@ using System.Reflection;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Modding;
+using TheArchitect.TheArchitectCode.Multiplayer;
 
 namespace TheArchitect.TheArchitectCode;
 
@@ -19,6 +20,7 @@ public partial class MainFile : Node
         Playtest.NativeDemoSafety.Initialize();
         var assembly = Assembly.GetExecutingAssembly();
         Persistence.ArchitectRun.Register();
+        ArchitectMultiplayer.Register();
 
         //If you want to use scripts defined in your mod for Godot scenes, uncomment the following line.
         //Godot.Bridge.ScriptManagerBridge.LookupScriptsInAssembly(assembly);

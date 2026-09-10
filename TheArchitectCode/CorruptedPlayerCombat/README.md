@@ -1,7 +1,9 @@
 # Native in-process Corrupted Player
 
-`CorruptedPlayer` uses `NativeCorruptedPlayer` in ordinary single-player gameplay.
-It restores the previous-character snapshot, not a fixed demo deck. No launch
+`CorruptedPlayer` uses `NativeCorruptedPlayer` in ordinary single-player and multiplayer gameplay.
+It restores the previous-character snapshot, not a fixed demo deck. Multiplayer
+restores every member of the host's last saved matching group, with a separate
+native actor and deterministic RNG stream for each enemy. No launch
 flag selects an alternative production engine. There is no RPC worker, scalar
 damage replay, manual card-effect adapter fallback or singleton-state swapping.
 
@@ -22,7 +24,8 @@ movement, generated cards, choices, X costs and automatic plays.
 run RNG while delegating actual combat mutations and absolute-side operations to
 the live encounter. This prevents player-oriented native helpers such as random
 enemy targeting from attacking their own Corrupted Player. Native pets use the
-private owner's RNG for creature creation as well.
+private owner's RNG for creature creation as well. Private players have distinct
+identities that cannot collide with the human party or another Corrupted Player.
 
 Native call sites are rewritten as well as getters: BaseLib pre-JIT and native
 inlining can bypass getter-only detours. The stable Creature backing reference,
@@ -39,11 +42,16 @@ player-start hooks still run then. Orb start effects, pre-play, manual play and
 post-play occur in its move. End-hand effects, Ethereal, retain/discard and orb passives resolve before
 side-end completion. Native extra-turn hooks run additional actor turns before
 the human side resumes, preparing their own hands because no human turn
-intervenes. Powers and card-local mutations persist between turns.
+intervenes. An extra turn belongs only to that Corrupted Player and its pets,
+not the rest of the Corrupted Party. Powers and card-local mutations persist between turns.
 
-The Corrupted Player retains its monster lifecycle listener. Death adds the Architect
-before removing owned pets and actor state, preserving continuous combat and
-human hand/energy/HP. Native terminal outcomes, snapshot deduplication and atomic
+Each Corrupted Player retains its monster lifecycle listener and cleans up its
+own pets and actor state on death. Only the last confirmed member death adds the
+Architect, before the native engine removes that enemy, preserving continuous
+combat and human hand/energy/HP. A shared one-shot phase prevents duplicate bosses
+from simultaneous or nested deaths; a member whose death is prevented still
+blocks the transition. Each member has 2x saved maximum HP, or 2.5x at A8+, rounded
+up, without native multiplayer HP scaling. Native terminal outcomes, snapshot deduplication and atomic
 replacement remain in the existing lifecycle/persistence implementation.
 
 ## NPC policy and display
@@ -73,6 +81,8 @@ All-enemy and random-enemy attacks use native multi-target preview rules.
 Values refresh with live state, without predicting earlier cards' effects,
 future draws or power expiry. Unsupported cards retain unpowered previews.
 The enemy is named for its saved character (for example, "Corrupted Ironclad").
+Party previews are compact, with full-size hover inspection; three or four
+Corrupted Players use a two-row enemy layout.
 This is a state preview, **not an exact future-damage forecast**.
 
 The actual native `NOrbManager` renders slots, passive/evoke effects and native
@@ -92,8 +102,9 @@ constructing the unplayed native card.
 
 Missing saved card, enchantment or BaseLib modifier models produce a visible
 preflight error. Restore the matching content version before entering the boss;
-the snapshot is not replaced. As in the earlier alpha, an unavailable saved
-character is treated as a First Visit.
+the snapshot is not replaced. In single-player, an unavailable saved character
+is treated as a First Visit. Multiplayer instead requires the entire frozen
+party to validate on every peer; no member is silently omitted.
 
 The captured schema contains character, max HP and deck, not the previous run's
 relic inventory, potions, temporary powers or mid-combat orb state. Those are not
@@ -120,10 +131,19 @@ bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --nondefect
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --poison
 # Focused hand/hover modifier coverage, including native damage after preview:
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --previews
+# Generated 2-4-member parties; no snapshot input needed:
+bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --party
+# Four-member opening layout only:
+bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --party-layout
 ```
 
 The script's historical name does not enable a fixture engine. Its explicit
 `--architect-native-test` gate controls disposable storage and automation only.
+The party scenario uses the native test run service with multiple human players,
+not a live network connection. It exercises full-party generation, fixed HP,
+independent native/extra turns, preview layout, and sequential/AoE deaths through
+the production encounter and handoff. Transport consensus, host ownership, and
+frozen save/rejoin behavior have separate deterministic regression coverage.
 The default scenario first loads the supplied snapshot through normal encounter
 entry, then exercises native reload and targeted mechanics in that disposable
 combat. The loss scenario follows saved-deck turns with a lethal multi-hit probe.

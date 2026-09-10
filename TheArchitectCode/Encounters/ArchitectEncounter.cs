@@ -32,24 +32,43 @@ public sealed class ArchitectEncounter : CustomEncounterModel
     protected override IReadOnlyList<(MonsterModel, string?)> GenerateMonsters()
     {
         var run = _run ?? throw new InvalidOperationException("Architect encounter has no run context.");
-        var envelope = ArchitectRun.Get(run).EntrySnapshot;
-        if (envelope?.Snapshot is not { } snapshot)
+        var state = ArchitectRun.Get(run);
+        var snapshots = state.EncounterSnapshots;
+        if (snapshots.Count == 0)
             return [(ArchitectModels.Boss.ToMutable(), null)];
-        if (NativeCardSupport.Preflight(snapshot.Deck) is { } error)
+        var characters = snapshots.Select(snapshot => snapshot.ResolveCharacter()).ToArray();
+        if (characters.Any(character => character == null))
         {
+            if (run.Players.Count == 1)
+            {
+                MainFile.Logger.Warn("Corrupted Player character unavailable at encounter entry; using First Visit.");
+                return [(ArchitectModels.Boss.ToMutable(), null)];
+            }
+            const string error = "A saved Corrupted Player character is unavailable. Install the matching character mod before entering.";
             NativeCorruptedPlayerPreflight.Show(error);
             throw new NotSupportedException(error);
         }
-        var character = snapshot.ResolveCharacter();
-        if (character == null)
+        foreach (var snapshot in snapshots)
         {
-            MainFile.Logger.Warn("Corrupted Player character unavailable at encounter entry; using First Visit.");
-            return [(ArchitectModels.Boss.ToMutable(), null)];
+            if (NativeCardSupport.Preflight(snapshot.Deck) is not { } error)
+                continue;
+            NativeCorruptedPlayerPreflight.Show(error);
+            throw new NotSupportedException(error);
         }
-        var corruptedPlayer = (CorruptedPlayer)ArchitectModels.CorruptedPlayer.ToMutable();
-        corruptedPlayer.Configure(character, CorruptedPlayerHealth.CalculateMaxHp(snapshot.MaxHp, run.AscensionLevel), snapshot.Deck,
-            $"{run.Rng.StringSeed}|{envelope.Revision}|{snapshot.ContentHash}|{Id}");
-        return [(corruptedPlayer, null)];
+        var phase = new CorruptedPartyPhase(snapshots.Count);
+        var monsters = new List<(MonsterModel, string?)>();
+        for (var index = 0; index < snapshots.Count; index++)
+        {
+            var snapshot = snapshots[index];
+            var corruptedPlayer = (CorruptedPlayer)ArchitectModels.CorruptedPlayer.ToMutable();
+            corruptedPlayer.Configure(characters[index]!,
+                CorruptedPlayerHealth.CalculateMaxHp(snapshot.MaxHp, run.AscensionLevel), snapshot.Deck,
+                $"{run.Rng.StringSeed}|{state.EncounterRevision}|{snapshot.ContentHash}|{Id}" +
+                (snapshots.Count > 1 ? $"|party:{index}" : ""));
+            corruptedPlayer.JoinParty(phase, index);
+            monsters.Add((corruptedPlayer, null));
+        }
+        return monsters;
     }
 }
 

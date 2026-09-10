@@ -7,6 +7,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Singleton;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Runs;
+using TheArchitect.TheArchitectCode.Lifecycle;
 
 namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
@@ -111,6 +112,8 @@ internal static class NativeCombatCallSites
 {
     private static readonly Dictionary<MethodInfo, MethodInfo> Replacements = new()
     {
+        [AccessTools.Method(typeof(MultiplayerScalingModel), nameof(MultiplayerScalingModel.GetMultiplayerScaling))] =
+            AccessTools.Method(typeof(ArchitectMultiplayerScaling), nameof(ArchitectMultiplayerScaling.GetScaling)),
         [AccessTools.PropertyGetter(typeof(CardModel), nameof(CardModel.CombatState))] =
             AccessTools.Method(typeof(NativeCombatCallSites), nameof(CardScope)),
         [AccessTools.PropertyGetter(typeof(PowerModel), nameof(PowerModel.CombatState))] =
