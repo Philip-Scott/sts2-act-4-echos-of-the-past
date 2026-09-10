@@ -53,6 +53,23 @@ foreach (int limit in new[] { 200, 300 })
         Hit(power, owner, 175);
         Check(owner.CurrentHp == 1000 - limit && power.DisplayAmount == 0);
         Check(power.DynamicVars["Remaining"].IntValue == 0);
+        Check(owner.HpDisplay == HpDisplay.InfiniteWithNumbers);
+    });
+
+    Test($"cap {limit}: health bar changes only when the damage budget is exhausted", () =>
+    {
+        var (owner, power) = Power(limit);
+        Check(owner.HpDisplay == HpDisplay.Normal);
+        Check(Capped(power, owner, limit) == limit);
+        Check(owner.HpDisplay == HpDisplay.Normal, "Damage previews must not change the health bar.");
+        Hit(power, owner, limit - 1);
+        Check(owner.HpDisplay == HpDisplay.Normal);
+        Hit(power, owner, 1, ValueProp.Unpowered | ValueProp.Unblockable);
+        Check(owner.HpDisplay == HpDisplay.InfiniteWithNumbers);
+        owner.SetCurrentHpInternal(1000);
+        Check(owner.HpDisplay == HpDisplay.InfiniteWithNumbers, "Healing must not clear the capped display.");
+        Hit(power, owner, 10);
+        Check(owner.CurrentHp == 1000 && owner.HpDisplay == HpDisplay.InfiniteWithNumbers);
     });
 
     Test($"cap {limit}: preview does not spend budget; poison and power damage do", () =>
@@ -81,13 +98,17 @@ foreach (int limit in new[] { 200, 300 })
         Hit(power, owner, 1000);
         power.BeforeSideTurnStart(null!, CombatSide.Player, [owner], null!).GetAwaiter().GetResult();
         Check(power.DisplayAmount == 0);
+        Check(owner.HpDisplay == HpDisplay.InfiniteWithNumbers);
         power.BeforeSideTurnStart(null!, CombatSide.Enemy, [], null!).GetAwaiter().GetResult();
         Check(power.DisplayAmount == 0);
+        Check(owner.HpDisplay == HpDisplay.InfiniteWithNumbers);
         power.BeforeSideTurnStart(null!, CombatSide.Enemy, [owner], null!).GetAwaiter().GetResult();
         Check(power.DisplayAmount == limit);
+        Check(owner.HpDisplay == HpDisplay.Normal);
         Hit(power, owner, 25, ValueProp.Unpowered | ValueProp.Unblockable);
         power.AfterSideTurnStart(CombatSide.Enemy, [owner], null!).GetAwaiter().GetResult();
         Check(power.DisplayAmount == limit - 25, "Poison damage must not be erased by a later reset.");
+        Check(owner.HpDisplay == HpDisplay.Normal);
     });
 
     Test($"cap {limit}: other creatures are unaffected and removal detaches accounting", () =>
@@ -106,6 +127,23 @@ foreach (int limit in new[] { 200, 300 })
         owner.Reset();
         owner.LoseHpInternal(50, ValueProp.Move);
         Check(power.DisplayAmount == limit && owner.Powers.Count == 0);
+    });
+
+    Test($"cap {limit}: power removal and combat reset restore the normal health bar", () =>
+    {
+        foreach (var reset in new[] { false, true })
+        {
+            var (owner, power) = Power(limit);
+            Hit(power, owner, limit);
+            Check(owner.HpDisplay == HpDisplay.InfiniteWithNumbers);
+            if (reset)
+                owner.Reset();
+            else
+                power.RemoveInternal();
+            Check(owner.HpDisplay == HpDisplay.Normal);
+            owner.LoseHpInternal(50, ValueProp.Move);
+            Check(owner.HpDisplay == HpDisplay.Normal, "The removed power must not change the display.");
+        }
     });
 }
 

@@ -46,6 +46,7 @@ public sealed class ArchitectInvinciblePower : CustomPowerModel
     {
         Owner.CurrentHpChanged -= TrackHpLoss;
         Removed -= DetachHpListener;
+        Owner.HpDisplay = HpDisplay.Normal;
     }
 
     public override Task BeforeSideTurnStart(PlayerChoiceContext choiceContext, CombatSide side,
@@ -72,6 +73,7 @@ public sealed class ArchitectInvinciblePower : CustomPowerModel
     private void RefreshRemaining()
     {
         DynamicVars["Remaining"].BaseValue = DisplayAmount;
+        Owner.HpDisplay = DisplayAmount == 0 ? HpDisplay.InfiniteWithNumbers : HpDisplay.Normal;
         InvokeDisplayAmountChanged();
     }
 }
