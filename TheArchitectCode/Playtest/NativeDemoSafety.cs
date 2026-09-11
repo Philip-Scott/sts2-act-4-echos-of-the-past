@@ -34,7 +34,9 @@ internal static class NativeDemoSafety
         SaveManager.MockInstanceForTesting(saves);
         saves.InitSettingsData();
         saves.SettingsSave.Fullscreen = false;
-        saves.SettingsSave.WindowSize = new Vector2I(1280, 720);
+        saves.SettingsSave.WindowSize = CommandLineHelper.HasArg("architect-native-1080p")
+            ? new Vector2I(1920, 1080)
+            : new Vector2I(1280, 720);
         saves.SettingsSave.SkipIntroLogo = true;
         saves.SettingsSave.SeenEaDisclaimer = true;
         saves.SettingsSave.ModSettings = new ModSettings { PlayerAgreedToModLoading = true };

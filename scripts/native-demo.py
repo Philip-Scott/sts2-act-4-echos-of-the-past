@@ -191,7 +191,7 @@ def launch(args):
                 "label": args.label, "scenario": args.scenario, "state": "preparing",
                 "render_threads": None if args.shared_visible else args.render_threads,
                 "display_mode": "shared-visible" if args.shared_visible else "virtual",
-                "host_display": shared_display,
+                "host_display": shared_display, "resolution": args.resolution,
                 "render_device": args.render_device if args.shared_visible else None}
     write_json(run / "run.json", metadata)
     process = None
@@ -220,7 +220,10 @@ def launch(args):
                                                     args.cold or args.shared_visible)
         settings = run / "xdg/SlayTheSpire2/default/1"
         settings.mkdir(parents=True)
-        shutil.copyfile(ROOT / "scripts/native-demo-settings.json", settings / "settings.save")
+        capture_settings = json.loads((ROOT / "scripts/native-demo-settings.json").read_text())
+        width, height = map(int, args.resolution.split("x"))
+        capture_settings["window_size"] = {"x": width, "y": height}
+        write_json(settings / "settings.save", capture_settings)
         if snapshot is not None:
             shutil.copyfile(snapshot, run / "snapshot-input.json")
         if run_save is not None:
@@ -268,7 +271,8 @@ def receive(connection):
     return json.loads(data)
 
 
-def focus_game(game):
+def focus_game(game, resolution):
+    width, height = map(int, resolution.split("x"))
     deadline = time.monotonic() + 30
     while game.poll() is None and time.monotonic() < deadline:
         windows = subprocess.run(["xdotool", "search", "--onlyvisible", "--pid", str(game.pid)],
@@ -277,7 +281,8 @@ def focus_game(game):
             window = windows.stdout.splitlines()[-1]
             subprocess.run(["xdotool", "windowfocus", "--sync", window],
                            check=True, timeout=5)
-            subprocess.run(["xdotool", "mousemove", "1270", "710"], check=True, timeout=5)
+            subprocess.run(["xdotool", "mousemove", str(width - 10), str(height - 10)],
+                           check=True, timeout=5)
             return window
         if windows.returncode not in (0, 1):
             raise ValueError(f"Cannot find private game window: {windows.stderr}")
@@ -320,8 +325,10 @@ def perform(request, run, metadata):
         return {"capture": str(run / "captures" / name)}
     if action == "pointer":
         x, y = request.get("x"), request.get("y")
-        if type(x) is not int or type(y) is not int or not (0 <= x < 1280 and 0 <= y < 720):
-            raise ValueError("Pointer coordinates must be inside 1280x720.")
+        resolution = metadata.get("resolution", "1280x720")
+        width, height = map(int, resolution.split("x"))
+        if type(x) is not int or type(y) is not int or not (0 <= x < width and 0 <= y < height):
+            raise ValueError(f"Pointer coordinates must be inside {resolution}.")
         command = ["xdotool", "mousemove", str(x), str(y)]
     elif action == "key":
         key = request.get("key", "")
@@ -346,6 +353,7 @@ def serve(args):
         raise ValueError("_serve is internal; use run to enter the private PID/display sandbox.")
     os.chdir(run)
     shared_visible = metadata.get("display_mode") == "shared-visible"
+    resolution = metadata.get("resolution", "1280x720")
     if not shared_visible:
         os.environ["DISPLAY"] = ":0"
         os.environ["XAUTHORITY"] = str(run / "Xauthority")
@@ -361,7 +369,7 @@ def serve(args):
     try:
         if not shared_visible:
             with (run / "display.log").open("w") as display_log:
-                xvfb = subprocess.Popen([str(run / "Xvfb"), ":0", "-screen", "0", "1280x720x24",
+                xvfb = subprocess.Popen([str(run / "Xvfb"), ":0", "-screen", "0", resolution + "x24",
                                          "-nolisten", "tcp", "-auth", os.environ["XAUTHORITY"],
                                          "-noreset"], stdout=display_log, stderr=subprocess.STDOUT)
         deadline = time.monotonic() + 15
@@ -372,18 +380,20 @@ def serve(args):
             time.sleep(0.1)
         command = [str(Path(metadata["game"]) / "SlayTheSpire2"),
                    "--display-driver", "x11", "--rendering-method", "gl_compatibility",
-                   "--windowed", "--resolution", "1280x720", "--audio-driver", "Dummy",
+                   "--windowed", "--resolution", resolution, "--audio-driver", "Dummy",
                    "--max-fps", "30",
                    "--log-file", str(run / "game.log"), "--force-steam", "off",
                    "--architect-native-test"]
         if metadata["scenario"] != "default":
             command.append("--architect-native-" + metadata["scenario"])
+        if resolution == "1920x1080":
+            command.append("--architect-native-1080p")
         if shared_visible:
             command.append("--architect-shared-visible")
         game = subprocess.Popen(command, cwd=metadata["game"])
         metadata.update(state="running", display=metadata["host_display"] if shared_visible else ":0 (private namespace)",
                         game_pid=game.pid, display_pid=xvfb.pid if xvfb else None,
-                        window=None if shared_visible else focus_game(game),
+                        window=None if shared_visible else focus_game(game, resolution),
                         namespaces={name: os.readlink(f"/proc/self/ns/{name}")
                                     for name in ("pid", "net", "ipc", "mnt")})
         write_json(run / "run.json", metadata)
@@ -460,6 +470,8 @@ def main():
     run = commands.add_parser("run", help="Run in foreground; Ctrl-C stops only this instance.")
     run.add_argument("game")
     run.add_argument("--label", default="native")
+    run.add_argument("--resolution", choices=("1280x720", "1920x1080"), default="1280x720",
+                     help="Game and private-display size; use 1920x1080 for release screenshots.")
     run.add_argument("--shared-visible", action="store_true",
                      help="Opt in to GPU windows on the shared desktop; no external input automation.")
     run.add_argument("--render-device", default="/dev/dri/renderD128",
@@ -470,7 +482,7 @@ def main():
     cache.add_argument("--cache-from", help="Copy shader caches from this completed run ID.")
     cache.add_argument("--cold", action="store_true", help="Do not seed shader caches from a completed run.")
     scenarios = run.add_mutually_exclusive_group()
-    for scenario in ("loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "previews", "party", "party-layout", "attack-vfx", "deck-preview", "ending"):
+    for scenario in ("loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "previews", "media", "party", "party-layout", "attack-vfx", "deck-preview", "ending"):
         scenarios.add_argument("--" + scenario, dest="scenario", action="store_const", const=scenario)
     run.set_defaults(scenario="default")
     for action in ("status", "capture", "stop", "pointer", "click", "key", "_serve"):

@@ -1,13 +1,35 @@
-# slay-the-spire-the-architect
+# Act 4: Echos of the Past
 
-A mod that adds an Act 4 to Slay the Spire 2, in which you fight against a bound version of your past self.
+![Act 4: Echos of the Past - Your past is the final boss](docs/media/release-banner.jpg)
+
+**A new fourth act for Slay the Spire 2. Your past is the final boss.**
+
+Previously named **The Architect**. The internal mod ID and save paths remain
+`TheArchitect`; the boss and in-game act still retain that name.
+
+Meet **The Unwritten**, choose an Ancient gift, and confront the Architect.
+On later visits, first fight a **Corrupted Player** wielding your previous deck.
+Play solo or bring a 2-4 player party: the same host and group face their entire
+last saved party before the Architect enters the same combat.
+
+**1.0.1 release preparation:** an update to the existing
+[Steam Workshop listing](https://steamcommunity.com/sharedfiles/filedetails/?id=3799307965)
+and a matching GitHub download. The Steam-edited description is preserved.
+Nothing is published by the release scripts. See the [release notes](release/RELEASE_NOTES.md),
+[installation guide](release/INSTALL.md), [screenshots](docs/media/README.md), and
+[publishing checklist](docs/RELEASING.md).
+
+To play, use **public-beta v0.111.0** and **BaseLib 3.4.5**, enable both mods,
+and start a new modded run. Disable other fourth-act mods. Everyone in co-op
+needs matching versions. Download the packaged release ZIP, not the source
+archive; players do not need the developer tools listed below.
 
 The project was scaffolded from the [Slay the Spire 2 Content mod template](https://github.com/Alchyr/ModTemplate-StS2)
 and depends on BaseLib.
 
-## Playable beta slice
+## Gameplay and compatibility
 
-This development build targets Steam's **public-beta**, game **v0.111.0**
+Version 1.0.1 targets Steam's **public-beta**, game **v0.111.0**
 (Steam build `24724944`, game commit `41cef1ea`), with **BaseLib 3.4.5**.
 It supports single-player and multiplayer runs. All participants must use matching
 game, mod and content versions. Disable other fourth-act mods, including Act4Heart,
@@ -57,7 +79,7 @@ First and Repeat Visits use the same pool. Turn counts include extra turns, and
 the Corrupted Player-to-Architect transition does not restart bonuses or copied
 relic counters. Only permanent deck and maximum-HP changes enter the existing
 terminal snapshot; relics, Gold, potions, and combat-only Glam do not.
-The Unwritten uses an initial sigil presentation and eight original, individually
+The Unwritten has custom Ancient artwork and eight original, individually
 illustrated relic icons, with matching inventory, selection-outline, and large
 inspection textures. Editable SVG sources accompany the PNG assets.
 Mirror can copy owned relic types, including modded relics, by default.
@@ -214,7 +236,7 @@ saved upgrades, card inspection, and party deck selection.
 Set `ARCHITECT_SNAPSHOT_INPUT` to an existing Corrupted Player snapshot to capture
 its single-player deck instead of the sample deck; the source file is only copied.
 
-This is an early playtest build, not completion of every item in #2. Full
+The 1.0.0 scope does not include every item in #2. Full
 crash-transaction recovery between snapshot capture and base-game progression/history
 is still tracked in #12. Avoid force-closing the game during the result transition.
 The beta game's normal combat saves restart the encounter rather than resuming mid-turn.
@@ -223,7 +245,7 @@ The beta game's normal combat saves restart the encounter rather than resuming m
 not the human player. Code identifiers, paths, and save keys use this name too.
 Pre-release saves using the old name are not migrated.
 
-## Requirements
+## Developer requirements
 
 - .NET SDK 9.0 or newer (the mod targets `net9.0`)
 - Slay the Spire 2 installed through Steam (or a copy of `sts2.dll` and `0Harmony.dll`)

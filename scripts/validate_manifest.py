@@ -8,6 +8,7 @@ manifest is caught even when the game assemblies are unavailable for compilation
 import json
 import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 MANIFEST = Path(__file__).resolve().parent.parent / "TheArchitect.json"
@@ -28,6 +29,9 @@ def main() -> int:
     except json.JSONDecodeError as exc:
         print(f"{MANIFEST} is not valid JSON: {exc}", file=sys.stderr)
         return 1
+    if not isinstance(manifest, dict):
+        print(f"{MANIFEST.name}: manifest must be an object", file=sys.stderr)
+        return 1
 
     for key in REQUIRED_STRINGS:
         value = manifest.get(key)
@@ -42,6 +46,16 @@ def main() -> int:
         value = manifest.get(key)
         if isinstance(value, str) and not VERSION_PATTERN.match(value):
             errors.append(f"'{key}' must look like '1.2.3' or 'v1.2.3', got '{value}'")
+
+    project = MANIFEST.with_suffix(".csproj")
+    try:
+        project_version = ET.parse(project).findtext("./PropertyGroup/Version")
+    except (OSError, ET.ParseError) as exc:
+        errors.append(f"cannot read project version: {exc}")
+    else:
+        version = manifest.get("version")
+        if isinstance(version, str) and version.removeprefix("v") != project_version:
+            errors.append(f"manifest version must match {project.name} Version ({project_version})")
 
     dependencies = manifest.get("dependencies", [])
     if not isinstance(dependencies, list):

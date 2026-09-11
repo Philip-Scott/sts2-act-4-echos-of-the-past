@@ -1,11 +1,8 @@
 using Godot;
 using HarmonyLib;
-using MegaCrit.Sts2.Core.Helpers;
-using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Runs;
 using TheArchitect.TheArchitectCode.Acts;
-using TheArchitect.TheArchitectCode.Encounters;
 
 namespace TheArchitect.TheArchitectCode.Lifecycle;
 
@@ -32,30 +29,5 @@ internal static class ArchitectMapIcons
         if (____runState.Act is not ArchitectAct)
             return;
         __instance.GetNode<TextureRect>("%Icon").Material = new ShaderMaterial { Shader = NeutralInk.Value };
-    }
-}
-
-// Route the beta's history helpers to the same artwork as the map.
-[HarmonyPatch]
-internal static class ArchitectHistoryIcons
-{
-    [HarmonyPatch(typeof(ImageHelper), nameof(ImageHelper.GetRoomIconPath))]
-    [HarmonyPostfix]
-    private static void Icon(ModelId? modelId, ref string? __result)
-    {
-        if (__result != null && modelId == ArchitectModels.EncounterId)
-            __result = ArchitectModels.Encounter.CustomRunHistoryIconPath;
-        else if (modelId == ArchitectModels.AncientId)
-            __result = ArchitectModels.Ancient.CustomRunHistoryIconPath;
-    }
-
-    [HarmonyPatch(typeof(ImageHelper), nameof(ImageHelper.GetRoomIconOutlinePath))]
-    [HarmonyPostfix]
-    private static void Outline(ModelId? modelId, ref string? __result)
-    {
-        if (__result != null && modelId == ArchitectModels.EncounterId)
-            __result = ArchitectModels.Encounter.CustomRunHistoryIconOutlinePath;
-        else if (modelId == ArchitectModels.AncientId)
-            __result = ArchitectModels.Ancient.CustomRunHistoryIconOutlinePath;
     }
 }

@@ -28,7 +28,7 @@ public sealed record CorruptedPlayerEnvelope
     [JsonRequired] public int SchemaVersion { get; init; } = 1;
     [JsonRequired] public long Revision { get; init; }
     [JsonRequired] public Guid ProfileUuid { get; init; } = Guid.NewGuid();
-    public string WrittenByModVersion { get; init; } = "0.1.0";
+    public string WrittenByModVersion { get; init; } = "1.0.1";
     public string GameVersion { get; init; } = "0.111.0";
     public string? TerminalRunId { get; init; }
     public string? Outcome { get; init; }

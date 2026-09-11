@@ -1,8 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
-  <g fill="none" stroke="#292929" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M49 28C24 43 18 74 28 99M36 119C58 143 93 145 119 127M135 105C146 80 137 48 116 33"/>
-    <path d="M60 48L81 22L99 51L89 74L106 113L82 140L61 114L72 81Z"/>
-    <path d="M46 85L64 78M99 78L118 69M76 60L91 54"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="278" height="278" viewBox="0 0 160 160">
+  <title>The Unwritten — native Ancient map ink</title>
+  <desc>White ink takes the native map's sepia tint. The broken mask, crooked hood, needle, open hand and pearl match the full character illustration.</desc>
+  <defs>
+    <mask id="carving">
+      <rect width="160" height="160" fill="white"/>
+      <g fill="none" stroke="black" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M61 77C51 52 63 36 82 30L88 17M91 33C108 45 108 64 100 78" stroke-width="3"/>
+        <path d="M58 70C57 49 66 41 72 37M102 50L103 62" stroke-width="1"/>
+        <path d="M63 57C63 42 80 36 92 43 103 51 98 73 87 82 72 84 63 71 63 57Z" fill="white" stroke-width="2"/>
+        <path d="M53 82L62 98 75 90M102 84L96 98 87 94" stroke-width="3"/>
+        <path d="M63 88L69 90M59 81L63 83M102 88L98 86" stroke-width="1"/>
+        <path d="M43 87C35 99 36 108 26 113M49 90C43 101 48 109 37 120" stroke-width="3"/>
+        <path d="M25 92L33 97 38 93M27 101L35 104" stroke-width="2"/>
+        <path d="M26 46L28 31C29 28 32 41 31 48M28 55L29 84" stroke-width="1.8"/>
+        <path d="M109 97C111 110 121 119 132 117M105 104C107 116 115 122 122 124" stroke-width="3"/>
+        <path d="M121 107L132 108 140 104M125 101L134 101" stroke-width="1.5"/>
+        <path d="M50 116L42 135M62 102C56 118 62 127 55 141M87 104C88 119 82 127 87 145M98 113C100 127 104 133 108 139" stroke-width="3"/>
+        <path d="M71 121L72 139M48 122L44 132M96 127L99 137" stroke-width="1"/>
+        <path d="M44 131L51 134M60 130L65 132M61 137L66 139M105 133L110 130" stroke-width="1.8"/>
+        <path d="M69 100C73 104 78 104 82 102" stroke-width="2"/>
+      </g>
+      <path d="M69 49C74 42 80 43 83 44L80 51 85 57 80 64 83 70 79 78C71 75 66 62 69 49Z" fill="black"/>
+      <path d="M70 54L78 53 76 56 71 56ZM74 66L78 68 80 67 78 70Z" fill="white"/>
+      <path d="M87 54L93 52 96 55 91 57Z" fill="black"/>
+      <path d="M81 51L86 50M82 60L87 59M80 70L85 69" stroke="black" stroke-width="1.5"/>
+      <path d="M125 86C126 81 131 79 135 82" fill="none" stroke="black" stroke-width="1.7" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <g fill="white" mask="url(#carving)">
+    <path d="M48 80C42 67 48 43 60 33L88 10 98 26C116 37 119 59 109 78L120 93 123 100 133 96 140 91C143 89 145 92 143 95L139 100 147 97C151 96 153 99 148 102L140 108 145 107C151 106 152 110 147 113L136 119 132 132 118 128 128 143 106 139 108 150 92 144 85 153 74 145 60 150 53 140 36 147 37 136 18 139 23 119 18 110 20 99 18 91 16 83C16 78 20 77 22 82L24 87 25 65 23 34C23 21 28 18 32 27 39 40 35 57 34 68L32 87 36 82C41 77 45 78 42 83L37 93 41 93Z"/>
+    <path d="M141 86C141 94 133 98 126 93 119 89 121 78 128 76 135 73 141 78 141 86Z"/>
+    <path d="M25 30C15 26 11 36 14 42 17 49 12 55 10 60L8 59C9 53 14 49 11 43 7 33 15 23 25 28Z"/>
+    <path d="M21 137C14 149 25 153 32 147L33 149C24 158 10 149 18 138Z"/>
+    <path d="M115 142C123 151 135 145 138 136L140 137C137 149 125 155 114 145Z"/>
   </g>
-  <path fill="#292929" d="M116 12L120 22L132 27L120 31L116 43L111 31L101 27L111 22Z"/>
 </svg>

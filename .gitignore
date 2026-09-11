@@ -13,3 +13,4 @@ Directory.Build.props
 artifacts/
 ci/
 obj/
+mod-uploader.log

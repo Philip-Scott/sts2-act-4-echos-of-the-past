@@ -1,0 +1,5 @@
+{
+  "title": "Act 4: Echos of the Past",
+  "changeNote": "1.0.1: Renamed the mod to Act 4: Echos of the Past and updated its mod-browser image and promotional artwork. Existing saves, internal mod ID, dependencies and gameplay are unchanged.",
+  "dependencies": [3737335127]
+}

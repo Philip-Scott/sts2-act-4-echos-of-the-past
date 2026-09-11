@@ -181,6 +181,65 @@ internal static class NativeMechanicsPlaytest
             "native attack matches displayed damage without double-applying preview modifiers");
         actor.Body.RemoveAllPowersInternalExcept();
         human.Creature.RemoveAllPowersInternalExcept();
+        Prepare(Card<Wound>(), Card<Wound>(), Card<Wound>(), Card<Wound>());
+        var blade = (await ForgeCmd.Forge(5, actor.Player, null)).Single();
+        await PowerCmd.Apply<ParryPower>(context, actor.Body, 10, actor.Body, null);
+        actor.Show(telegraph);
+        PreviewFace(blade).EmitSignal(Control.SignalName.MouseEntered);
+        async Task PreviewBlade(int damage, int block)
+        {
+            await game.AwaitProcessFrame();
+            await game.AwaitProcessFrame();
+            var miniature = PreviewFace(blade).GetChildren().OfType<NCard>().Single();
+            var enlarged = game.HoverTipsContainer!.GetNode<Control>("CorruptedPlayerCardPreview")
+                .GetChildren().OfType<NCard>().Single();
+            foreach (var (node, label) in new[] { (miniature, "miniature"), (enlarged, "open hover") })
+            {
+                var description = node.GetNode<MegaRichTextLabel>("%DescriptionLabel").GetParsedText();
+                var numbers = Regex.Matches(description, @"\d+").Select(match =>
+                    int.Parse(match.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                Require(node.Model == blade && numbers.SequenceEqual(new[] { damage, block }),
+                    $"forged Sovereign Blade {label} displays {damage} damage and {block} Block: {description}");
+            }
+        }
+        await PreviewBlade(15, 10);
+        await NativeDemoPlaytest.Capture("sovereign-blade-parry");
+        await ForgeCmd.Forge(7, actor.Player, null);
+        await PreviewBlade(22, 10);
+        await PowerCmd.Apply<ParryPower>(context, actor.Body, 4, actor.Body, null);
+        await PreviewBlade(22, 14);
+        await NativeDemoPlaytest.Capture("sovereign-blade-forged-again");
+        await PowerCmd.Apply<DexterityPower>(context, actor.Body, 2, actor.Body, null);
+        await PreviewBlade(22, 16);
+        await PowerCmd.Apply<FrailPower>(context, actor.Body, 2, human.Creature, null);
+        await PreviewBlade(22, 12);
+        await NativeDemoPlaytest.Capture("sovereign-blade-frail");
+        await PowerCmd.Remove<DexterityPower>(actor.Body);
+        await PowerCmd.Remove<FrailPower>(actor.Body);
+        await PreviewBlade(22, 14);
+        previewHp = human.Creature.CurrentHp;
+        var bladePlayed = false;
+        void RequireBladeOutcome(CardModel card)
+        {
+            if (card != blade)
+                return;
+            bladePlayed = true;
+            Require(previewHp - human.Creature.CurrentHp == 22 && actor.Body.Block == 14 &&
+                blade.DynamicVars.Damage.BaseValue == 22,
+                "forged Sovereign Blade deals displayed 22 damage and gains displayed 14 Parry Block");
+        }
+        actor.CardPlayed += RequireBladeOutcome;
+        try
+        {
+            await Turn();
+        }
+        finally
+        {
+            actor.CardPlayed -= RequireBladeOutcome;
+        }
+        Require(bladePlayed, "forged Sovereign Blade executes after its live previews");
+        actor.Body.RemoveAllPowersInternalExcept();
+        human.Creature.RemoveAllPowersInternalExcept();
         if (previewsOnly)
         {
             MainFile.Logger.Info("NATIVE CARD PREVIEWS PASSED");

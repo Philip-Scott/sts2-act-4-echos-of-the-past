@@ -108,9 +108,22 @@ internal static class UnwrittenPlaytest
         Check(run.Act is ArchitectAct && run.Map is ArchitectMap { HasAncient: true }, "Ancient Act 4 route");
         var pool = ArchitectModels.Ancient.OptionPools.AllOptions.ToArray();
         Check(pool.Length == 8 && pool.All(option => option.Weight == 1), "Eight equally weighted category candidates");
-        Check(ImageHelper.GetRoomIconPath(MapPointType.Ancient, RoomType.Event, ArchitectModels.Ancient.Id)
-                == ArchitectModels.Ancient.CustomMapIconPath,
-            $"Ancient history icon mapping ({ArchitectModels.Ancient.Id} vs {ArchitectModels.AncientId})");
+        foreach (var (point, room, id, icon, outline) in new[]
+                 {
+                     (MapPointType.Ancient, RoomType.Event, ArchitectModels.Ancient.Id,
+                         ArchitectModels.Ancient.CustomRunHistoryIconPath,
+                         ArchitectModels.Ancient.CustomRunHistoryIconOutlinePath),
+                     (MapPointType.Boss, RoomType.Boss, ArchitectModels.Encounter.Id,
+                         ArchitectModels.Encounter.CustomRunHistoryIconPath,
+                         ArchitectModels.Encounter.CustomRunHistoryIconOutlinePath)
+                 })
+        {
+            var actualIcon = ImageHelper.GetRoomIconPath(point, room, id);
+            var actualOutline = ImageHelper.GetRoomIconOutlinePath(point, room, id);
+            Check(actualIcon == icon, $"{point} history icon mapping ({id}: {actualIcon} vs {icon})");
+            Check(actualOutline == outline,
+                $"{point} history outline mapping ({id}: {actualOutline} vs {outline})");
+        }
 
         // Save at the native room boundary: unchosen offers must reconstruct without a reroll.
         if (run.CurrentRoom is not EventRoom { CanonicalEvent: TheUnwritten })

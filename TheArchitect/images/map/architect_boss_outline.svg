@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="360" viewBox="0 0 360 360">
+  <title>The Architect — hover silhouette</title>
+  <desc>A five-pixel white halo around the portrait, with a solid backing for native hover tint.</desc>
+  <path fill="white" stroke="white" stroke-width="10" stroke-linejoin="round" d="M124 116 122 64 139 52 150 26 164 40 182 35 193 49 214 46 220 66 234 62 233 118
+    C239 134 246 143 259 149 L249 151 Q257 169 272 179 L258 180 273 204
+    L304 207 331 263 310 277 308 302 276 311 259 325
+    Q222 340 180 337 Q135 339 100 326 L83 311 48 301 51 275 29 262 57 207 87 204 104 180 89 182
+    Q110 165 115 150 L103 153 Q121 135 124 116Z"/>
+</svg>

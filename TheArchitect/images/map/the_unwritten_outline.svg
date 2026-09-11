@@ -1,8 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
-  <g fill="none" stroke="#f0e4cc" stroke-width="15" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M49 28C24 43 18 74 28 99M36 119C58 143 93 145 119 127M135 105C146 80 137 48 116 33"/>
-    <path d="M60 48L81 22L99 51L89 74L106 113L82 140L61 114L72 81Z"/>
-    <path d="M46 85L64 78M99 78L118 69M76 60L91 54"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="278" height="278" viewBox="0 0 160 160">
+  <title>The Unwritten — native Ancient map silhouette</title>
+  <desc>A solid expanded silhouette, aligned exactly with the map ink. Native Godot controls tint this layer behind the icon.</desc>
+  <g fill="white" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M48 80C42 67 48 43 60 33L88 10 98 26C116 37 119 59 109 78L120 93 123 100 133 96 140 91C143 89 145 92 143 95L139 100 147 97C151 96 153 99 148 102L140 108 145 107C151 106 152 110 147 113L136 119 132 132 118 128 128 143 106 139 108 150 92 144 85 153 74 145 60 150 53 140 36 147 37 136 18 139 23 119 18 110 20 99 18 91 16 83C16 78 20 77 22 82L24 87 25 65 23 34C23 21 28 18 32 27 39 40 35 57 34 68L32 87 36 82C41 77 45 78 42 83L37 93 41 93Z"/>
+    <path d="M141 86C141 94 133 98 126 93 119 89 121 78 128 76 135 73 141 78 141 86Z"/>
+    <path d="M25 30C15 26 11 36 14 42 17 49 12 55 10 60L8 59C9 53 14 49 11 43 7 33 15 23 25 28Z"/>
+    <path d="M21 137C14 149 25 153 32 147L33 149C24 158 10 149 18 138Z"/>
+    <path d="M115 142C123 151 135 145 138 136L140 137C137 149 125 155 114 145Z"/>
   </g>
-  <path fill="#f0e4cc" stroke="#f0e4cc" stroke-width="7" d="M116 12L120 22L132 27L120 31L116 43L111 31L101 27L111 22Z"/>
 </svg>

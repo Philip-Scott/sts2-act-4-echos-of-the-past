@@ -11,7 +11,7 @@ internal static class UnwrittenPresentation
 {
     private static bool Prefix(EventModel __instance, ref PackedScene __result)
     {
-        if (__instance is not TheUnwritten ancient)
+        if (__instance is not TheUnwritten)
             return true;
 
         // Runtime packing preserves the project's editor-free asset build and native Ancient layout.
@@ -23,19 +23,19 @@ internal static class UnwrittenPresentation
             var backdrop = root.GetNode<TextureRect>("ArchitectBackdrop");
             backdrop.Owner = root;
             backdrop.Modulate = new Color(0.28f, 0.36f, 0.43f);
-            var sigil = new TextureRect
+            var character = new TextureRect
             {
-                Name = "UnwrittenSigil",
+                Name = "UnwrittenCharacter",
                 MouseFilter = Control.MouseFilterEnum.Ignore,
-                Texture = PreloadManager.Cache.GetTexture2D(ancient.CustomMapIconOutlinePath),
+                Texture = PreloadManager.Cache.GetTexture2D(TheUnwritten.CharacterTexturePath),
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                Position = new Vector2(280f, 170f),
-                Size = new Vector2(520f, 520f),
-                Modulate = new Color(0.71f, 0.92f, 0.92f)
+                // Native Ancient titles occupy the upper center; offers begin at y≈738.
+                Position = new Vector2(0f, 50f),
+                Size = new Vector2(600f, 700f)
             };
-            root.AddChild(sigil);
-            sigil.Owner = root;
+            root.AddChild(character);
+            character.Owner = root;
             __result = new PackedScene();
             var error = __result.Pack(root);
             if (error != Error.Ok)

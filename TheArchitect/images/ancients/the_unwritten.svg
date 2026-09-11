@@ -1,0 +1,202 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1400" viewBox="0 0 1200 1400">
+  <title>The Unwritten — Patron of Imperfection</title>
+  <desc>An ancient mender of possibilities. A crooked ivory hood frames a cracked, kindly mask and one amber eye. Her teal and oxblood vestments unravel into loose gold threads; a bent needle and an offered orange pearl defy the Architect's perfect design. Original vector character illustration, transparent background.</desc>
+  <defs>
+    <linearGradient id="cloak" x1=".12" y1=".12" x2=".85" y2=".92" gradientUnits="objectBoundingBox">
+      <stop stop-color="#527d79"/><stop offset=".3" stop-color="#294d52"/><stop offset=".65" stop-color="#172d38"/><stop offset="1" stop-color="#0e1926"/>
+    </linearGradient>
+    <linearGradient id="fold" x1="0" y1="0" x2="1" y2=".4">
+      <stop stop-color="#162c35"/><stop offset=".5" stop-color="#52716c"/><stop offset=".66" stop-color="#345852"/><stop offset="1" stop-color="#142833"/>
+    </linearGradient>
+    <linearGradient id="hood" x1=".1" y1=".1" x2=".85" y2=".9">
+      <stop stop-color="#e5d9b5"/><stop offset=".32" stop-color="#a9b49c"/><stop offset=".63" stop-color="#537c78"/><stop offset="1" stop-color="#29434b"/>
+    </linearGradient>
+    <linearGradient id="bone" x1=".15" y1=".1" x2=".88" y2="1">
+      <stop stop-color="#fff0cb"/><stop offset=".3" stop-color="#d8c4a3"/><stop offset=".72" stop-color="#9a9b86"/><stop offset="1" stop-color="#546c68"/>
+    </linearGradient>
+    <linearGradient id="rust" x1="0" y1="0" x2=".8" y2="1">
+      <stop stop-color="#b06c55"/><stop offset=".4" stop-color="#784849"/><stop offset="1" stop-color="#352834"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f7dc9e"/><stop offset=".35" stop-color="#b49a66"/><stop offset=".65" stop-color="#685b44"/><stop offset="1" stop-color="#dfc48a"/>
+    </linearGradient>
+    <linearGradient id="lining" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#201f2b"/><stop offset=".5" stop-color="#523c44"/><stop offset="1" stop-color="#121e29"/>
+    </linearGradient>
+    <radialGradient id="pearl" cx=".35" cy=".28" r=".78">
+      <stop stop-color="#fff4ce"/><stop offset=".2" stop-color="#ffd68b"/><stop offset=".52" stop-color="#ed9b48"/><stop offset=".82" stop-color="#ad522d"/><stop offset="1" stop-color="#6c352d"/>
+    </radialGradient>
+    <radialGradient id="glow">
+      <stop stop-color="#efb76d" stop-opacity=".38"/><stop offset=".4" stop-color="#e99d56" stop-opacity=".1"/><stop offset="1" stop-color="#edac67" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="weave" width="11" height="13" patternUnits="userSpaceOnUse" patternTransform="rotate(13)">
+      <path d="M0 1H11M1 0V13" fill="none" stroke="#b8c5a8" stroke-opacity=".075" stroke-width=".8"/>
+      <path d="M0 8H11" fill="none" stroke="#071623" stroke-opacity=".13"/>
+    </pattern>
+    <path id="mantle" d="M482 351C409 373 368 412 325 467L250 584 198 832 118 1105 212 1060 179 1175 313 1115 279 1264 420 1198 497 1344 583 1246 631 1322 690 1190 806 1268 777 1120 950 1180 881 1033 1040 1080 961 930 992 774 870 603C828 504 786 433 689 376Z"/>
+    <clipPath id="clothClip"><use href="#mantle"/></clipPath>
+  </defs>
+
+  <!-- Loose ends never complete a halo or a closed, perfect shape. -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M499 215C286 72 94 242 204 395 275 495 90 480 116 651" stroke="#a4b6a0" stroke-width="3" opacity=".38"/>
+    <path d="M643 182C850 72 1069 269 969 419 904 516 1101 539 1090 670" stroke="#aabf9f" stroke-width="2" opacity=".43"/>
+    <path d="M629 174C810 92 1029 247 956 383" stroke="#e7c48b" stroke-width="2" opacity=".48"/>
+    <path d="M179 1051C40 1183 132 1302 287 1278" stroke="#6d9691" stroke-width="3" opacity=".55"/>
+    <path d="M877 996C1105 1103 1104 1284 922 1318" stroke="#c4aa76" stroke-width="3" opacity=".5"/>
+    <path d="M909 1041C1069 1187 986 1252 1019 1291" stroke="#8fa498" stroke-width="2" opacity=".5"/>
+  </g>
+
+  <!-- Layered, fraying silhouette and heavy cloth. -->
+  <use href="#mantle" fill="url(#cloak)" stroke="#101c29" stroke-width="9" stroke-linejoin="round"/>
+  <g clip-path="url(#clothClip)">
+    <path d="M467 417C281 645 452 799 177 1178L320 1120 327 1028C529 827 414 646 534 443Z" fill="#0d2330"/>
+    <path d="M352 532C319 700 333 826 232 1046 346 936 398 777 398 578Z" fill="#63857a" opacity=".38"/>
+    <path d="M510 481C395 784 572 1007 410 1259L501 1350 551 1188C654 952 484 787 581 506Z" fill="url(#fold)"/>
+    <path d="M579 565C544 800 653 982 575 1251L636 1340 677 1186C719 984 588 788 636 600Z" fill="#0a1b29"/>
+    <path d="M649 472C736 750 650 902 787 1279L853 1218C703 866 822 697 711 486Z" fill="url(#fold)"/>
+    <path d="M769 562C839 727 771 922 965 1151L1001 1053C848 864 892 714 814 615Z" fill="#40615e"/>
+    <path d="M316 900L229 1118 303 1089 278 1206 395 1158 433 1063Z" fill="url(#rust)" stroke="#172a32" stroke-width="6"/>
+    <path d="M343 933L274 1063 317 1050 306 1151 383 1117 402 1073Z" fill="#a46752" opacity=".34"/>
+    <path d="M696 889L745 1077 864 1117 815 1025 820 937Z" fill="url(#rust)" stroke="#182932" stroke-width="6"/>
+    <path d="M457 1110L473 1185 516 1211 548 1137 513 1074Z" fill="#748a7c" stroke="#1c3037" stroke-width="6"/>
+    <path d="M885 847L935 938 912 1000 839 937Z" fill="#998774" stroke="#1b2c33" stroke-width="6"/>
+    <use href="#mantle" fill="url(#weave)"/>
+    <g fill="none" stroke="#8da593" stroke-width="3" opacity=".42">
+      <path d="M382 641C357 870 303 920 258 1015M394 700C385 827 352 900 326 936"/>
+      <path d="M491 686C455 875 553 1040 501 1162M478 892C474 987 510 1028 486 1092"/>
+      <path d="M702 680C742 842 717 1007 780 1144M743 857C740 1012 772 1048 794 1100"/>
+      <path d="M823 722C819 854 866 971 912 1016"/>
+    </g>
+    <g stroke="#d1b585" stroke-width="4" stroke-linecap="round" opacity=".78">
+      <path d="M306 928L325 935M293 951L313 960M283 979L302 987M269 1006L290 1015M256 1034L278 1044M254 1092L275 1095M320 1144L324 1164M350 1127L359 1147M380 1117L393 1131"/>
+      <path d="M713 930L735 925M722 958L743 950M731 986L752 979M740 1015L762 1006M749 1045L772 1036M780 1079L774 1097M808 1088L803 1107"/>
+      <path d="M463 1132L481 1125M470 1158L489 1151M514 1100L530 1095M534 1134L549 1141"/>
+    </g>
+  </g>
+  <g fill="none" stroke-linecap="round">
+    <path d="M230 1048L205 1086M314 1109L289 1165M420 1197L403 1240M495 1323L488 1365M629 1296L638 1354M781 1233L810 1300M936 1160L966 1201" stroke="#638278" stroke-width="4"/>
+    <path d="M314 1114C240 1267 350 1266 294 1342M807 1232C825 1325 920 1254 897 1352M422 1200C395 1285 450 1291 422 1322" stroke="#b7a478" stroke-width="2.5"/>
+    <path d="M184 1170L158 1192M278 1254L253 1287M1031 1072L1071 1101M689 1201L696 1249" stroke="#829889" stroke-width="3"/>
+  </g>
+
+  <!-- Oxblood inner stole, patched collar and a deliberately mismatched clasp. -->
+  <path d="M480 342L682 358 760 501 672 727 590 682 514 759 396 541Z" fill="url(#lining)" stroke="#15212b" stroke-width="7"/>
+  <path d="M489 387C442 468 467 571 523 657L563 609 533 463Z" fill="url(#rust)"/>
+  <path d="M669 400C700 467 679 562 637 618L682 650 728 501Z" fill="url(#rust)"/>
+  <path d="M519 390L537 496 589 552 640 491 659 400Z" fill="#182732"/>
+  <path d="M539 391L548 449 584 478 623 443 633 391Z" fill="url(#bone)" stroke="#20323a" stroke-width="5"/>
+  <path d="M548 422L586 447 620 419M552 435L585 461 611 439" fill="none" stroke="#7b8272" stroke-width="3"/>
+  <path d="M446 377L487 363 540 484 517 562 447 515 414 449Z" fill="url(#hood)" stroke="#1b3038" stroke-width="6"/>
+  <path d="M480 387L509 480 490 510 441 444Z" fill="#829b89"/>
+  <path d="M671 361L721 405 754 468 703 523 647 492 636 444Z" fill="url(#cloak)" stroke="#192c35" stroke-width="6"/>
+  <path d="M700 400L727 463 688 495 661 479" fill="none" stroke="#b6b895" stroke-width="6"/>
+  <path d="M446 386L429 424 462 483 490 498" fill="none" stroke="#e0cfaa" stroke-width="5"/>
+  <g stroke="#ddd0a4" stroke-width="4" stroke-linecap="round">
+    <path d="M448 405L434 411M459 427L443 434M471 450L457 457M481 473L469 480M698 426L714 420M708 449L724 443"/>
+  </g>
+  <path d="M523 530C548 542 582 543 611 528" fill="none" stroke="#161e28" stroke-width="13"/>
+  <path d="M524 527C549 539 582 540 611 525" fill="none" stroke="url(#gold)" stroke-width="6"/>
+  <path d="M528 511L548 519 544 544 523 548 513 530Z" fill="url(#gold)" stroke="#28343a" stroke-width="4"/>
+  <circle cx="536" cy="528" r="6" fill="#263f42"/>
+  <path d="M611 511C634 503 644 530 626 543 604 554 593 529 611 511Z" fill="#ad6b49" stroke="#ddbc7b" stroke-width="4"/>
+  <path d="M615 523L625 532M625 523L614 532" stroke="#463f36" stroke-width="3"/>
+
+  <!-- Left sleeve, long artisan's fingers, and a bent, oversized sewing needle. -->
+  <path d="M410 438C348 429 292 480 267 535L228 601 247 711 336 745 422 656 454 530Z" fill="url(#cloak)" stroke="#122531" stroke-width="8"/>
+  <path d="M359 462C304 517 324 571 255 651L284 701C377 642 341 552 406 485Z" fill="#7d9a88" opacity=".43"/>
+  <path d="M248 641L272 578 332 589 352 660 306 701Z" fill="url(#lining)" stroke="#162630" stroke-width="6"/>
+  <path d="M256 629L272 591 324 602 336 653 305 674Z" fill="url(#rust)"/>
+  <path d="M263 630L282 638M269 610L288 618M312 651L326 645" stroke="#c5ad80" stroke-width="4"/>
+  <path d="M261 612C248 588 250 568 237 548L212 519C200 506 199 491 207 486 217 481 231 499 242 507L231 475 218 446C213 434 218 425 227 429L249 460 261 488 252 448 248 423C248 411 257 407 264 419L279 456 283 484 284 454C284 440 294 434 300 445L309 484 302 520C315 500 327 498 333 508 340 520 315 535 313 554L312 609 288 638Z" fill="url(#bone)" stroke="#273638" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M251 537L272 557 287 557M261 491L272 525M284 486L288 526M243 509L261 528M269 585L292 591M265 596L291 603" fill="none" stroke="#788274" stroke-width="3" stroke-linecap="round"/>
+  <path d="M253 548L266 545M280 567L302 571" stroke="#f0d5ac" stroke-width="4"/>
+  <path d="M291 665L275 436 300 273C304 244 297 196 280 160 267 141 254 151 254 176L262 320 251 437Z" fill="url(#gold)" stroke="#263538" stroke-width="4"/>
+  <path d="M273 191C268 164 263 168 263 190L268 238C269 250 277 248 277 235Z" fill="#20363d"/>
+  <path d="M286 294L268 437 289 628" fill="none" stroke="#ffe4ac" stroke-width="2"/>
+  <path d="M254 521C270 531 284 530 297 521L303 512 295 503 273 509 249 496" fill="url(#bone)" stroke="#35453f" stroke-width="4"/>
+  <path d="M262 542C275 548 286 547 300 539L302 529 290 526 272 532 256 526" fill="url(#bone)" stroke="#35453f" stroke-width="4"/>
+  <path d="M269 176C241 196 208 198 195 174 171 130 133 160 149 204 174 272 111 331 137 387" fill="none" stroke="#d8b882" stroke-width="3"/>
+  <path d="M149 204C174 272 111 331 137 387" fill="none" stroke="#f2d59a" stroke-width="1"/>
+
+  <!-- Offering arm: the hand is open, not a weapon pose. -->
+  <path d="M746 446C818 467 824 560 866 626L915 661 1001 702 958 823 864 844 735 733 690 571Z" fill="url(#cloak)" stroke="#13232f" stroke-width="8"/>
+  <path d="M773 489C823 574 786 650 904 731L873 789C749 722 791 619 734 549Z" fill="#61877a" opacity=".48"/>
+  <path d="M896 650C923 642 977 655 1005 689L966 784C932 796 900 777 880 752Z" fill="url(#lining)" stroke="#172832" stroke-width="6"/>
+  <path d="M912 664C943 663 971 675 987 693L958 758C939 761 919 753 900 738Z" fill="url(#rust)"/>
+  <path d="M907 682L923 690M902 707L917 715M966 703L981 710M957 727L972 733" stroke="#ceb38c" stroke-width="4"/>
+  <path d="M925 704L940 658C952 640 964 632 979 632L1006 621 1034 592C1044 582 1053 587 1049 597L1032 621 1021 639 1051 622 1075 609C1087 604 1093 612 1083 621L1061 639 1038 652 1075 641C1090 637 1094 646 1082 654L1056 667 1028 676 1064 673C1077 672 1079 682 1064 687L1027 696 997 696 975 723 950 738Z" fill="url(#bone)" stroke="#283c3b" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M949 685C949 662 934 649 923 640L910 622C902 609 891 613 895 626L907 653 922 676 930 707" fill="url(#bone)" stroke="#283c3b" stroke-width="5" stroke-linecap="round"/>
+  <path d="M954 682C970 665 989 663 1012 667M969 690L992 683M980 651L1008 649M967 711L946 704" fill="none" stroke="#8f9178" stroke-width="3" stroke-linecap="round"/>
+  <path d="M986 647L1008 642M955 717L946 715" stroke="#f8dab1" stroke-width="4"/>
+  <ellipse cx="983" cy="561" rx="111" ry="120" fill="url(#glow)"/>
+  <circle cx="983" cy="567" r="34" fill="url(#pearl)" stroke="#b17645" stroke-width="2"/>
+  <path d="M961 556C963 542 977 537 989 541" fill="none" stroke="#fff2c6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M991 592C1001 591 1009 583 1011 574" fill="none" stroke="#ffba67" stroke-width="3"/>
+  <g fill="none" stroke="#e9c38a" stroke-linecap="round">
+    <path d="M956 602C906 597 912 542 964 533 1016 524 1039 566 1008 591" stroke-width="2" opacity=".55"/>
+    <path d="M975 615C1005 605 1023 617 1034 591" stroke-width="2"/>
+    <path d="M993 512L995 499M939 530L932 524M1029 543L1040 538" stroke-width="3" opacity=".65"/>
+  </g>
+
+  <!-- Hood: one high folded peak, one collapsed shoulder, no symmetrical crown. -->
+  <path d="M435 369C398 294 415 221 458 177L518 133 606 78 654 130 701 166C754 214 758 317 725 380L701 423 651 394 500 399 456 431Z" fill="url(#hood)" stroke="#172932" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M606 79L582 177 514 201 455 286 434 368C417 275 439 217 483 178Z" fill="#e2d5b1"/>
+  <path d="M601 98L620 168 701 198 733 281C733 211 699 178 652 142Z" fill="#7a978a"/>
+  <path d="M631 164C704 199 724 252 705 365L681 398 704 420 727 379C772 274 732 191 682 166L622 110Z" fill="#335a5c"/>
+  <path d="M664 186C713 232 717 300 694 342" fill="none" stroke="#a5b7a1" stroke-width="7" stroke-linecap="round"/>
+  <path d="M527 187C552 169 571 163 582 165" fill="none" stroke="#fff0c9" stroke-width="6" stroke-linecap="round"/>
+  <path d="M473 205L466 257 444 293" fill="none" stroke="#819589" stroke-width="6"/>
+  <path d="M485 269C497 220 539 187 588 190 650 186 690 239 687 304L672 369 627 419 552 419 495 377 470 326Z" fill="#13252e" stroke="#557770" stroke-width="5"/>
+  <path d="M489 271C508 218 544 201 582 202 628 200 660 222 677 260" fill="none" stroke="#0a1823" stroke-width="13"/>
+  <path d="M438 343C452 322 465 302 478 266" fill="none" stroke="#d5d0ad" stroke-width="6"/>
+  <path d="M437 359L450 372M441 382L454 391M451 404L465 410" stroke="#d9c59a" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- The unfinished face is a carved, gentle mask, with a dark living side. -->
+  <path d="M523 235C549 216 589 217 618 233L650 266 656 316 642 368 608 405 574 412 541 391 516 350 506 290Z" fill="#243b40" stroke="#0e1e28" stroke-width="6"/>
+  <path d="M524 235C550 216 581 221 597 227L589 249 600 270 586 292 595 313 577 336 588 361 574 383 579 408 551 395 527 365 510 323 509 276Z" fill="url(#bone)" stroke="#263b3d" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M525 241L543 239 529 282 531 317 518 313 516 275Z" fill="#fff0c8" opacity=".63"/>
+  <path d="M545 345L559 359 578 357 570 380 547 369 529 339Z" fill="#71897c" opacity=".45"/>
+  <path d="M594 230C626 237 648 266 649 295L631 284 624 259 607 250Z" fill="#5c7770"/>
+  <path d="M618 334L638 320 631 358 606 389 588 397 601 374Z" fill="#45665f"/>
+  <path d="M526 277C539 265 554 266 566 276L558 287 538 285Z" fill="#344a45"/>
+  <path d="M530 276L546 275 559 279" fill="none" stroke="#182e32" stroke-width="5" stroke-linecap="round"/>
+  <path d="M605 277C617 264 634 270 640 283L624 290 609 286Z" fill="#0a1922"/>
+  <path d="M611 279L622 275 632 280 622 284Z" fill="#e9bc74"/>
+  <ellipse cx="622" cy="279" rx="3.5" ry="5" fill="#fff0b9"/>
+  <path d="M611 264L626 263 637 271" fill="none" stroke="#809182" stroke-width="3" stroke-linecap="round"/>
+  <path d="M552 287L545 314 555 321 567 318" fill="none" stroke="#6a7b6c" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M553 295L551 311 560 315" fill="none" stroke="#f5dfb5" stroke-width="3"/>
+  <path d="M545 340C559 347 569 344 579 339" fill="none" stroke="#53685f" stroke-width="3" stroke-linecap="round"/>
+  <path d="M550 348L563 351" fill="none" stroke="#f0d1a5" stroke-width="3" stroke-linecap="round"/>
+  <path d="M520 254L539 250 548 257M518 302L533 303M526 319L537 326" fill="none" stroke="#a7ac91" stroke-width="2"/>
+  <path d="M571 232L558 250 563 260 554 265" fill="none" stroke="#7a8673" stroke-width="2"/>
+  <path d="M531 365L546 368 551 386" fill="none" stroke="#5f786d" stroke-width="2"/>
+  <g stroke="#e4c68e" stroke-width="3" stroke-linecap="round">
+    <path d="M585 247L600 244M589 271L608 267M582 296L600 292M583 321L601 317M578 346L595 342M577 371L591 368"/>
+  </g>
+  <g fill="#172c31">
+    <circle cx="584" cy="247" r="2.5"/><circle cx="587" cy="271" r="2.5"/><circle cx="581" cy="297" r="2.5"/><circle cx="581" cy="322" r="2.5"/><circle cx="576" cy="347" r="2.5"/><circle cx="575" cy="372" r="2.5"/>
+  </g>
+  <path d="M590 370C611 412 558 431 584 454" fill="none" stroke="#d8bc86" stroke-width="2"/>
+  <path d="M499 294C487 339 506 373 532 398M661 310C665 354 644 389 623 407" fill="none" stroke="#91a591" stroke-width="4" opacity=".7"/>
+
+  <!-- Small keepsakes make the patron a maker rather than an abstract deity. -->
+  <path d="M405 680C463 712 478 767 474 838M409 684C396 746 408 806 425 823" fill="none" stroke="#b69e70" stroke-width="4"/>
+  <path d="M411 818L438 815 448 831 447 867 416 874 406 857Z" fill="#806c53" stroke="#182c33" stroke-width="5"/>
+  <path d="M410 828L441 823 444 857 415 864Z" fill="url(#bone)"/>
+  <g stroke="#b78e63" stroke-width="3">
+    <path d="M411 835L441 830M412 843L442 838M413 851L443 846M415 859L444 854"/>
+  </g>
+  <path d="M467 823L481 830 487 847 477 863 460 857 458 839Z" fill="url(#gold)" stroke="#23353a" stroke-width="4"/>
+  <path d="M469 835L476 840 473 850 466 846Z" fill="#1a333a"/>
+  <path d="M649 703L660 759 696 796 687 807 648 772 636 723Z" fill="#d0b78b" stroke="#21333a" stroke-width="4"/>
+  <path d="M650 714L658 738" stroke="#fff0bc" stroke-width="3"/>
+  <g fill="#d6c18c" opacity=".65">
+    <path d="M151 465L154 473 149 482 147 474Z"/>
+    <path d="M1034 392L1039 400 1034 410 1031 402Z"/>
+    <path d="M929 216L932 222 929 228 926 222Z"/>
+    <path d="M344 148L347 155 344 161 341 155Z"/>
+    <circle cx="1080" cy="707" r="2.5"/><circle cx="174" cy="794" r="2"/><circle cx="841" cy="182" r="2"/>
+  </g>
+</svg>

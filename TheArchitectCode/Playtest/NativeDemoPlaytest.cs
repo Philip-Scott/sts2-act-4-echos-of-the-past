@@ -67,6 +67,12 @@ internal static class NativeDemoPlaytest
     private static async Task Demonstrate(NGame game, Task menuReady)
     {
         await menuReady;
+        if (CommandLineHelper.HasArg("architect-native-1080p"))
+        {
+            // Render at capture resolution even when the desktop shrinks the window to fit.
+            game.GetWindow().ContentScaleSize = new Vector2I(1920, 1080);
+            game.GetWindow().ContentScaleMode = Window.ContentScaleModeEnum.Viewport;
+        }
         if (NativeDemoSafety.SharedVisible)
         {
             game.GetWindow().Unfocusable = true;
@@ -252,7 +258,8 @@ internal static class NativeDemoPlaytest
             actor.Player.Deck.Cards.Count == expected.Snapshot.Deck.Length &&
             ArchitectRun.Get(run).EntrySnapshot!.Snapshot!.ContentHash == expected.Snapshot.ContentHash,
             "native room-boundary reload reconstructed the same saved deck without fixture or old actor state");
-        if (!CommandLineHelper.HasArg("architect-native-nondefect"))
+        if (!CommandLineHelper.HasArg("architect-native-nondefect") &&
+            !CommandLineHelper.HasArg("architect-native-media"))
             await NativeMechanicsPlaytest.Run(human, actor);
         OrbCmd.RemoveSlots(actor.Player, actor.State.OrbQueue.Capacity);
         await OrbCmd.AddSlots(actor.Player, 2);
@@ -468,6 +475,8 @@ internal static class NativeDemoPlaytest
     internal static async Task Capture(string stage)
     {
         var game = NGame.Instance ?? throw new InvalidOperationException("Smoke game missing.");
+        if (CommandLineHelper.HasArg("architect-native-media"))
+            await Task.Delay(1500);
         await game.AwaitProcessFrame();
         await game.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
         var error = game.GetViewport().GetTexture().GetImage().SavePng(Path.Combine(NativeDemoSafety.RuntimePath, stage + ".png"));

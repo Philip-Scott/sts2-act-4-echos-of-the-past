@@ -10,6 +10,8 @@ namespace TheArchitect.TheArchitectCode.Ancients;
 
 public sealed class TheUnwritten : CustomAncientModel
 {
+    internal const string CharacterTexturePath = "res://TheArchitect/images/ancients/the_unwritten.png";
+
     public override bool IsValidForAct(ActModel act) => act is ArchitectAct;
     public override Color ButtonColor => new("46616b");
     public override Color DialogueColor => new("344e5c");
@@ -19,7 +21,8 @@ public sealed class TheUnwritten : CustomAncientModel
     public override string CustomRunHistoryIconOutlinePath => CustomMapIconOutlinePath;
     public override IEnumerable<string> GetAssetPaths(IRunState runState) =>
         ["res://scenes/events/ancient_event_layout.tscn",
-            ArchitectRoomBackgrounds.RestBackgroundPath, CustomMapIconPath, CustomMapIconOutlinePath];
+            ArchitectRoomBackgrounds.RestBackgroundPath, CharacterTexturePath,
+            CustomMapIconPath, CustomMapIconOutlinePath];
 
     protected override OptionPools MakeOptionPools => new(
         MakePool(Relic("LOOSE_THREAD"), Relic("CROOKED_NEEDLE"), Relic("ORANGE_PEARL"), Relic("DIAMOND_HAND")),

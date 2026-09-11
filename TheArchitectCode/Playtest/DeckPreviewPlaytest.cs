@@ -41,9 +41,17 @@ internal static class DeckPreviewPlaytest
         await NativeDemoPlaytest.Capture("deck-character-select");
         button.GrabFocus();
         Check(button.HasFocus(), "Preview button accepts controller focus.");
-        Input.ParseInputEvent(new InputEventAction { Action = MegaInput.select, Pressed = true });
-        await Task.Delay(100);
-        Input.ParseInputEvent(new InputEventAction { Action = MegaInput.select, Pressed = false });
+        if (NativeDemoSafety.SharedVisible)
+        {
+            // Shared-visible captures deliberately disable viewport input.
+            Press(button);
+        }
+        else
+        {
+            Input.ParseInputEvent(new InputEventAction { Action = MegaInput.select, Pressed = true });
+            await Task.Delay(100);
+            Input.ParseInputEvent(new InputEventAction { Action = MegaInput.select, Pressed = false });
+        }
         await Task.Delay(100);
         Check(NModalContainer.Instance?.OpenModal is CorruptedDeckPreview, "First Visit preview opens without a run.");
         await NativeDemoPlaytest.Capture("deck-first-visit");
