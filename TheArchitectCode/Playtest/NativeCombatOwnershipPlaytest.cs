@@ -85,7 +85,7 @@ internal static class NativeCombatOwnershipPlaytest
         foreach (var card in ModelDb.AllCards.Where(card =>
             card.GetType().Assembly == typeof(CardModel).Assembly &&
             card.MultiplayerConstraint == CardMultiplayerConstraint.MultiplayerOnly))
-            Require(NativeCardSupport.Reason(card) == null, $"{card.Id}: no blanket co-op exclusion");
+            Require(actor.UnsupportedReason(card) == null, $"{card.Id}: no blanket co-op exclusion");
         Require(actor.View.Players.Count == actors.Length &&
             actors.All(member => actor.View.GetPlayer(member.Player.NetId) == member.Player) &&
             humans.All(human => actor.View.GetPlayer(human.NetId) == null),

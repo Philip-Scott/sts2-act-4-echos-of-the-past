@@ -56,6 +56,7 @@ public sealed class NativeCorruptedPlayer
             throw new InvalidOperationException("Native Corrupted Player requires a live enemy with a combat identity.");
         if (counterpart != null && !combat.PlayerCreatures.Contains(counterpart))
             throw new InvalidOperationException("A Corrupted Player counterpart must belong to the human party.");
+        NativeCombatCallSites.InstallModdedEffects();
         Body = body;
         _combat = combat;
         _counterpart = counterpart;
@@ -84,7 +85,7 @@ public sealed class NativeCorruptedPlayer
             if (saved.Id == null || ModelDb.GetByIdOrNull<CardModel>(saved.Id) == null)
                 throw new NotSupportedException($"The Corrupted Player's saved card {saved.Id} is not installed.");
             var card = run.LoadCard(NativeCardSupport.ForNativeLoad(raw, saved), Player);
-            if ((NativeCardSupport.SavedReason(raw) ?? NativeCardSupport.Reason(card)) is { } reason)
+            if (NativeCardSupport.SavedReason(raw) is { } reason)
             {
                 _unsupported.Add(card, reason);
                 MainFile.Logger.Warn($"Corrupted Player {card.Id}: {reason}; preserved but not executed.");
@@ -339,7 +340,7 @@ public sealed class NativeCorruptedPlayer
     internal void RequestEndTurn() => _endTurnRequested = true;
 
     internal string? UnsupportedReason(CardModel card) =>
-        _unsupported.GetValueOrDefault(card.DeckVersion ?? card) ?? NativeCardSupport.Reason(card);
+        _unsupported.GetValueOrDefault(card.DeckVersion ?? card);
 
     internal static bool IncludeHook(AbstractModel model)
     {
@@ -412,6 +413,20 @@ public sealed class NativeCorruptedPlayer
         $"hand=[{string.Join(",", State.Hand.Cards.Select(c => $"{c.Id.Entry}+{c.CurrentUpgradeLevel}"))}] " +
         $"draw={State.DrawPile.Cards.Count} discard={State.DiscardPile.Cards.Count} exhaust={State.ExhaustPile.Cards.Count} " +
         $"orbs={State.OrbQueue.Orbs.Count} shuffle={Player.RunState.Rng.Shuffle.ToSerializable().counter}");
+}
+
+[HarmonyPatch(typeof(Hook), nameof(Hook.ShouldPlay))]
+internal static class NativeUnsupportedPlayPatch
+{
+    private static bool Prefix(CardModel card, ref bool __result, ref AbstractModel? preventer)
+    {
+        if (!card.IsMutable || card.Owner is not { } owner || !NativeCorruptedPlayer.TryGet(owner, out var actor) ||
+            actor.UnsupportedReason(card) == null)
+            return true;
+        __result = false;
+        preventer = card;
+        return false;
+    }
 }
 
 [HarmonyPatch(typeof(Creature), nameof(Creature.Player), MethodType.Getter)]

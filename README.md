@@ -126,8 +126,11 @@ generated cards and card transfers stay on that side, never the human party.
 Cards requiring another player remain unplayed when no living corrupted ally
 exists; pets do not count as player targets. Human relics do not supply the
 Corrupted Players' block, repeat or power bonuses.
-Third-party card/modifier effects are visibly **Unsupported** and remain unplayed;
-the original saved JSON is preserved.
+Installed modded cards, enchantments and BaseLib card modifiers execute their own
+effects through the same engine, including restored BaseLib saved values.
+Mod mechanics that assume human-only UI, relics or other uncaptured character
+state may still need specific compatibility work. Unrecognized saved extension
+formats remain visibly **Unsupported**; the original saved JSON is preserved.
 Missing saved models block entry with an actionable error rather than silently
 dropping cards. This is not a claim that every vanilla card combination has been
 audited. See [native Corrupted Player behavior and boundaries](TheArchitectCode/CorruptedPlayerCombat/README.md).

@@ -113,6 +113,7 @@ internal static class NativeCardScopeIdentityPatch
 // Rewriting the callers also covers their already-inlined combat-state getters.
 internal static class NativeCombatCallSites
 {
+    private static readonly HashSet<Assembly> PatchedModAssemblies = [];
     private static readonly MethodInfo IsPlayerGetter =
         AccessTools.PropertyGetter(typeof(Creature), nameof(Creature.IsPlayer));
     private static readonly MethodInfo MultiplayerConstraintGetter =
@@ -145,7 +146,7 @@ internal static class NativeCombatCallSites
 
     private static MethodInfo? Replacement(MethodInfo called, Type? declaringType)
     {
-        var cardEffect = declaringType?.Namespace == "MegaCrit.Sts2.Core.Models.Cards";
+        var cardEffect = IsCardEffect(declaringType);
         if (called == IsPlayerGetter &&
             (cardEffect || IsCoopAllyPower(declaringType) ||
              IsCardCommand(declaringType)))
@@ -172,18 +173,50 @@ internal static class NativeCombatCallSites
             t.Namespace == "MegaCrit.Sts2.Core.Commands" ||
             t.Namespace == "MegaCrit.Sts2.Core.Nodes.Orbs"))
         {
-            foreach (var method in AccessTools.GetDeclaredMethods(type).Where(m =>
-                !m.ContainsGenericParameters && m.GetMethodBody() != null))
-            {
-                if (!PatchProcessor.GetOriginalInstructions(method).Any(instruction =>
-                    instruction.operand is MethodInfo called &&
-                    Replacement(called, type) != null))
-                    continue;
-                harmony.Patch(method, transpiler: new HarmonyMethod(typeof(NativeCombatCallSites), nameof(Transpiler)));
-                patched++;
-            }
+            patched += PatchType(harmony, type);
         }
         MainFile.Logger.Info($"Native Corrupted Player installed {patched} owner-scoped combat call sites.");
+    }
+
+    // Wait until an encounter is created: other content mods can initialize after us.
+    internal static void InstallModdedEffects()
+    {
+        var harmony = new Harmony(MainFile.ModId);
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies().Where(assembly =>
+            !assembly.IsDynamic && assembly != typeof(CardModel).Assembly &&
+            !PatchedModAssemblies.Contains(assembly) &&
+            assembly.GetReferencedAssemblies().Any(reference =>
+                reference.Name == typeof(CardModel).Assembly.GetName().Name)))
+        {
+            var patched = 0;
+            foreach (var type in assembly.GetTypes().Where(IsModelEffect))
+                patched += PatchType(harmony, type);
+            PatchedModAssemblies.Add(assembly);
+            if (patched > 0)
+                MainFile.Logger.Info($"Corrupted Player installed {patched} owner-scoped call sites in {assembly.GetName().Name}.");
+        }
+    }
+
+    private static bool IsModelEffect(Type? type) =>
+        type != null && (typeof(AbstractModel).IsAssignableFrom(type) || IsModelEffect(type.DeclaringType));
+
+    private static bool IsCardEffect(Type? type) =>
+        type != null && (typeof(CardModel).IsAssignableFrom(type) || IsCardEffect(type.DeclaringType));
+
+    private static int PatchType(Harmony harmony, Type type)
+    {
+        var patched = 0;
+        foreach (var method in AccessTools.GetDeclaredMethods(type).Where(m =>
+            !m.ContainsGenericParameters && m.GetMethodBody() != null))
+        {
+            if (!PatchProcessor.GetOriginalInstructions(method).Any(instruction =>
+                instruction.operand is MethodInfo called &&
+                Replacement(called, type) != null))
+                continue;
+            harmony.Patch(method, transpiler: new HarmonyMethod(typeof(NativeCombatCallSites), nameof(Transpiler)));
+            patched++;
+        }
+        return patched;
     }
 
     private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions,

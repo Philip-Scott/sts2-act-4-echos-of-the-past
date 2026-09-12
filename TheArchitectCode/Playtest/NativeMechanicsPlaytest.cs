@@ -255,6 +255,7 @@ internal static class NativeMechanicsPlaytest
         Require(bladePlayed, "forged Sovereign Blade executes after its live previews");
         actor.Body.RemoveAllPowersInternalExcept();
         human.Creature.RemoveAllPowersInternalExcept();
+        await NativeModdedCardPlaytest.Run(human, actor, Prepare, Turn);
         if (previewsOnly)
         {
             MainFile.Logger.Info("NATIVE CARD PREVIEWS PASSED");

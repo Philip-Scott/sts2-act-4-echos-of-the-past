@@ -17,6 +17,7 @@
     <Compile Include="../../TheArchitectCode/Acts/ArchitectMap.cs" Link="ArchitectMap.cs" />
     <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/CorruptedPartyPhase.cs" Link="CorruptedPartyPhase.cs" />
     <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/CorruptedPlayerHealth.cs" Link="CorruptedPlayerHealth.cs" />
+    <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/NativeCardSupport.cs" Link="NativeCardSupport.cs" />
     <Compile Include="../../TheArchitectCode/Playtest/ArchitectHistorySetup.cs" Link="ArchitectHistorySetup.cs" />
     <Compile Include="../../TheArchitectCode/Lifecycle/ArchitectHistoryIcons.cs" Link="ArchitectHistoryIcons.cs" />
     <Compile Include="../../TheArchitectCode/UI/CorruptedPartyLayoutGeometry.cs" Link="CorruptedPartyLayoutGeometry.cs" />

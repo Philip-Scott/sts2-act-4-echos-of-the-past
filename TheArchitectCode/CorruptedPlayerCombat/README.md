@@ -14,8 +14,9 @@ energy, stars, RNG and card piles. Its player's Creature backing reference is
 bound once to the actual Corrupted Player enemy. Neither the private player nor its
 run becomes a real party member, and `LocalContext` is unchanged.
 
-Native save restoration preserves card IDs, upgrades, native enchantments and
-saved properties. Combat copies retain their native deck-version relationship.
+Native save restoration preserves card IDs, upgrades, installed enchantments,
+saved properties and BaseLib extended card/modifier data.
+Combat copies retain their native deck-version relationship.
 Cards execute through `SpendResources` and `OnPlayWrapper` inside the enemy move,
 including live source/target hooks, native resource spending, powers, pile
 movement, generated cards, choices, X costs and automatic plays.
@@ -45,6 +46,10 @@ Native call sites are rewritten as well as getters: BaseLib pre-JIT and native
 inlining can bypass getter-only detours. The stable Creature backing reference,
 explicit owner/participant reads, and explicit turn-loop phase boundaries are
 essential. Do not replace them with temporary human state swaps.
+Installed mod model call sites, including their async state machines, receive the
+same bridges when the first Corrupted Player is constructed, after content mods
+have loaded. Each assembly is processed once; later encounters also pick up
+newly loaded assemblies.
 
 The real turn loop owns side hooks. Actor energy and hand draw are prepared at
 the start of the human turn, including the opening turn, so the human can inspect
@@ -130,12 +135,18 @@ their native target-derived rotation rather than being flipped a second time.
 
 ## Explicit boundaries
 
-Third-party card/enchantment/modifier effects are outside this release's support.
-They are visibly labelled **Unsupported**, not
-played or spent as fake no-op actions, and do not execute card/modifier combat
-hooks. Their exact raw captured JSON remains in the profile snapshot. Unsupported
-saved extension data is not handed to arbitrary extension deserializers when
-constructing the unplayed native card.
+Installed third-party cards, enchantments, afflictions and BaseLib card modifiers
+are not excluded based on their assembly. They execute their own effects and
+combat hooks, including generated and automatically played cards. Populated
+BaseLib typed save dictionaries are restored by the normal loader, not stripped.
+This does not emulate arbitrary human-only mod interfaces, custom global state,
+or character mechanics that require uncaptured relics. Those may require
+mod-specific bridges; third-party compatibility is not universal.
+
+Unrecognized saved extension formats remain visibly labelled **Unsupported**,
+not played or spent as fake no-op actions, and do not execute card/modifier combat
+hooks. Their exact raw captured JSON remains in the profile snapshot. Unknown
+extension data is excluded from the unplayed native card's loader.
 
 Native co-op-only cards are supported. A card requiring another living player has
 no valid target when its corrupted teammates are dead (or in a solo snapshot);
@@ -170,7 +181,7 @@ bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --label car
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --loss
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --nondefect
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --poison
-# Focused hand/hover modifier coverage, including native damage after preview:
+# Hand/hover coverage plus modded effects, generated cards and saved BaseLib modifiers:
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --previews
 # Generated 2-4-member parties; no snapshot input needed:
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --party

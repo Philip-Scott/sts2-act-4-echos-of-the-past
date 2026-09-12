@@ -59,8 +59,10 @@ Keep the same character and content mods enabled for later visits.
 
 ## Known limitations and troubleshooting
 
-Co-op-only cards and third-party card/modifier effects on Corrupted Players remain
-visibly Unsupported and unplayed. Not every vanilla combination is audited.
+Corrupted Players execute installed modded card/modifier effects and native co-op
+cards. Human-only mod interfaces and mechanics requiring uncaptured relics or
+custom state may need specific compatibility work. Unrecognized saved extension
+formats remain visibly Unsupported and unplayed. Not every combination is audited.
 Missing saved content can block entry rather than silently discard cards.
 Host migration is not supported. Avoid force-closing during result transitions;
 crash-transaction recovery remains incomplete. Combat reloads restart encounters,

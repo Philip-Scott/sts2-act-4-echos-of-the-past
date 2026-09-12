@@ -1,9 +1,5 @@
 using System.Text.Json;
 using BaseLib.Abstracts;
-using HarmonyLib;
-using MegaCrit.Sts2.Core.Combat;
-using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
@@ -24,34 +20,18 @@ internal static class NativeCardSupport
             FloorAddedToDeck = saved.FloorAddedToDeck
         };
 
-    internal static string? Reason(CardModel card)
-    {
-        if (card.GetType().Assembly != typeof(CardModel).Assembly)
-            return "Unsupported: third-party card effects";
-        if (card.Enchantment is { } enchantment && enchantment.GetType().Assembly != typeof(CardModel).Assembly)
-            return "Unsupported: third-party enchantment";
-        if (card.Affliction is { } affliction && affliction.GetType().Assembly != typeof(CardModel).Assembly ||
-            CardModifier.Modifiers(card).Count > 0)
-            return "Unsupported: third-party card modifier";
-        return null;
-    }
-
     internal static string? SavedReason(JsonElement raw)
     {
         foreach (var field in raw.EnumerateObject())
         {
             if (field.Name is "id" or "current_upgrade_level" or "floor_added_to_deck" or "props" or "enchantment")
                 continue;
-            if (field.Name == "save_dict_List[BaseLib.Abstracts.CardModifier+ModifierSave]" &&
-                field.Value.ValueKind == JsonValueKind.Object && field.Value.EnumerateObject().All(p =>
-                    p.Name == "BaseLibCardModifiers" && p.Value.ValueKind == JsonValueKind.Array &&
-                    p.Value.GetArrayLength() == 0))
-                continue;
+            // BaseLib owns these typed dictionaries, including nonempty modifier
+            // saves. Keep the original SerializableCard so its extension data survives.
             if (field.Name.StartsWith("save_dict_", StringComparison.Ordinal) &&
-                (field.Value.ValueKind == JsonValueKind.Null ||
-                 field.Value.ValueKind == JsonValueKind.Object && !field.Value.EnumerateObject().Any()))
+                field.Value.ValueKind is JsonValueKind.Null or JsonValueKind.Object)
                 continue;
-            return "Unsupported: third-party saved card/modifier data";
+            return "Unsupported: unrecognized saved card/modifier data";
         }
         return null;
     }
@@ -99,19 +79,5 @@ internal static class NativeCardSupport
             }
         }
         return null;
-    }
-}
-
-[HarmonyPatch(typeof(Hook), nameof(Hook.ShouldPlay))]
-internal static class NativeUnsupportedPlayPatch
-{
-    private static bool Prefix(CardModel card, ref bool __result, ref AbstractModel? preventer)
-    {
-        if (!card.IsMutable || card.Owner is not { } owner || !NativeCorruptedPlayer.TryGet(owner, out var actor) ||
-            actor.UnsupportedReason(card) == null)
-            return true;
-        __result = false;
-        preventer = card;
-        return false;
     }
 }

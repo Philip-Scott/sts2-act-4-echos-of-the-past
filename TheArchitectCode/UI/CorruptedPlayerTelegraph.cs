@@ -109,7 +109,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             TooltipText = "Current / maximum energy; not a future damage forecast.\n" +
                 "Plays left to right, reconsidering after each card. Choices select the first valid option.\n" +
                 "Attack intent: any Attack in your CURRENT hand when the Corrupted Player checks, regardless of cost.\n" +
-                "Co-op-only cards and third-party card/modifier effects are preserved but unsupported."
+                "Installed modded cards use their own effects. Ally-only cards need a living corrupted teammate."
         };
         _resources.AddChild(_energySlot);
         _starSlot = new Control
