@@ -87,6 +87,13 @@ internal static class CorruptionVisualPlaytest
         var humanNode = human.Creature.GetCreatureNode()!;
         await Task.Delay(2000);
         AssertIsolation(node, humanNode, label);
+        var bindings = new[] { Find<CorruptedPlayerBinding>(node.Visuals, "BoundEchoBack"),
+            Find<CorruptedPlayerBinding>(node.Visuals, "BoundEchoFront") };
+        var geometryBuilds = bindings.Select(binding => binding.GeometryBuildCount).ToArray();
+        for (var frame = 0; frame < 10; frame++)
+            await game.AwaitProcessFrame();
+        Require(bindings.Select(binding => binding.GeometryBuildCount).SequenceEqual(geometryBuilds),
+            $"{label}: animated bindings reuse their stroke geometry on idle frames");
         actor.AssertIdentity();
         if (character is Ironclad)
             await AssertCompositorModulation(game, Find<CanvasGroup>(node.Visuals, "BoundEchoBody"));
@@ -324,6 +331,52 @@ internal static class CorruptionVisualPlaytest
                     entry.Node.UseParentMaterial == entry.UseParentMaterial),
                 $"production attachment retained {native.Body.Name}, its scene owner and all {native.Materials.Length} native body materials");
         }
+    }
+
+    internal static async Task AssertCachedUpdates(NGame game, NCreature node)
+    {
+        var effect = Find<CorruptedPlayerCorruption>(node.Visuals, "BoundEcho");
+        var group = Find<CanvasGroup>(node.Visuals, "BoundEchoBody");
+        var front = Find<CorruptedPlayerBinding>(node.Visuals, "BoundEchoFront");
+        var bounds = node.Visuals.GetNode<Control>("%Bounds");
+        var material = (ShaderMaterial)group.Material;
+        var updates = effect.GeometryUpdateCount;
+        var geometry = front.GeometryBuildCount;
+        var originalRect = material.GetShaderParameter("body_rect").AsVector4();
+        var tint = node.Visuals.Modulate;
+        var size = bounds.Size;
+        var scale = node.Scale;
+        try
+        {
+            node.Scale *= 1.25f;
+            foreach (var alpha in new[] { 0.5f, 0f, 1f })
+            {
+                node.Visuals.Modulate = new Color(tint.R, tint.G, tint.B, alpha);
+                await game.AwaitProcessFrame();
+                await game.AwaitProcessFrame();
+                Require(group.Visible == (alpha > 0) && front.Visible == (alpha > 0) &&
+                    Mathf.IsEqualApprox(InheritedAlpha(group) * group.SelfModulate.A, alpha),
+                    $"cached compositor and bindings follow inherited alpha={alpha}");
+            }
+            Require(effect.GeometryUpdateCount == updates && front.GeometryBuildCount == geometry,
+                "parent scale and tint animate without rebuilding local body or binding geometry");
+            bounds.Size += new Vector2(20, 10);
+            await game.AwaitProcessFrame();
+            await game.AwaitProcessFrame();
+            Require(effect.GeometryUpdateCount > updates && front.GeometryBuildCount > geometry &&
+                !material.GetShaderParameter("body_rect").AsVector4().IsEqualApprox(originalRect),
+                "changing native bounds invalidates compositor and binding geometry");
+        }
+        finally
+        {
+            node.Scale = scale;
+            node.Visuals.Modulate = tint;
+            bounds.Size = size;
+        }
+        await game.AwaitProcessFrame();
+        await game.AwaitProcessFrame();
+        Require(material.GetShaderParameter("body_rect").AsVector4().IsEqualApprox(originalRect),
+            "restoring native bounds restores shader coordinates");
     }
 
     private static void AssertIsolation(NCreature node, NCreature human, string label)

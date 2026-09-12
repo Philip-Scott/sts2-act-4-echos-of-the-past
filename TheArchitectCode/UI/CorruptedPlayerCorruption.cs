@@ -82,7 +82,26 @@ public partial class CorruptedPlayerCorruption : Node
     private NCreature? _creature;
     private CorruptedPlayerBinding _back = null!;
     private CorruptedPlayerBinding _front = null!;
-    private readonly List<(Node2D Body, CanvasGroup Group, ShaderMaterial Material)> _bodies = [];
+    private sealed class BodyEffect(Node2D body, CanvasGroup group, ShaderMaterial material)
+    {
+        internal Node2D Body { get; } = body;
+        internal CanvasGroup Group { get; } = group;
+        internal ShaderMaterial Material { get; } = material;
+        internal Rect2? Rect;
+        internal float Strength = float.NaN;
+    }
+
+    private sealed class BoundsCache
+    {
+        internal Transform2D Target;
+        internal Transform2D Bounds;
+        internal Vector2 Size;
+        internal Rect2 Rect;
+    }
+
+    private readonly List<BodyEffect> _bodies = [];
+    private readonly Dictionary<Node2D, BoundsCache> _boundsCache = new();
+    internal int GeometryUpdateCount { get; private set; }
     private double _time;
     private float _strength = Intensity;
     private bool _animateBinding;
@@ -141,7 +160,7 @@ public partial class CorruptedPlayerCorruption : Node
         body.Reparent(group, keepGlobalTransform: false);
         body.ZIndex = 0;
         body.ZAsRelative = true;
-        _bodies.Add((body, group, material));
+        _bodies.Add(new BodyEffect(body, group, material));
     }
 
     public override void _Ready()
@@ -159,22 +178,36 @@ public partial class CorruptedPlayerCorruption : Node
         var bindingStrength = _animateBinding && alive
             ? Intensity * Mathf.SmoothStep(0f, 1f, (float)_time / 0.8f)
             : _strength;
-        foreach (var (body, group, material) in _bodies)
+        bool anyVisible = false;
+        foreach (var effect in _bodies)
         {
+            var body = effect.Body;
+            var group = effect.Group;
+            var material = effect.Material;
             // Native death VFX take the original body into their own viewport.
             bool attached = IsInstanceValid(body) && body.GetParent() == group;
             group.Visible = attached && body.Visible && ApplyInheritedModulation(group);
             if (!group.Visible)
                 continue;
+            anyVisible = true;
             var rect = BoundsIn(group);
-            float margin = Mathf.Max(rect.Size.X * 0.15f, rect.Size.Y * 0.025f) + 8f;
-            group.FitMargin = margin;
-            group.ClearMargin = margin + 8f;
-            material.SetShaderParameter(BodyRect, new Vector4(rect.Position.X, rect.Position.Y, rect.Size.X, rect.Size.Y));
+            if (effect.Rect is not { } previous || !previous.IsEqualApprox(rect))
+            {
+                float margin = Mathf.Max(rect.Size.X * 0.15f, rect.Size.Y * 0.025f) + 8f;
+                group.FitMargin = margin;
+                group.ClearMargin = margin + 8f;
+                material.SetShaderParameter(BodyRect, new Vector4(rect.Position.X, rect.Position.Y, rect.Size.X, rect.Size.Y));
+                effect.Rect = rect;
+                GeometryUpdateCount++;
+            }
             material.SetShaderParameter(EffectTime, (float)_time);
-            material.SetShaderParameter(Strength, _strength);
+            if (effect.Strength != _strength)
+            {
+                material.SetShaderParameter(Strength, _strength);
+                effect.Strength = _strength;
+            }
         }
-        bool visible = bindingStrength > 0 && _bodies.Any(entry => entry.Group.Visible);
+        bool visible = bindingStrength > 0 && anyVisible;
         _back.Visible = visible;
         _front.Visible = visible;
         if (visible)
@@ -192,8 +225,11 @@ public partial class CorruptedPlayerCorruption : Node
             tint *= parent.Modulate;
         // Capture opaque attachments, then fade/tint the composite once. The compatibility
         // renderer's backbuffer can have only two alpha bits; capturing a fade loses precision.
-        group.Modulate = new Color(Inverse(tint.R), Inverse(tint.G), Inverse(tint.B), Inverse(tint.A));
-        group.SelfModulate = tint;
+        var inverse = new Color(Inverse(tint.R), Inverse(tint.G), Inverse(tint.B), Inverse(tint.A));
+        if (group.Modulate != inverse)
+            group.Modulate = inverse;
+        if (group.SelfModulate != tint)
+            group.SelfModulate = tint;
         return tint.A > 0;
     }
 
@@ -201,13 +237,25 @@ public partial class CorruptedPlayerCorruption : Node
 
     private Rect2 BoundsIn(Node2D target)
     {
-        var transform = target.GlobalTransform.AffineInverse() * _bounds.GetGlobalTransform();
+        var targetTransform = target.GlobalTransform;
+        var boundsTransform = _bounds.GetGlobalTransform();
+        var size = _bounds.Size;
+        if (_boundsCache.TryGetValue(target, out var cached) &&
+            cached.Target == targetTransform && cached.Bounds == boundsTransform && cached.Size == size)
+            return cached.Rect;
+        var transform = targetTransform.AffineInverse() * boundsTransform;
         var rect = new Rect2(transform * Vector2.Zero, Vector2.Zero);
-        rect = rect.Expand(transform * new Vector2(_bounds.Size.X, 0));
-        rect = rect.Expand(transform * _bounds.Size);
-        rect = rect.Expand(transform * new Vector2(0, _bounds.Size.Y));
+        rect = rect.Expand(transform * new Vector2(size.X, 0));
+        rect = rect.Expand(transform * size);
+        rect = rect.Expand(transform * new Vector2(0, size.Y));
         if (rect.Size.X <= 0 || rect.Size.Y <= 0)
             throw new InvalidOperationException("Bound Echo requires non-empty character bounds.");
+        cached ??= new BoundsCache();
+        cached.Target = targetTransform;
+        cached.Bounds = boundsTransform;
+        cached.Size = size;
+        cached.Rect = rect;
+        _boundsCache[target] = cached;
         return rect;
     }
 }

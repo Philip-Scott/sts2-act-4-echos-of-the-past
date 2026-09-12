@@ -90,9 +90,13 @@ internal static class NativeDemoPlaytest
             await DeckPreviewPlaytest.Run(game);
             return;
         }
-        if (CommandLineHelper.HasArg("architect-native-party") || CommandLineHelper.HasArg("architect-native-party-layout"))
+        var partySize = Enumerable.Range(2, 3).FirstOrDefault(count =>
+            CommandLineHelper.HasArg($"architect-native-party-{count}"));
+        if (partySize != 0 || CommandLineHelper.HasArg("architect-native-party") ||
+            CommandLineHelper.HasArg("architect-native-party-layout"))
         {
-            await NativePartyPlaytest.Run(game, CommandLineHelper.HasArg("architect-native-party-layout"));
+            await NativePartyPlaytest.Run(game, CommandLineHelper.HasArg("architect-native-party-layout"),
+                partySize == 0 ? null : partySize);
             return;
         }
         if (CommandLineHelper.HasArg("architect-native-relic-art"))

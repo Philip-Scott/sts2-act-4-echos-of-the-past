@@ -52,6 +52,15 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     private bool _nativeDisplay;
     private bool _partyDisplay;
     private bool _stopped;
+    private CombatStateTracker? _stateTracker;
+    private (int Draw, int Discard, int Exhaust)? _pileCounts;
+    internal int ContentRefreshCount { get; private set; }
+    private CorruptedPartyTelegraphLayout? _partyLayout;
+    private readonly record struct LayoutInputs(
+        Vector2 Viewport, Vector2 Above, Transform2D Anchor, float Spacing, Vector2 PanelSize);
+    private LayoutInputs? _layoutInputs;
+    internal int LayoutUpdateCount { get; private set; }
+    internal int PartyLayoutRebuildCount => _partyLayout?.RebuildCount ?? 0;
 
     private sealed class CardCell(CorruptedPlayerTelegraphCard entry, Button face, HBoxContainer intents)
     {
@@ -123,12 +132,24 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         _row = new HBoxContainer();
         _row.AddThemeConstantOverride("separation", 8);
         _scroll.AddChild(_row);
+        _stateTracker = CombatManager.Instance.StateTracker;
+        _stateTracker.CombatStateChanged += OnCombatStateChanged;
+        if (_partyDisplay)
+            _partyLayout = CorruptedPartyTelegraphLayout.Acquire(_creature.CombatState!);
+    }
+
+    private void OnCombatStateChanged(CombatState state)
+    {
+        if (!_stopped && !_creature.IsDead && _creature.CombatState == state &&
+            !CombatManager.Instance.IsOverOrEnding)
+            _refreshPlan();
     }
 
     public void ShowPlan(IReadOnlyList<CorruptedPlayerTelegraphCard> cards, bool limited)
     {
         if (_stopped)
             return;
+        ContentRefreshCount++;
         _heading.Text = limited ? "Corrupted Player · play → · plan limit" : "Corrupted Player · play →";
         if (_row.GetChildCount() > 0 && _cells.Count == cards.Count && _cells.Select(cell =>
                 (cell.Entry.InstanceId, cell.Entry.PlayOrder, cell.Entry.Unsupported))
@@ -235,6 +256,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             return;
         var state = player.PlayerCombatState
             ?? throw new InvalidOperationException("The Corrupted Player HUD requires an active combat state.");
+        if (!_nativeDisplay)
+            _layoutInputs = null;
         _nativeDisplay = true;
         _nativeState = state;
         _heading.Hide();
@@ -249,9 +272,15 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             _energy.Scale = Vector2.One * 0.5f;
             IgnoreMouse(_energy);
         }
-        _draw.SetTextAutoSize(state.DrawPile.Cards.Count.ToString());
-        _discard.SetTextAutoSize(state.DiscardPile.Cards.Count.ToString());
-        _exhaust.SetTextAutoSize(state.ExhaustPile.Cards.Count.ToString());
+        var counts = (Draw: state.DrawPile.Cards.Count, Discard: state.DiscardPile.Cards.Count,
+            Exhaust: state.ExhaustPile.Cards.Count);
+        if (_pileCounts?.Draw != counts.Draw)
+            _draw.SetTextAutoSize(counts.Draw.ToString());
+        if (_pileCounts?.Discard != counts.Discard)
+            _discard.SetTextAutoSize(counts.Discard.ToString());
+        if (_pileCounts?.Exhaust != counts.Exhaust)
+            _exhaust.SetTextAutoSize(counts.Exhaust.ToString());
+        _pileCounts = counts;
     }
 
     internal void Stop()
@@ -259,6 +288,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         if (_stopped)
             return;
         _stopped = true;
+        UnsubscribeState();
+        ReleaseLayout();
         SetProcess(false);
         Hide();
         ClearPreview();
@@ -483,20 +514,29 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             ClearPreview();
             return;
         }
-        _refreshPlan();
+        UpdateLayout();
+        if (!IsVisibleInTree() || NCapstoneContainer.Instance?.InUse == true || NHoverTipSet.shouldBlockHoverTips)
+            ClearPreview();
+        else
+            PositionPreview();
+    }
+
+    private void UpdateLayout()
+    {
         var viewport = GetViewportRect().Size;
+        var above = _anchor.Visuals.IntentPosition.GlobalPosition;
+        var anchor = _anchor.GetGlobalTransform();
+        var spacing = _partyLayout?.Spacing(_anchor) ?? float.PositiveInfinity;
+        var inputs = new LayoutInputs(viewport, above, anchor, spacing, Size);
+        if (_layoutInputs == inputs)
+            return;
+        LayoutUpdateCount++;
         var width = Mathf.Min(680f, Mathf.Max(220f, viewport.X - 32f));
         CustomMinimumSize = new Vector2(width, 248);
         Size = new Vector2(width, 248);
-        var above = _anchor.Visuals.IntentPosition.GlobalPosition;
-        if (_partyDisplay && _creature.CombatState is { } combat)
+        if (_partyDisplay)
         {
-            var spacing = combat.Enemies.Where(enemy => enemy != _creature && enemy.Monster is CorruptedPlayer)
-                .Select(enemy => enemy.GetCreatureNode()).Where(node => node != null &&
-                    Math.Abs(node.Position.Y - _anchor.Position.Y) < 120f)
-                .Select(node => Math.Abs(node!.Visuals.IntentPosition.GlobalPosition.X - above.X))
-                .DefaultIfEmpty(float.PositiveInfinity).Min();
-            var fit = (spacing - 16f) / (Size.X * _anchor.GetGlobalTransform().Scale.X);
+            var fit = (spacing - 16f) / (Size.X * anchor.Scale.X);
             Scale = Vector2.One * Mathf.Clamp(fit, 0.1f, 0.55f);
         }
         var displaySize = _partyDisplay ? (GetGlobalTransform() * new Rect2(Vector2.Zero, Size)).Size : Size;
@@ -505,11 +545,27 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             Mathf.Clamp(above.X - displaySize.X / 2f, 16f, Mathf.Max(16f, viewport.X - displaySize.X - 16f)),
             Mathf.Clamp(above.Y - displaySize.Y + (_nativeDisplay ? 24f : -24f), topMargin,
                 Mathf.Max(topMargin, viewport.Y - displaySize.Y - 12f)));
-        if (!IsVisibleInTree() || NCapstoneContainer.Instance?.InUse == true || NHoverTipSet.shouldBlockHoverTips)
-            ClearPreview();
-        else
-            PositionPreview();
+        _layoutInputs = inputs with { PanelSize = Size };
     }
 
-    public override void _ExitTree() => ClearPreview();
+    private void ReleaseLayout()
+    {
+        _partyLayout?.Release();
+        _partyLayout = null;
+    }
+
+    private void UnsubscribeState()
+    {
+        if (_stateTracker == null)
+            return;
+        _stateTracker.CombatStateChanged -= OnCombatStateChanged;
+        _stateTracker = null;
+    }
+
+    public override void _ExitTree()
+    {
+        UnsubscribeState();
+        ReleaseLayout();
+        ClearPreview();
+    }
 }

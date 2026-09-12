@@ -106,7 +106,16 @@ internal static class NativeMechanicsPlaytest
                     $"already-open hover updates to current damage {expected}");
             }
         }
+        telegraph.ShowPlan([], false);
+        var handRow = telegraph.GetNode<ScrollContainer>("HandScroll").GetChild(0);
+        var emptyHand = handRow.GetChild(0);
+        for (var refresh = 0; refresh < 10; refresh++)
+            telegraph.ShowPlan([], false);
+        Require(handRow.GetChildCount() == 1 && handRow.GetChild(0) == emptyHand &&
+            !emptyHand.IsQueuedForDeletion(), "unchanged empty hands reuse their placeholder node");
         actor.Show(telegraph);
+        Require(handRow.GetChildCount() == actor.State.Hand.Cards.Count &&
+            emptyHand.IsQueuedForDeletion(), "empty hand transitions back to the current cards");
         PreviewFace(previewStrike).EmitSignal(Control.SignalName.MouseEntered);
         var previewHand = actor.State.Hand.Cards.ToArray();
         var previewBaseValues = previewHand.Select(card => card.DynamicVars.Values.Select(v => v.BaseValue).ToArray()).ToArray();
@@ -115,6 +124,11 @@ internal static class NativeMechanicsPlaytest
         var previewEnergy = actor.State.Energy;
         var previewHp = human.Creature.CurrentHp;
         await PreviewDamage(previewStrike, 6);
+        var idleRefreshes = telegraph.ContentRefreshCount;
+        for (var frame = 0; frame < 10; frame++)
+            await game.AwaitProcessFrame();
+        Require(telegraph.ContentRefreshCount == idleRefreshes,
+            "unchanged hand and open hover do not refresh content on idle frames");
         Require(actor.Body.GetPowerAmount<StrengthPower>() == 0, "preview does not simulate preceding Inflame");
         await PowerCmd.Apply<StrengthPower>(context, actor.Body, 2, actor.Body, null);
         await PreviewDamage(previewStrike, 8);

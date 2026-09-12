@@ -29,13 +29,15 @@ namespace TheArchitect.TheArchitectCode.Playtest;
 
 internal static class NativePartyPlaytest
 {
-    internal static async Task Run(NGame game, bool layoutOnly = false)
+    internal static async Task Run(NGame game, bool layoutOnly = false, int? partySize = null)
     {
         Require(NativeDemoSafety.Enabled, "party probes require disposable storage and Steam disabled");
-        foreach (var (count, ascension) in layoutOnly ? new[] { (4, 8) } : [(2, 0), (3, 8), (4, 8)])
+        var cases = partySize is { } size ? new[] { (size, size == 2 ? 0 : 8) } :
+            layoutOnly ? [(4, 8)] : [(2, 0), (3, 8), (4, 8)];
+        foreach (var (count, ascension) in cases)
             await Exercise(game, count, ascension, layoutOnly);
         MainFile.Logger.Info(layoutOnly ? "NATIVE PARTY LAYOUT PASSED" :
-            "NATIVE PARTY PASSED: 2-4 humans and saved enemies; counterpart names/targets, AOE, fixed HP, independent turns, sequential/AoE handoff.");
+            $"NATIVE PARTY PASSED: {(partySize?.ToString() ?? "2-4")} humans and saved enemies; counterpart names/targets, AOE, fixed HP, independent turns, sequential/AoE handoff.");
         game.GetTree().Quit();
     }
 
@@ -139,6 +141,59 @@ internal static class NativePartyPlaytest
         await NativeDemoPlaytest.Capture($"party-{count}-opening");
         var panels = enemies.Select(enemy => enemy.GetCreatureNode()!
             .GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph")).ToArray();
+        var bindings = enemies.SelectMany(enemy => enemy.GetCreatureNode()!.Visuals
+            .FindChildren("BoundEcho*", recursive: true, owned: false).OfType<CorruptedPlayerBinding>()).ToArray();
+        Require(bindings.Length == count * 2, $"{count}: every body has two binding layers");
+        var geometryBuilds = bindings.Select(binding => binding.GeometryBuildCount).ToArray();
+        var effects = enemies.Select(enemy => enemy.GetCreatureNode()!.Visuals
+            .GetNode<CorruptedPlayerCorruption>("BoundEcho")).ToArray();
+        var compositorUpdates = effects.Select(effect => effect.GeometryUpdateCount).ToArray();
+        var refreshes = panels.Select(panel => panel.ContentRefreshCount).ToArray();
+        var layoutUpdates = panels.Select(panel => panel.LayoutUpdateCount).ToArray();
+        var partyRebuilds = panels[0].PartyLayoutRebuildCount;
+        for (var frame = 0; frame < 10; frame++)
+            await game.AwaitProcessFrame();
+        Require(bindings.Select(binding => binding.GeometryBuildCount).SequenceEqual(geometryBuilds),
+            $"{count}: animated bindings retain cached geometry on idle frames");
+        Require(panels.Select(panel => panel.ContentRefreshCount).SequenceEqual(refreshes),
+            $"{count}: idle party HUDs do not refresh content");
+        Require(effects.Select(effect => effect.GeometryUpdateCount).SequenceEqual(compositorUpdates),
+            $"{count}: idle compositors do not resubmit geometry uniforms");
+        Require(panels.Select(panel => panel.LayoutUpdateCount).SequenceEqual(layoutUpdates) &&
+            panels[0].PartyLayoutRebuildCount == partyRebuilds,
+            $"{count}: unchanged party positions do not rebuild shared or individual layouts");
+        await CorruptionVisualPlaytest.AssertCachedUpdates(game, enemies[0].GetCreatureNode()!);
+        var anchor = enemies[0].GetCreatureNode()!;
+        var originalPosition = anchor.Position;
+        var contentSize = game.GetWindow().ContentScaleSize;
+        try
+        {
+            anchor.Position += new Vector2(12, 0);
+            await game.AwaitProcessFrame();
+            await game.AwaitProcessFrame();
+            Require(panels[0].PartyLayoutRebuildCount > partyRebuilds &&
+                panels[0].LayoutUpdateCount > layoutUpdates[0],
+                $"{count}: moving an actor invalidates party spacing and panel placement");
+            var layoutsBeforeResize = panels[0].LayoutUpdateCount;
+            game.GetWindow().ContentScaleSize = contentSize + new Vector2I(80, 40);
+            await game.AwaitProcessFrame();
+            await game.AwaitProcessFrame();
+            Require(panels[0].LayoutUpdateCount > layoutsBeforeResize,
+                $"{count}: resizing the viewport invalidates cached panel placement");
+            var layoutsBeforePanelResize = panels[0].LayoutUpdateCount;
+            panels[0].Size += new Vector2(0, 10);
+            await game.AwaitProcessFrame();
+            await game.AwaitProcessFrame();
+            Require(panels[0].LayoutUpdateCount > layoutsBeforePanelResize,
+                $"{count}: deferred panel sizing invalidates cached placement");
+        }
+        finally
+        {
+            anchor.Position = originalPosition;
+            game.GetWindow().ContentScaleSize = contentSize;
+        }
+        await game.AwaitProcessFrame();
+        await game.AwaitProcessFrame();
         var bounds = panels.Select(panel => panel.GetGlobalTransform() * new Rect2(Vector2.Zero, panel.Size)).ToArray();
         Require(bounds.All(rect => game.GetViewport().GetVisibleRect().Encloses(rect)),
             $"{count}: all party hand previews remain on screen");

@@ -152,8 +152,16 @@ bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --poison
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --previews
 # Generated 2-4-member parties; no snapshot input needed:
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --party
+# Individual party sizes avoid the existing model-registry failure on a second
+# new run in the same process (RELIC.BORROWED_TOMORROW not found):
+bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --party-2
+bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --party-3
+bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --party-4
 # Four-member opening layout only:
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --party-layout
+# Legacy body-effect probe (currently fails at turn setup on the target beta,
+# including with the pre-performance baseline; use --party for cache/fade coverage):
+bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --corruption
 # Directional attack effects in both directions; generates its own disposable snapshot:
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --attack-vfx
 ```

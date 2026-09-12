@@ -84,26 +84,45 @@ class NativeDemoTests(unittest.TestCase):
                  patch.object(demo.subprocess, "Popen", return_value=process), \
                  patch.object(demo.signal, "signal"), patch("builtins.print"):
                 result = demo.launch(SimpleNamespace(game=str(game), label="test", scenario="default",
+                                                     resolution="1280x720",
                                                      cache_from=None, cold=True, render_threads=4,
                                                      shared_visible=False, render_device="/dev/dri/renderD128"))
                 with patch.dict(demo.os.environ, {"ARCHITECT_SNAPSHOT_INPUT": ""}):
                     ancient_result = demo.launch(SimpleNamespace(game=str(game), label="ancient", scenario="ancient",
+                                                                 resolution="1280x720",
                                                                  cache_from=None, cold=True, render_threads=4,
                                                                  shared_visible=False, render_device="/dev/dri/renderD128"))
                     party_result = demo.launch(SimpleNamespace(game=str(game), label="party", scenario="party",
+                                                               resolution="1280x720",
                                                                cache_from=None, cold=True, render_threads=4,
                                                                shared_visible=False, render_device="/dev/dri/renderD128"))
                     saved_result = demo.launch(SimpleNamespace(game=str(game), label="saved", scenario="saved-run",
+                                                               resolution="1280x720",
                                                                cache_from=None, cold=True, render_threads=4,
                                                                shared_visible=False, render_device="/dev/dri/renderD128"))
                     vfx_result = demo.launch(SimpleNamespace(game=str(game), label="vfx", scenario="attack-vfx",
+                                                             resolution="1280x720",
                                                              cache_from=None, cold=True, render_threads=4,
                                                              shared_visible=False, render_device="/dev/dri/renderD128"))
+                    corruption_result = demo.launch(SimpleNamespace(game=str(game), label="corruption",
+                        scenario="corruption", resolution="1280x720", cache_from=None, cold=True,
+                        render_threads=4, shared_visible=False, render_device="/dev/dri/renderD128"))
+                    for size in (2, 3, 4):
+                        scenario = f"party-{size}"
+                        self.assertEqual(demo.launch(SimpleNamespace(game=str(game), label=scenario,
+                            scenario=scenario, resolution="1280x720", cache_from=None, cold=True,
+                            render_threads=4, shared_visible=False, render_device="/dev/dri/renderD128")), 0)
+                        party_run = next((root / "runs").glob(f"run-*-{scenario}-*"))
+                        self.assertFalse((party_run / "snapshot-input.json").exists())
             self.assertEqual(result, 0)
             self.assertEqual(ancient_result, 0)
             self.assertEqual(party_result, 0)
             self.assertEqual(saved_result, 0)
             self.assertEqual(vfx_result, 0)
+            self.assertEqual(corruption_result, 0)
+            corruption = next((root / "runs").glob("run-*-corruption-*"))
+            self.assertFalse((corruption / "snapshot-input.json").exists())
+            self.assertIsNone(json.loads((corruption / "run.json").read_text())["snapshot_sha256"])
             vfx = next((root / "runs").glob("run-*-vfx-*"))
             self.assertFalse((vfx / "snapshot-input.json").exists())
             self.assertIsNone(json.loads((vfx / "run.json").read_text())["snapshot_sha256"])
