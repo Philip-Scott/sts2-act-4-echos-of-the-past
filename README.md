@@ -112,6 +112,11 @@ shows its actual hand and resources, not a guaranteed damage forecast;
 cards enlarge on hover. Native orb slots appear for Defect and for any other
 character that acquires orb capacity. Enemy pets stay beside their Corrupted Player,
 without moving the human.
+Corrupted Parties place the host nearest the human party, independently of saved
+lineage order. With three players, the third stands above and between the first
+two, mirroring the human party's triangular formation.
+Four-player parties use two wider rows, with the back pair shifted diagonally
+away from the humans to keep the bodies and card rows distinct.
 
 Corrupted Players use **Bound Echo** rather than a purple tint: cyan-violet
 afterimages and a slowly shifting body slice sit inside orbiting gold seals and

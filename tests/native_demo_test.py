@@ -17,6 +17,29 @@ SPEC.loader.exec_module(demo)
 
 
 class NativeDemoTests(unittest.TestCase):
+    def test_manual_requires_visible_individual_party_before_accessing_files(self):
+        for visible, scenario in ((False, "party-2"), (True, "party"), (True, "ancient")):
+            with self.subTest(visible=visible, scenario=scenario), \
+                 patch.object(demo, "required_file") as required:
+                with self.assertRaisesRegex(ValueError, "--manual requires"):
+                    demo.launch(SimpleNamespace(manual=True, shared_visible=visible, scenario=scenario))
+                required.assert_not_called()
+
+    def test_layout_only_requires_individual_automated_party(self):
+        for manual, scenario in ((True, "party-2"), (False, "party"), (False, "ancient")):
+            with self.subTest(manual=manual, scenario=scenario), \
+                 patch.object(demo, "required_file") as required:
+                with self.assertRaisesRegex(ValueError, "--layout-only requires"):
+                    demo.launch(SimpleNamespace(manual=manual, layout_only=True,
+                        shared_visible=True, scenario=scenario))
+                required.assert_not_called()
+
+    def test_single_player_inspection_requires_manual_mode(self):
+        with patch.object(demo, "required_file") as required:
+            with self.assertRaisesRegex(ValueError, "--party-1 requires --manual"):
+                demo.launch(SimpleNamespace(manual=False, scenario="party-1"))
+            required.assert_not_called()
+
     def test_sandbox_has_private_devices_and_namespaces_and_no_host_display(self):
         with patch.object(demo, "tool", side_effect=lambda name: "/usr/bin/" + name):
             command = demo.sandbox_command(Path("/game"), demo.RUNS / "run-test", "/usr/bin/Xvfb")
@@ -84,33 +107,33 @@ class NativeDemoTests(unittest.TestCase):
                  patch.object(demo.subprocess, "Popen", return_value=process), \
                  patch.object(demo.signal, "signal"), patch("builtins.print"):
                 result = demo.launch(SimpleNamespace(game=str(game), label="test", scenario="default",
-                                                     resolution="1280x720",
+                                                     resolution="1280x720", manual=False, layout_only=False,
                                                      cache_from=None, cold=True, render_threads=4,
                                                      shared_visible=False, render_device="/dev/dri/renderD128"))
                 with patch.dict(demo.os.environ, {"ARCHITECT_SNAPSHOT_INPUT": ""}):
                     ancient_result = demo.launch(SimpleNamespace(game=str(game), label="ancient", scenario="ancient",
-                                                                 resolution="1280x720",
+                                                                 resolution="1280x720", manual=False, layout_only=False,
                                                                  cache_from=None, cold=True, render_threads=4,
                                                                  shared_visible=False, render_device="/dev/dri/renderD128"))
                     party_result = demo.launch(SimpleNamespace(game=str(game), label="party", scenario="party",
-                                                               resolution="1280x720",
+                                                               resolution="1280x720", manual=False, layout_only=False,
                                                                cache_from=None, cold=True, render_threads=4,
                                                                shared_visible=False, render_device="/dev/dri/renderD128"))
                     saved_result = demo.launch(SimpleNamespace(game=str(game), label="saved", scenario="saved-run",
-                                                               resolution="1280x720",
+                                                               resolution="1280x720", manual=False, layout_only=False,
                                                                cache_from=None, cold=True, render_threads=4,
                                                                shared_visible=False, render_device="/dev/dri/renderD128"))
                     vfx_result = demo.launch(SimpleNamespace(game=str(game), label="vfx", scenario="attack-vfx",
-                                                             resolution="1280x720",
+                                                             resolution="1280x720", manual=False, layout_only=False,
                                                              cache_from=None, cold=True, render_threads=4,
                                                              shared_visible=False, render_device="/dev/dri/renderD128"))
                     corruption_result = demo.launch(SimpleNamespace(game=str(game), label="corruption",
-                        scenario="corruption", resolution="1280x720", cache_from=None, cold=True,
+                        scenario="corruption", resolution="1280x720", cache_from=None, cold=True, manual=False, layout_only=False,
                         render_threads=4, shared_visible=False, render_device="/dev/dri/renderD128"))
                     for size in (2, 3, 4):
                         scenario = f"party-{size}"
                         self.assertEqual(demo.launch(SimpleNamespace(game=str(game), label=scenario,
-                            scenario=scenario, resolution="1280x720", cache_from=None, cold=True,
+                            scenario=scenario, resolution="1280x720", cache_from=None, cold=True, manual=False, layout_only=False,
                             render_threads=4, shared_visible=False, render_device="/dev/dri/renderD128")), 0)
                         party_run = next((root / "runs").glob(f"run-*-{scenario}-*"))
                         self.assertFalse((party_run / "snapshot-input.json").exists())

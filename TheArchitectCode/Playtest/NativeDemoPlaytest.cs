@@ -75,8 +75,9 @@ internal static class NativeDemoPlaytest
         }
         if (NativeDemoSafety.SharedVisible)
         {
-            game.GetWindow().Unfocusable = true;
-            game.GetViewport().GuiDisableInput = true;
+            var manualParty = CommandLineHelper.HasArg("architect-native-party-manual");
+            game.GetWindow().Unfocusable = !manualParty;
+            game.GetViewport().GuiDisableInput = !manualParty;
             game.AddChild(new NativeDemoObserver());
         }
         await Task.Delay(2000);
@@ -90,7 +91,7 @@ internal static class NativeDemoPlaytest
             await DeckPreviewPlaytest.Run(game);
             return;
         }
-        var partySize = Enumerable.Range(2, 3).FirstOrDefault(count =>
+        var partySize = Enumerable.Range(1, 4).FirstOrDefault(count =>
             CommandLineHelper.HasArg($"architect-native-party-{count}"));
         if (CommandLineHelper.HasArg("architect-native-party-layout-prototype"))
         {
@@ -101,7 +102,8 @@ internal static class NativeDemoPlaytest
             CommandLineHelper.HasArg("architect-native-party-layout"))
         {
             await NativePartyPlaytest.Run(game, CommandLineHelper.HasArg("architect-native-party-layout"),
-                partySize == 0 ? null : partySize);
+                partySize == 0 ? null : partySize,
+                manual: CommandLineHelper.HasArg("architect-native-party-manual"));
             return;
         }
         if (CommandLineHelper.HasArg("architect-native-relic-art"))

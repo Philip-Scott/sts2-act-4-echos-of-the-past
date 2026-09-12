@@ -35,6 +35,7 @@ public sealed class CorruptedPlayer : CustomMonsterModel
     private CorruptedPartyPhase? _party;
     private int _partyIndex;
     private Player? _counterpart;
+    internal int FormationIndex { get; private set; }
     public NativeCorruptedPlayer? Native { get; private set; }
     private CharacterModel Character => _character ?? ModelDb.Character<Ironclad>();
     public override LocString Title
@@ -85,11 +86,12 @@ public sealed class CorruptedPlayer : CustomMonsterModel
         _counterpart = counterpart;
     }
 
-    internal void JoinParty(CorruptedPartyPhase party, int index)
+    internal void JoinParty(CorruptedPartyPhase party, int index, int formationIndex)
     {
         AssertMutable();
         _party = party;
         _partyIndex = index;
+        FormationIndex = formationIndex;
     }
 
     public override NCreatureVisuals CreateCustomVisuals()

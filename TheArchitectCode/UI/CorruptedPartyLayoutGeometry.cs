@@ -16,6 +16,13 @@ internal static class CorruptedPartyLayoutGeometry
         var columns = count == 2 ? 2 : (int)Math.Ceiling(Math.Sqrt(count));
         var cellWidth = (960f / scaling - 150f) / columns;
         var row = index / columns;
+        if (count == 3)
+            return index == 2
+                ? (550f / scaling, -20f)
+                : ((index == 0 ? 260f : 840f) / scaling, 200f);
+        if (count == 4)
+            return ((210f + 450f * (index % 2) + 210f * row) / scaling,
+                220f - 260f * row);
         // Stagger the bodies, not their native visuals, hitboxes, or attached pets.
         var offset = count == 2 ? 0f : (row == 0 ? 35f : -35f);
         return (150f + cellWidth * (index % columns + 0.5f) + offset,

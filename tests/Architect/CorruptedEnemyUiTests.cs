@@ -19,6 +19,45 @@ internal static class CorruptedEnemyUiTests
             });
         }
 
+        test("corrupted enemy layout: three players mirror the human triangle", () =>
+        {
+            foreach (var scaling in new[] { 0.8f, 1f, 1.2f })
+            {
+                var host = CorruptedPartyLayoutGeometry.EnemyPosition(0, 3, scaling);
+                var second = CorruptedPartyLayoutGeometry.EnemyPosition(1, 3, scaling);
+                var third = CorruptedPartyLayoutGeometry.EnemyPosition(2, 3, scaling);
+                check(host.X < third.X && third.X < second.X,
+                    "The host is nearest the humans, with player three centered behind the first two.");
+                check(host.Y == second.Y && third.Y < host.Y,
+                    "Player three sits above the two front-row players.");
+                check(Math.Abs(third.X - (host.X + second.X) / 2f) < 0.01f,
+                    "The rear player must stay horizontally centered at every camera scale.");
+                check((second.X - host.X) * scaling >= 580f && host.Y - third.Y >= 220f,
+                    "The triangle needs room for both bodies and compact card rows.");
+            }
+        });
+
+        test("corrupted enemy layout: four players mirror a spacious staggered grid", () =>
+        {
+            foreach (var scaling in new[] { 0.8f, 1f, 1.2f })
+            {
+                var positions = Enumerable.Range(0, 4)
+                    .Select(index => CorruptedPartyLayoutGeometry.EnemyPosition(index, 4, scaling)).ToArray();
+                check(positions[0].X < positions[2].X && positions[2].X < positions[1].X &&
+                    positions[1].X < positions[3].X,
+                    "The rear pair is staggered away from the humans, not stacked above the front pair.");
+                check(positions[0].Y == positions[1].Y && positions[2].Y == positions[3].Y &&
+                    positions[0].Y - positions[2].Y >= 260f,
+                    "Both rows must stay level with ample vertical separation.");
+                check((positions[1].X - positions[0].X) * scaling >= 449.99f &&
+                    (positions[3].X - positions[2].X) * scaling >= 449.99f &&
+                    (positions[2].X - positions[0].X) * scaling >= 209.99f,
+                    "Camera scaling must preserve the wide columns and diagonal offset.");
+                check(positions[3].X * scaling <= 870.01f,
+                    "The last player still needs room before the right edge.");
+            }
+        });
+
         test("corrupted enemy layout: wrapped relic inventory moves both overlapping rows", () =>
         {
             CorruptedPartyLayoutGeometry.Bounds[] desired =

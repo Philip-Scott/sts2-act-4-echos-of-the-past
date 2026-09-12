@@ -154,8 +154,14 @@ def sandbox_command(game, run, xvfb, render_threads=4, shared_display=None, rend
 
 
 def launch(args):
+    if args.manual and (not args.shared_visible or args.scenario not in ("party-1", "party-2", "party-3", "party-4")):
+        raise ValueError("--manual requires --shared-visible and --party-1, --party-2, --party-3 or --party-4.")
+    if args.scenario == "party-1" and not args.manual:
+        raise ValueError("--party-1 requires --manual.")
+    if args.layout_only and (args.manual or args.scenario not in ("party-2", "party-3", "party-4")):
+        raise ValueError("--layout-only requires --party-2, --party-3 or --party-4 without --manual.")
     game = required_file(Path(args.game) / "SlayTheSpire2").parent
-    requires_snapshot = args.scenario not in ("ancient", "saved-run", "relic-art", "party", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption")
+    requires_snapshot = args.scenario not in ("ancient", "saved-run", "relic-art", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption")
     if requires_snapshot and not os.environ.get("ARCHITECT_SNAPSHOT_INPUT"):
         raise ValueError("Set ARCHITECT_SNAPSHOT_INPUT to the captured snapshot to copy (never modified).")
     snapshot = required_file(os.environ["ARCHITECT_SNAPSHOT_INPUT"]) if (
@@ -189,6 +195,8 @@ def launch(args):
                                dir=RUNS))
     metadata = {"id": run.name, "worktree": str(ROOT), "game": str(game),
                 "label": args.label, "scenario": args.scenario, "state": "preparing",
+                "manual": args.manual,
+                "layout_only": args.layout_only,
                 "render_threads": None if args.shared_visible else args.render_threads,
                 "display_mode": "shared-visible" if args.shared_visible else "virtual",
                 "host_display": shared_display, "resolution": args.resolution,
@@ -392,6 +400,10 @@ def serve(args):
             command.append("--architect-native-1080p")
         if shared_visible:
             command.append("--architect-shared-visible")
+        if metadata.get("manual"):
+            command.append("--architect-native-party-manual")
+        if metadata.get("layout_only"):
+            command.append("--architect-native-party-layout")
         game = subprocess.Popen(command, cwd=metadata["game"])
         metadata.update(state="running", display=metadata["host_display"] if shared_visible else ":0 (private namespace)",
                         game_pid=game.pid, display_pid=xvfb.pid if xvfb else None,
@@ -476,6 +488,10 @@ def main():
                      help="Game and private-display size; use 1920x1080 for release screenshots.")
     run.add_argument("--shared-visible", action="store_true",
                      help="Opt in to GPU windows on the shared desktop; no external input automation.")
+    run.add_argument("--manual", action="store_true",
+                     help="Leave a shared-visible --party-1/2/3/4 fight open with GUI input enabled.")
+    run.add_argument("--layout-only", action="store_true",
+                     help="Check a --party-2/3/4 inspection layout and card hover, then exit without playing turns.")
     run.add_argument("--render-device", default="/dev/dri/renderD128",
                      help="Mesa GPU render node for --shared-visible (default: /dev/dri/renderD128).")
     run.add_argument("--render-threads", type=int, choices=range(1, 17), default=4,
@@ -484,7 +500,7 @@ def main():
     cache.add_argument("--cache-from", help="Copy shader caches from this completed run ID.")
     cache.add_argument("--cold", action="store_true", help="Do not seed shader caches from a completed run.")
     scenarios = run.add_mutually_exclusive_group()
-    for scenario in ("loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "previews", "media", "party", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption"):
+    for scenario in ("loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "previews", "media", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption"):
         scenarios.add_argument("--" + scenario, dest="scenario", action="store_const", const=scenario)
     run.set_defaults(scenario="default")
     for action in ("status", "capture", "stop", "pointer", "click", "key", "_serve"):

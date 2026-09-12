@@ -190,6 +190,10 @@ bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --party
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --party-2
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --party-3
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --party-4
+# Leave a local two-player fight open for manual inspection (not live co-op):
+bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --shared-visible --party-2 --manual
+# Automated layout and real GUI-hover checks, using the same inspection decks:
+bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --shared-visible --party-3 --layout-only
 # Four-member opening layout only:
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --party-layout
 # Legacy body-effect probe (currently fails at turn setup on the target beta,
@@ -376,7 +380,18 @@ not established. Python, bwrap, xdpyinfo and Mesa are required, but Xvfb,
 ImageMagick and xdotool are not required for this mode. Software-renderer thread
 limits and copied software shader caches do not apply.
 
-**Rebuild the mod before using this mode.** The native test gate disables GUI
+With `--party-1`, `--party-2`, `--party-3` or `--party-4`, add `--manual` to leave the opening
+fight running without automated actions or automatic exit. This opts into GUI
+input and a focusable window, uses normal character HP, and retains disposable,
+unsaved storage. It is a local inspection scene, not a networked co-op session;
+the additional humans are not controlled by a second client.
+Manual Corrupted Players receive five distinct non-basic cards from their own
+character pool (two attacks, two skills and one power, with one upgraded attack),
+so their opening hands expose varied card art and descriptions. Human decks and
+maximum HP remain at their ordinary starting values.
+The single-player inspection scenario requires `--manual`.
+
+**Rebuild the mod before using this mode.** Without `--manual`, the native test gate disables GUI
 input, requests a non-focusable window and disables background FPS limiting in
 its memory-only settings. It replaces the test-only pointer warp with the
 existing in-process Clear action after native pile browsing, and releases only

@@ -39,10 +39,11 @@ internal static class CorruptedPartySpawnPosition
     {
         if (creatures.Count < 2 || creatures.Any(node => node.Entity.Monster is not CorruptedPlayer))
             return true;
-        for (var index = 0; index < creatures.Count; index++)
+        var formation = creatures.OrderBy(node => ((CorruptedPlayer)node.Entity.Monster!).FormationIndex).ToArray();
+        for (var index = 0; index < formation.Length; index++)
         {
             var (x, y) = CorruptedPartyLayoutGeometry.EnemyPosition(index, creatures.Count, scaling);
-            creatures[index].Position = new Vector2(x, y);
+            formation[index].Position = new Vector2(x, y);
         }
         return false;
     }

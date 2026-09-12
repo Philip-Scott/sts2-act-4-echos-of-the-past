@@ -56,6 +56,7 @@ public sealed class ArchitectEncounter : CustomEncounterModel
             throw new NotSupportedException(error);
         }
         var phase = new CorruptedPartyPhase(snapshots.Count);
+        var formation = run.Players.OrderBy(player => player.NetId != state.StartingHostNetId).ToArray();
         var monsters = new List<(MonsterModel, string?)>();
         for (var index = 0; index < snapshots.Count; index++)
         {
@@ -68,7 +69,8 @@ public sealed class ArchitectEncounter : CustomEncounterModel
                 CorruptedPlayerHealth.CalculateMaxHp(snapshot.MaxHp, run.AscensionLevel), snapshot.Deck,
                 $"{run.Rng.StringSeed}|{state.EncounterRevision}|{snapshot.ContentHash}|{Id}" +
                 (snapshots.Count > 1 ? $"|party:{index}" : ""), counterpart);
-            corruptedPlayer.JoinParty(phase, index);
+            corruptedPlayer.JoinParty(phase, index,
+                counterpart == null ? index : Array.IndexOf(formation, counterpart));
             monsters.Add((corruptedPlayer, null));
         }
         return monsters;
