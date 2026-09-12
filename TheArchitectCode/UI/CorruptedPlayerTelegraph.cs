@@ -39,6 +39,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     private HBoxContainer _resources = null!;
     private Control _energySlot = null!;
     private NEnergyCounter? _energy;
+    private Control _starSlot = null!;
+    private NStarCounter? _stars;
     private MegaLabel _draw = null!;
     private MegaLabel _discard = null!;
     private MegaLabel _exhaust = null!;
@@ -57,7 +59,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     internal int ContentRefreshCount { get; private set; }
     private CorruptedPartyTelegraphLayout? _partyLayout;
     private readonly record struct LayoutInputs(
-        Vector2 Viewport, Vector2 Above, Transform2D Anchor, float Spacing, Vector2 PanelSize);
+        Vector2 Viewport, Vector2 Above, Transform2D Anchor, float Spacing, Vector2 PanelSize,
+        Vector2 PartyPosition);
     private LayoutInputs? _layoutInputs;
     internal int LayoutUpdateCount { get; private set; }
     internal int PartyLayoutRebuildCount => _partyLayout?.RebuildCount ?? 0;
@@ -109,6 +112,15 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
                 "Co-op-only cards and third-party card/modifier effects are preserved but unsupported."
         };
         _resources.AddChild(_energySlot);
+        _starSlot = new Control
+        {
+            Name = "Stars",
+            CustomMinimumSize = new Vector2(64, 64),
+            MouseFilter = MouseFilterEnum.Stop,
+            TooltipText = "The Corrupted Player's current stars.",
+            Visible = false
+        };
+        _resources.AddChild(_starSlot);
         _draw = AddPileButton("Draw", () => _nativeState!.DrawPile);
         _discard = AddPileButton("Discard", () => _nativeState!.DiscardPile);
         _exhaust = AddPileButton("Exhaust", () => _nativeState!.ExhaustPile);
@@ -272,6 +284,22 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             _energy.Scale = Vector2.One * 0.5f;
             IgnoreMouse(_energy);
         }
+        if (_stars == null)
+        {
+            _stars = PreloadManager.Cache.GetScene("res://scenes/combat/energy_counters/star_counter.tscn")
+                .Instantiate<NStarCounter>();
+            // The native scene shares its shader resource; each actor animates its own count.
+            var icon = _stars.GetNode<Control>("Icon");
+            icon.Material = (Material)icon.Material.Duplicate();
+            _starSlot.AddChild(_stars);
+            _stars.SetAnchorsPreset(LayoutPreset.TopLeft);
+            _stars.Position = Vector2.Zero;
+            _stars.Scale = Vector2.One * 0.5f;
+            IgnoreMouse(_stars);
+            _stars.Initialize(player);
+            state.StarsChanged += OnStarsChanged;
+            UpdateStarVisibility();
+        }
         var counts = (Draw: state.DrawPile.Cards.Count, Discard: state.DiscardPile.Cards.Count,
             Exhaust: state.ExhaustPile.Cards.Count);
         if (_pileCounts?.Draw != counts.Draw)
@@ -283,12 +311,27 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         _pileCounts = counts;
     }
 
+    private void UpdateStarVisibility()
+    {
+        _starSlot.Visible = _stars?.Visible == true;
+        _layoutInputs = null;
+    }
+
+    private void OnStarsChanged(int oldStars, int newStars) => UpdateStarVisibility();
+
+    private void UnsubscribeStars()
+    {
+        if (_nativeState != null)
+            _nativeState.StarsChanged -= OnStarsChanged;
+    }
+
     internal void Stop()
     {
         if (_stopped)
             return;
         _stopped = true;
         UnsubscribeState();
+        UnsubscribeStars();
         ReleaseLayout();
         SetProcess(false);
         Hide();
@@ -301,6 +344,12 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             _energy!.QueueFree();
         }
         _energy = null;
+        if (GodotObject.IsInstanceValid(_stars))
+        {
+            _starSlot.RemoveChild(_stars!);
+            _stars!.QueueFree();
+        }
+        _stars = null;
     }
 
     private void AddCard(CorruptedPlayerTelegraphCard entry)
@@ -527,25 +576,44 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         var above = _anchor.Visuals.IntentPosition.GlobalPosition;
         var anchor = _anchor.GetGlobalTransform();
         var spacing = _partyLayout?.Spacing(_anchor) ?? float.PositiveInfinity;
-        var inputs = new LayoutInputs(viewport, above, anchor, spacing, Size);
+        var width = Mathf.Min(680f, Mathf.Max(220f, viewport.X - 32f));
+        var partyPosition = _partyLayout?.Position(_anchor, new Vector2(width, 248), viewport, PartyTopMargin())
+            ?? Vector2.Zero;
+        var inputs = new LayoutInputs(viewport, above, anchor, spacing, Size, partyPosition);
         if (_layoutInputs == inputs)
             return;
         LayoutUpdateCount++;
-        var width = Mathf.Min(680f, Mathf.Max(220f, viewport.X - 32f));
         CustomMinimumSize = new Vector2(width, 248);
         Size = new Vector2(width, 248);
         if (_partyDisplay)
         {
-            var fit = (spacing - 16f) / (Size.X * anchor.Scale.X);
-            Scale = Vector2.One * Mathf.Clamp(fit, 0.1f, 0.55f);
+            Scale = Vector2.One * CorruptedPartyLayoutGeometry.Scale(spacing, Size.X, anchor.Scale.X);
         }
         var displaySize = _partyDisplay ? (GetGlobalTransform() * new Rect2(Vector2.Zero, Size)).Size : Size;
         var topMargin = _partyDisplay ? 100f : 12f;
-        GlobalPosition = new Vector2(
+        GlobalPosition = _partyDisplay ? partyPosition : new Vector2(
             Mathf.Clamp(above.X - displaySize.X / 2f, 16f, Mathf.Max(16f, viewport.X - displaySize.X - 16f)),
             Mathf.Clamp(above.Y - displaySize.Y + (_nativeDisplay ? 24f : -24f), topMargin,
                 Mathf.Max(topMargin, viewport.Y - displaySize.Y - 12f)));
         _layoutInputs = inputs with { PanelSize = Size };
+    }
+
+    private static float PartyTopMargin()
+    {
+        var top = 100f;
+        if (NRun.Instance?.GlobalUi is not { } ui)
+            return top;
+        // TopBar itself fills the viewport; only its background occupies the HUD strip.
+        if (ui.TopBar.GetNodeOrNull<Control>("BgImage") is { } background && background.IsVisibleInTree())
+            top = Math.Max(top, background.GetGlobalRect().End.Y + 12f);
+        var inventory = ui.RelicInventory;
+        if (inventory.IsVisibleInTree())
+        {
+            var height = inventory.GetBottomOfInventory().Y - inventory.GetDefaultPosition().Y;
+            var bottom = inventory.GetGlobalTransform() * new Vector2(0, height);
+            top = Math.Max(top, bottom.Y + 12f);
+        }
+        return top;
     }
 
     private void ReleaseLayout()
@@ -565,6 +633,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     public override void _ExitTree()
     {
         UnsubscribeState();
+        UnsubscribeStars();
         ReleaseLayout();
         ClearPreview();
     }

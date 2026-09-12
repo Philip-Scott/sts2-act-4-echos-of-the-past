@@ -384,7 +384,7 @@ public sealed class NativeCorruptedPlayer
         TargetType.AnyEnemy => _counterpart is { IsHittable: true } && _combat.PlayerCreatures.Contains(_counterpart)
             ? _counterpart
             : _combat.PlayerCreatures.FirstOrDefault(c => c.IsHittable),
-        TargetType.AnyAlly => _combat.GetTeammatesOf(Body).FirstOrDefault(c => c != Body && c.IsAlive),
+        TargetType.AnyAlly => View.PlayerCreatures.FirstOrDefault(c => c != Body && c.IsAlive),
         _ => null
     };
 

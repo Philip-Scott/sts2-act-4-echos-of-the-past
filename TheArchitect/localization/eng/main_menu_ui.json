@@ -10,5 +10,7 @@
   "THEARCHITECT.DECK_PREVIEW.UNAVAILABLE_CHARACTER": "The saved Corrupted Player's character is unavailable.\nThis run will be a First Visit: you will fight the Architect directly.",
   "THEARCHITECT.DECK_PREVIEW.LOADING": "Loading the host's Corrupted Party...",
   "THEARCHITECT.DECK_PREVIEW.WAITING": "Waiting for other players to join.\nCorrupted Party decks depend on the host and the complete group.",
+  "THEARCHITECT.DECK_PREVIEW.NOT_SELECTED": "This run has not saved its Corrupted Player selection yet.\nThe opponent decks are selected when you enter Act 4.",
+  "THEARCHITECT.DECK_PREVIEW.FROZEN_FIRST_VISIT": "This run saved a First Visit.\nYou will fight the Architect directly.",
   "THEARCHITECT.DECK_PREVIEW.ERROR": "The Corrupted Player deck preview is unavailable."
 }

@@ -1,5 +1,49 @@
 # Corrupted Player prototypes
 
+## Drag-and-drop party layout editor
+
+`corrupted-party-layout-editor-prototype.html` is a throwaway placement editor
+for one through four Corrupted Players. Use the same local server command below
+and open
+<http://127.0.0.1:8874/corrupted-party-layout-editor-prototype.html?variant=A&players=4>.
+The native screenshot gallery also links to the editor.
+
+Arrange and resize characters and their UI pieces against a 1920x1080 reference
+canvas. Art and fixed human UI are illustrative stand-ins, not native sprites
+or pixel-perfect measurements. Nine pieces per actor can be placed independently;
+the inspector also supports numeric sizing, group movement, layers, and undo.
+A/B/C select a pending preset; only confirmed Apply replaces the current count.
+
+Each party size has its own layout. Export the layouts as JSON before
+closing the page; browser memory is not accessible to the CLI. Provide the
+exported file to the implementation session so its coordinates and actor/piece
+identities can be used as the design reference. Importing that file allows
+continued editing.
+
+These placements are design data, not game configuration. The editor does not
+modify the installed mod or live saves.
+
+## Under-enemy party layout study
+
+This throwaway comparison uses native game captures, not production layout changes.
+It compares two-column shelves, a single-line formation, and staggered ranks, with
+each enemy's hand and resource counters underneath its body. Switch between two,
+three, and four Corrupted Players to judge spacing at actual combat-screen density.
+
+```sh
+python3 -m http.server 8874 --bind 127.0.0.1 --directory TheArchitectCode/Prototypes
+```
+
+Open <http://127.0.0.1:8874/corrupted-party-layout-prototype.html?variant=A&players=4>.
+The floating arrows or left/right keys switch `variant=A`, `B`, or `C`;
+the enemy-count selector sets `players=2`, `3`, or `4`. Full-resolution images
+and capture geometry are available on the same page. Star balances are explicitly
+granted to make each native counter visible. No live game input or save changes
+are performed by the gallery.
+
+No formation has been selected for production. The native capture path is
+explicitly opt-in and uses the isolated playtest runner.
+
 ## Corruption effect lab (B + C combination)
 
 Run from the repository root:

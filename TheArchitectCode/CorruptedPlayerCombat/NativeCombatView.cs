@@ -22,8 +22,10 @@ internal sealed class NativeCombatView(NativeCorruptedPlayer actor, ICombatState
     public IReadOnlyList<Creature> Enemies => live.GetOpponentsOf(actor.Body);
     public IReadOnlyList<Creature> HittableEnemies => Enemies.Where(c => c.IsHittable).ToArray();
     public IReadOnlyList<Creature> Creatures => live.Creatures;
-    public IReadOnlyList<Creature> PlayerCreatures => [actor.Body];
-    public IReadOnlyList<Player> Players => [actor.Player];
+    public IReadOnlyList<Creature> PlayerCreatures => Party.Select(member => member.Body).ToArray();
+    public IReadOnlyList<Player> Players => Party.Select(member => member.Player).ToArray();
+    private IEnumerable<NativeCorruptedPlayer> Party =>
+        NativeCorruptedPlayer.In(live).Where(member => !member.Cleaned);
     public IReadOnlyList<ModifierModel> Modifiers => live.Modifiers;
     public MultiplayerScalingModel? MultiplayerScalingModel => live.MultiplayerScalingModel;
     public int RoundNumber { get => live.RoundNumber; set => throw new NotSupportedException("Cards cannot advance the encounter round."); }
@@ -57,7 +59,7 @@ internal sealed class NativeCombatView(NativeCorruptedPlayer actor, ICombatState
     public IReadOnlyList<Creature> GetCreaturesOnSide(CombatSide side) => live.GetCreaturesOnSide(side);
     public IReadOnlyList<Creature> GetOpponentsOf(Creature creature) => live.GetOpponentsOf(creature);
     public IReadOnlyList<Creature> GetTeammatesOf(Creature creature) => live.GetTeammatesOf(creature);
-    public Player? GetPlayer(ulong playerId) => playerId == actor.Player.NetId ? actor.Player : live.GetPlayer(playerId);
+    public Player? GetPlayer(ulong playerId) => Players.FirstOrDefault(player => player.NetId == playerId);
     public IEnumerable<AbstractModel> IterateHookListeners() => live.IterateHookListeners();
     public void SortEnemiesBySlotName() => live.SortEnemiesBySlotName();
     public void SetEnemyIndex(Creature creature, int index) => live.SetEnemyIndex(creature, index);
@@ -111,6 +113,10 @@ internal static class NativeCardScopeIdentityPatch
 // Rewriting the callers also covers their already-inlined combat-state getters.
 internal static class NativeCombatCallSites
 {
+    private static readonly MethodInfo IsPlayerGetter =
+        AccessTools.PropertyGetter(typeof(Creature), nameof(Creature.IsPlayer));
+    private static readonly MethodInfo MultiplayerConstraintGetter =
+        AccessTools.PropertyGetter(typeof(IRunState), nameof(IRunState.CardMultiplayerConstraint));
     private static readonly Dictionary<MethodInfo, MethodInfo> Replacements = new()
     {
         [AccessTools.Method(typeof(MultiplayerScalingModel), nameof(MultiplayerScalingModel.GetMultiplayerScaling))] =
@@ -137,8 +143,15 @@ internal static class NativeCombatCallSites
     private static readonly MethodInfo AddPet = typeof(MegaCrit.Sts2.Core.Commands.PlayerCmd).GetMethods()
         .Single(m => m.Name == "AddPet" && m.IsGenericMethodDefinition);
 
-    private static MethodInfo? Replacement(MethodInfo called, bool cardEffect)
+    private static MethodInfo? Replacement(MethodInfo called, Type? declaringType)
     {
+        var cardEffect = declaringType?.Namespace == "MegaCrit.Sts2.Core.Models.Cards";
+        if (called == IsPlayerGetter &&
+            (cardEffect || IsCoopAllyPower(declaringType) ||
+             IsCardCommand(declaringType)))
+            return AccessTools.Method(typeof(NativeCombatCallSites), nameof(IsCardPlayer));
+        if (called == MultiplayerConstraintGetter)
+            return AccessTools.Method(typeof(NativeCombatCallSites), nameof(CardMultiplayerConstraint));
         if (Replacements.TryGetValue(called, out var replacement))
             return replacement;
         if (cardEffect && CorruptedPlayerAttackVfx.Replacement(called) is { } visual)
@@ -164,7 +177,7 @@ internal static class NativeCombatCallSites
             {
                 if (!PatchProcessor.GetOriginalInstructions(method).Any(instruction =>
                     instruction.operand is MethodInfo called &&
-                    Replacement(called, type.Namespace == "MegaCrit.Sts2.Core.Models.Cards") != null))
+                    Replacement(called, type) != null))
                     continue;
                 harmony.Patch(method, transpiler: new HarmonyMethod(typeof(NativeCombatCallSites), nameof(Transpiler)));
                 patched++;
@@ -179,7 +192,7 @@ internal static class NativeCombatCallSites
         foreach (var instruction in instructions)
         {
             if (instruction.operand is MethodInfo called &&
-                Replacement(called, __originalMethod.DeclaringType?.Namespace == "MegaCrit.Sts2.Core.Models.Cards")
+                Replacement(called, __originalMethod.DeclaringType)
                     is { } replacement)
             {
                 instruction.opcode = System.Reflection.Emit.OpCodes.Call;
@@ -200,4 +213,20 @@ internal static class NativeCombatCallSites
         NativeCorruptedPlayer.TryGet(creature, out var actor) ? actor.Player : creature.Player;
     internal static bool IsPartyPlayer(Creature creature) =>
         !NativeCorruptedPlayer.TryGet(creature, out _) && creature.IsPlayer;
+    internal static bool IsCardPlayer(Creature creature) =>
+        NativeCorruptedPlayer.TryGet(creature, out _) || creature.IsPlayer;
+
+    private static bool IsCardCommand(Type? type) =>
+        type != null && (type == typeof(MegaCrit.Sts2.Core.Commands.CardCmd) || IsCardCommand(type.DeclaringType));
+
+    private static bool IsCoopAllyPower(Type? type) =>
+        type != null && (type == typeof(MegaCrit.Sts2.Core.Models.Powers.BeaconOfHopePower) ||
+            type == typeof(MegaCrit.Sts2.Core.Models.Powers.TankPower) || IsCoopAllyPower(type.DeclaringType));
+
+    private static MegaCrit.Sts2.Core.Entities.Cards.CardMultiplayerConstraint CardMultiplayerConstraint(IRunState run) =>
+        run.Players.Count == 1 && NativeCorruptedPlayer.TryGet(run.Players[0], out var actor)
+            ? actor.View.Live.Players.Count > 1
+                ? MegaCrit.Sts2.Core.Entities.Cards.CardMultiplayerConstraint.MultiplayerOnly
+                : MegaCrit.Sts2.Core.Entities.Cards.CardMultiplayerConstraint.SingleplayerOnly
+            : run.CardMultiplayerConstraint;
 }

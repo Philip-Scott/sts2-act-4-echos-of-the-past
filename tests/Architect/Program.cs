@@ -180,6 +180,8 @@ UnwrittenBonusTests.Run(Test);
 HistoryIconTests.Run(Test);
 HandheldMirrorTests.Run(Test, Check);
 CorruptedPartyTests.Run(Test, Check);
+CorruptedEnemyUiTests.Run(Test, Check);
+InvincibleCounterTests.Run(Test, Check);
 
 Test("Unwritten: all eight relics declare the pool required by native descriptions", () =>
 {

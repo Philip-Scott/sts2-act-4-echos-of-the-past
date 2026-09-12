@@ -27,6 +27,20 @@ enemy targeting from attacking their own Corrupted Player. Native pets use the
 private owner's RNG for creature creation as well. Private players have distinct
 identities that cannot collide with the human party or another Corrupted Player.
 
+Native co-op cards use the complete Corrupted Party as their player collection,
+not a one-player private run or the human party. Single-ally targets exclude self,
+dead members, pets and ordinary monsters. All-ally effects, native card transfers,
+recipient choices and Hibernate's Frost orbs use those same private players.
+Native ally-eligibility reads recognize corrupted bodies without enrolling them
+in the real player turn loop. Global co-op draw, exhaust and attack listeners are
+party-scoped in both directions; defensive co-op effects expire after their
+opponents' turn rather than assuming the humans are always their owners.
+
+Block, card-repeat and power-amount hooks explicitly isolate the recipient/source's
+relic inventory. A human Vambrace, Throwing Axe or Ruined Helmet cannot supply a
+Corrupted Player bonus. Native opposing powers and human defensive relic hooks
+remain in the live encounter; relics are not globally removed from combat dispatch.
+
 Native call sites are rewritten as well as getters: BaseLib pre-JIT and native
 inlining can bypass getter-only detours. The stable Creature backing reference,
 explicit owner/participant reads, and explicit turn-loop phase boundaries are
@@ -76,13 +90,15 @@ The telegraph shows only the current native hand, with larger cards and no
 background panel or themed scroll-area overlay. A half-size native character
 energy orb and three-quarter-size draw, discard and exhaust icons sit below the
 hand, using the player's HUD artwork, count badges and typography. Energy shows
-current/maximum resources; each pile opens the native read-only pile browser,
+current/maximum resources. A native star counter sits beside energy, independently
+bound to that actor's private player and using native visibility rules.
+Each pile opens the native read-only pile browser,
 which keeps draw order hidden and reflects live pile contents.
 The enemy's pile icons do not register or override the human's pile hotkeys.
-On death or actor cleanup, the native energy counter leaves the scene tree
+On death or actor cleanup, both native resource counters leave the scene tree
 synchronously, disconnecting its combat callbacks before its owner's combat state
 is removed. Hiding the hand alone is not sufficient. Each party member stops only
-its own HUD, and later refreshes cannot recreate a defeated member's counter.
+its own HUD, and later refreshes cannot recreate a defeated member's counters.
 An empty hand stays empty in the preview; neither the draw pile nor the discard
 pile is presented as playable cards. Native cards enlarge on hover or keyboard/
 controller focus and dismiss when the pointer or focus leaves. Clicking does not
@@ -94,8 +110,10 @@ Values refresh with live state, without predicting earlier cards' effects,
 future draws or power expiry. Unsupported cards retain unpowered previews.
 Multiplayer enemies are named `Corrupted <Player Name>` for their matched human.
 Single-player keeps the saved character's name (for example, "Corrupted Ironclad").
-Party previews are compact, with full-size hover inspection; three or four
-Corrupted Players use a two-row enemy layout.
+Party previews are compact, with full-size hover inspection. Multiplayer enemies
+use staggered positions; their hand strips stay below the wrapped relic inventory
+and share collision resolution. Three or four Corrupted Players use a two-row
+enemy layout. Single-player positioning is unchanged.
 This is a state preview, **not an exact future-damage forecast**.
 
 The actual native `NOrbManager` renders slots, passive/evoke effects and native
@@ -112,12 +130,16 @@ their native target-derived rotation rather than being flipped a second time.
 
 ## Explicit boundaries
 
-Co-op-only native cards and third-party card/enchantment/modifier effects are
-outside this release's support. They are visibly labelled **Unsupported**, not
+Third-party card/enchantment/modifier effects are outside this release's support.
+They are visibly labelled **Unsupported**, not
 played or spent as fake no-op actions, and do not execute card/modifier combat
 hooks. Their exact raw captured JSON remains in the profile snapshot. Unsupported
 saved extension data is not handed to arbitrary extension deserializers when
 constructing the unplayed native card.
+
+Native co-op-only cards are supported. A card requiring another living player has
+no valid target when its corrupted teammates are dead (or in a solo snapshot);
+it stays unplayed rather than becoming Unsupported or targeting a pet.
 
 Missing saved card, enchantment or BaseLib modifier models produce a visible
 preflight error. Restore the matching content version before entering the boss;
@@ -178,6 +200,10 @@ frozen save/rejoin behavior have separate deterministic regression coverage.
 The default scenario first loads the supplied snapshot through normal encounter
 entry, then exercises native reload and targeted mechanics in that disposable
 combat. The loss scenario follows saved-deck turns with a lethal multi-hit probe.
+The mechanics/previews scenario also checks native relic ownership through both
+live and preview hook scopes. The party scenarios exercise single/all-ally native
+effects, player-only eligibility, The Ball's native transfer and Tutor's recipient
+choice, while asserting that human resources and party membership remain separate.
 The non-Defect scenario writes an explicitly labelled disposable Ironclad orb
 deck through the normal snapshot format, exercising zero-to-first-slot capacity.
 Winning scenarios transition with two live lightning orbs and verify that the

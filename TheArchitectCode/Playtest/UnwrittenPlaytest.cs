@@ -17,6 +17,7 @@ using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
+using MegaCrit.Sts2.Core.Nodes.Events;
 using MegaCrit.Sts2.Core.Nodes.Screens;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
@@ -27,6 +28,8 @@ using MegaCrit.Sts2.Core.Saves;
 using TheArchitect.TheArchitectCode.Acts;
 using TheArchitect.TheArchitectCode.Ancients;
 using TheArchitect.TheArchitectCode.Relics;
+using TheArchitect.TheArchitectCode.Lifecycle;
+using MegaCrit.Sts2.addons.mega_text;
 
 namespace TheArchitect.TheArchitectCode.Playtest;
 
@@ -131,11 +134,12 @@ internal static class UnwrittenPlaytest
         var offered = CurrentAncient(run).CurrentOptions.Select(o => o.Relic!.Id).ToArray();
         Check(offered.Length == 3, "Initial Ancient offers generated successfully");
         Check(player.Creature.CurrentHp == player.Creature.MaxHp, "Native entry healing retained");
-        await Task.Delay(3000);
+        await AssertNameBanner(game);
         run = await Reload(game);
         player = run.Players.Single();
         var resumed = CurrentAncient(run).CurrentOptions.Select(o => o.Relic!.Id);
         Check(offered.SequenceEqual(resumed), "Native reload retains offer identities and ordering");
+        await AssertNameBanner(game);
         await ChooseBuildGift(player);
         await Task.Delay(500);
         await NativeDemoPlaytest.Capture("unwritten-map");
@@ -157,6 +161,29 @@ internal static class UnwrittenPlaytest
         await CombatEffects(player);
         MainFile.Logger.Info("UNWRITTEN SMOKE PASSED: native arrival, pool, healing, choices, reload, map, rewards and combat.");
         game.GetTree().Quit();
+    }
+
+    private static async Task AssertNameBanner(NGame game)
+    {
+        var banner = game.FindChildren("*", recursive: true, owned: false).OfType<NAncientNameBanner>().Single();
+        var title = banner.GetNode<MegaRichTextLabel>("%Title");
+        var epithet = banner.GetNode<MegaLabel>("%Epithet");
+        await WaitFor(() => title.GetThemeFontSize("normal_font_size") == UnwrittenNameBanner.TitleFontSize &&
+            banner.Position.X >= 47.9f);
+        await game.AwaitProcessFrame();
+        Check(title.GetParsedText() == ArchitectModels.Ancient.Title.GetFormattedText().ToUpper() &&
+            epithet.Text == ArchitectModels.Ancient.Epithet.GetFormattedText(),
+            "Ancient overlay retains the name and subtitle");
+        Check(epithet.GetNodeOrNull<Control>("BaseLibModSourceLabel") is not { Visible: true },
+            "Ancient overlay hides only The Unwritten's mod attribution");
+        var layout = game.FindChildren("*", recursive: true, owned: false).OfType<NAncientEventLayout>().Single();
+        var options = layout.FindChildren("*", recursive: true, owned: false)
+            .OfType<NEventOptionButton>().Where(option => option.IsVisibleInTree()).ToArray();
+        Check(options.Length == 3, "Ancient overlay sizing uses all three visible relic offers");
+        var titleRight = (title.GetGlobalTransform() * new Vector2(title.GetContentWidth(), 0)).X;
+        Check(titleRight + 12f <= options.Min(option => option.GetGlobalRect().Position.X),
+            "Ancient title fits to the left of the relic offers");
+        await NativeDemoPlaytest.Capture("unwritten-name-banner");
     }
 
     private static async Task AcquisitionEffects(Player player)

@@ -16,7 +16,7 @@ public sealed class ArchitectInvinciblePower : CustomPowerModel
     private int _hpLostThisTurn;
 
     public override PowerType Type => PowerType.Buff;
-    public override PowerStackType StackType => PowerStackType.Single;
+    public override PowerStackType StackType => PowerStackType.Counter;
     public override bool ShouldScaleInMultiplayer => true;
     public override int DisplayAmount => Math.Max(0, Amount - _hpLostThisTurn);
     public override string CustomPackedIconPath => ModelDb.Power<IntangiblePower>().PackedIconPath;

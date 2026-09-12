@@ -27,6 +27,9 @@ archive; players do not need the developer tools listed below.
 The project was scaffolded from the [Slay the Spire 2 Content mod template](https://github.com/Alchyr/ModTemplate-StS2)
 and depends on BaseLib.
 
+For maintenance, see the [game entrypoint and upgrade-risk inventory](docs/GAME_ENTRYPOINTS.md),
+which separates BaseLib APIs, native callbacks, custom patches, and private/scene dependencies.
+
 ## Gameplay and compatibility
 
 Version 1.0.1 targets Steam's **public-beta**, game **v0.111.0**
@@ -118,8 +121,13 @@ alone. Enemy-owned Osty gets the same effect on its own body, including when it
 grows or revives; the human's Osty is unchanged. The bindings stay outside the
 distortion and fade when their creature dies.
 
-Co-op-only cards and third-party card/modifier effects are visibly
-**Unsupported** and remain unplayed; the original saved JSON is preserved.
+Native co-op cards support the Corrupted Party: ally targets, shared resources,
+generated cards and card transfers stay on that side, never the human party.
+Cards requiring another player remain unplayed when no living corrupted ally
+exists; pets do not count as player targets. Human relics do not supply the
+Corrupted Players' block, repeat or power bonuses.
+Third-party card/modifier effects are visibly **Unsupported** and remain unplayed;
+the original saved JSON is preserved.
 Missing saved models block entry with an actionable error rather than silently
 dropping cards. This is not a claim that every vanilla card combination has been
 audited. See [native Corrupted Player behavior and boundaries](TheArchitectCode/CorruptedPlayerCombat/README.md).

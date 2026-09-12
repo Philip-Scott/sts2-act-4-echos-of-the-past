@@ -30,7 +30,7 @@ internal static class UnwrittenPresentation
                 Texture = PreloadManager.Cache.GetTexture2D(TheUnwritten.CharacterTexturePath),
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                // Native Ancient titles occupy the upper center; offers begin at y≈738.
+                // Keep the Ancient artwork above the native relic offers.
                 Position = new Vector2(0f, 50f),
                 Size = new Vector2(600f, 700f)
             };

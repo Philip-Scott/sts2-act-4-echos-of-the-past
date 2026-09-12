@@ -1,0 +1,452 @@
+<!doctype html>
+<!-- THROWAWAY ONLY. No game hooks, dependencies, network writes, or automatic persistence.
+     Original illustrative SVG stand-ins, not extracted game sprites. Open directly or serve locally. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corrupted party / Throwaway layout editor</title>
+<style>
+* { box-sizing: border-box; }
+:root { color-scheme: dark; font: 13px/1.4 system-ui,sans-serif; background: #11131b; color: #ede9f4; }
+body { margin: 0; }
+button,input,select,textarea { font: inherit; }
+button,select,input[type=number],textarea { background: #232735; color: #eee9f7; border: 1px solid #4e5369; border-radius: 5px; padding: 6px 8px; }
+button { cursor: pointer; }
+button:hover { background: #35394c; }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: #7557a3; border-color: #b396de; }
+button[aria-pressed=true] { background: #634c87; border-color: #d7b9ff; }
+:focus-visible { outline: 2px solid #d7b9ff; outline-offset: 2px; }
+header { padding: 12px 18px; border-bottom: 1px solid #3d3c4b; display: flex; gap: 14px; justify-content: space-between; align-items: center; }
+h1 { font: 500 22px/1.2 Georgia,serif; margin: 3px 0; }
+.eyebrow { font-size: 10px; letter-spacing: 2px; color: #d0b6f6; }
+.muted { color: #b2b3c7; font-size: 12px; }
+.row { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+main { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 14px; padding: 14px 16px 82px; }
+.workspace { min-width: 0; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 10px; min-height: 34px; }
+.toolbar label { display: flex; gap: 6px; align-items: center; }
+.frame { position: relative; width: 100%; overflow: hidden; background: #101019; box-shadow: 0 0 0 1px #5a526b; }
+#stage { position: absolute; width: 1920px; height: 1080px; transform-origin: top left; overflow: hidden; background: radial-gradient(ellipse at 66% 42%,#50435b 0,transparent 50%),linear-gradient(#242132 0%,#312b40 65%,#514153 65.2%,#272536); touch-action: none; user-select: none; }
+#stage::before { content: ""; position: absolute; left: 870px; top: 105px; width: 930px; height: 570px; border: 26px solid #ada0bd12; border-bottom: 0; border-radius: 480px 480px 0 0; }
+#stage.grid { background-image: linear-gradient(#ffffff0a 1px,transparent 1px),linear-gradient(90deg,#ffffff0a 1px,transparent 1px),radial-gradient(ellipse at 66% 42%,#50435b,transparent 55%),linear-gradient(#242132 65%,#514153 65.2%,#272536); background-size: 40px 40px,40px 40px,100% 100%,100% 100%; }
+.context { position: absolute; pointer-events: none; z-index: 0; }
+.reserved { position: absolute; border: 2px dashed #93b6c35c; color: #aac4cf; background: #11273138; pointer-events: none; font-size: 17px; padding: 8px; }
+.guide-label { font-size: 16px; letter-spacing: 1px; }
+#stage:not(.guides) .reserved,#stage:not(.guides) .guide-label { display: none; }
+.fixed-ui { border: 2px solid #917c5a; border-radius: 12px; background: #272534e8; color: #ded3b5; padding: 12px 20px; }
+.human-label { position: absolute; left: 0; bottom: -27px; width: 100%; text-align: center; font-size: 17px; color: #c1d7db; }
+.human svg { opacity: .65; filter: saturate(.5); width: 100%; height: 100%; }
+.fixed-hand { display: flex; gap: 7px; align-items: end; padding: 20px; border-top: 2px solid #a4bdc266; }
+.fixed-card { width: 120px; height: 163px; border: 2px solid #9a8b72; border-radius: 10px 10px 0 0; background: linear-gradient(145deg,#536473,#282836 65%); padding: 12px 9px; text-align: center; font-size: 17px; transform: rotate(var(--rot)); }
+.fixed-card b { display: block; margin-top: 30px; color: #d5c6a0; }
+.piece { position: absolute; touch-action: none; cursor: grab; }
+.piece > svg { width: 100%; height: 100%; display: block; pointer-events: none; }
+.piece:hover { outline: 2px dashed #e7d9ff88; }
+.piece.selected { outline: 3px solid #e3b9ff; }
+.piece.selected::after { content: attr(data-title); position: absolute; left: 0; bottom: calc(100% + 7px); padding: 2px 7px; background: #21192e; border: 1px solid #b391d6; white-space: nowrap; color: #f0defe; font-size: 17px; pointer-events: none; }
+.handle { display: none; position: absolute; right: var(--handle-offset,-9px); bottom: var(--handle-offset,-9px); width: var(--handle-size,20px); height: var(--handle-size,20px); padding: 0; border: 2px solid #fff0ff; border-radius: 2px; background: #a872d4; cursor: nwse-resize; touch-action: none; }
+.selected .handle { display: block; }
+.understage { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+#readout { color: #e2c9ff; font: 12px/1.5 ui-monospace,monospace; overflow-wrap: anywhere; }
+#message { min-height: 22px; margin: 7px 0; color: #cfddbd; }
+#message.error { color: #ffb4b9; }
+aside { max-height: calc(100vh - 174px); overflow-y: auto; padding: 0 5px 8px 0; }
+aside h2 { margin: 0 0 9px; font-size: 14px; }
+fieldset { border: 1px solid #434354; padding: 11px; margin: 0 0 12px; border-radius: 8px; }
+legend { color: #d4bbef; padding: 0 5px; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fields label { display: flex; flex-direction: column; gap: 3px; }
+.fields input { width: 100%; min-width: 0; }
+.wide { width: 100%; }
+.check { display: block; margin: 8px 0; }
+#piece-id { font-size: 11px; overflow-wrap: anywhere; color: #a9adbf; margin: 8px 0; }
+#layers { width: 100%; height: 151px; padding: 3px; font-size: 12px; }
+#layers option { padding: 3px; }
+details { border-top: 1px solid #414153; padding-top: 8px; margin-top: 8px; }
+summary { cursor: pointer; color: #c4c0d6; }
+#json { max-height: 240px; overflow: auto; white-space: pre; font: 10px/1.4 ui-monospace,monospace; background: #171922; padding: 10px; }
+.switcher { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; align-items: center; gap: 7px; padding: 8px 12px; background: #22212ef5; border: 1px solid #8a749d; border-radius: 12px; box-shadow: 0 5px 30px #0008; white-space: nowrap; }
+.switcher small { color: #b4acc5; }
+dialog { width: min(680px,94vw); border: 1px solid #8d75a5; border-radius: 12px; background: #191c28; color: #eee8f4; }
+dialog::backdrop { background: #0009; }
+dialog textarea { width: 100%; height: 260px; font: 11px/1.4 monospace; resize: vertical; margin: 10px 0; }
+dialog p { color: #bdb6ca; }
+#import-error { color: #ffb4b9; min-height: 20px; }
+@media(max-width: 1050px) { main { grid-template-columns: minmax(0,1fr) 265px; gap: 10px; } header { align-items: start; } .switcher small { display: none; } }
+@media(max-width: 760px) { header { flex-direction: column; } main { grid-template-columns: 1fr; } aside { max-height: none; } .switcher { gap: 4px; padding: 6px; max-width: 98vw; } .switcher button { padding: 6px; font-size: 11px; } }
+</style>
+</head>
+<body>
+<header>
+  <div><div class="eyebrow">THROWAWAY LAYOUT EDITOR / THE ARCHITECT</div><h1>Place the corrupted party.</h1><div class="muted">Illustrative stand-in art · real 1920 × 1080 coordinate space · no game changes</div></div>
+  <div><div class="row"><button class="primary" id="export">Export all 4 layouts ↓</button><button id="import">Import JSON</button><button id="copy">Copy JSON</button></div><div id="save-status" class="muted" role="status">Session-only. Export before closing; nothing is saved automatically.</div></div>
+</header>
+<main>
+  <section class="workspace" aria-label="Combat layout workspace">
+    <div class="toolbar">
+      <label>Corrupted players <select id="count"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+      <label><input id="guides" type="checkbox" checked> Reserved guides</label>
+      <label><input id="grid" type="checkbox"> 40 px grid</label>
+      <button id="undo" disabled>Undo</button><button id="redo" disabled>Redo</button>
+      <span id="draft-name" class="muted"></span>
+    </div>
+    <div class="frame" id="frame"><div id="stage" class="guides" tabindex="0" role="group" aria-label="1920 by 1080 combat canvas. Select a piece, drag or use arrow keys; Shift moves ten pixels."></div></div>
+    <div class="understage"><span class="muted">Drag any piece · corner to resize · arrows nudge / Shift ×10 · select obscured pieces in Layers</span><span id="fit" class="muted"></span></div>
+    <div id="readout"></div><div id="message" role="status" aria-live="polite"></div>
+    <details id="json-details"><summary>Live serialized state — all four player counts</summary><pre id="json"></pre></details>
+    <p class="muted">Bodies and UI are separate stand-ins, not screenshot cutouts. Human sprites, hand, End Turn, and HUD are fixed context, not editable game measurements. No duplicate baked-in enemies. Nothing is sent to the server. Export a JSON file and give it to Copilot to translate your placements later.</p>
+  </section>
+  <aside aria-label="Selected piece inspector">
+    <fieldset><legend>Actor &amp; layers</legend>
+      <label for="actor">Corrupted actor</label><select class="wide" id="actor"></select>
+      <label for="character">Character model</label><select class="wide" id="character"></select>
+      <label class="check"><input id="group" type="checkbox"> Move all pieces of this actor together</label>
+      <label for="layers">Select any piece (frontmost first)</label><select id="layers" size="6"></select>
+    </fieldset>
+    <fieldset id="inspector"><legend>Selected piece</legend>
+      <h2 id="selected-title"></h2><div id="piece-id"></div>
+      <div class="fields">
+        <label>X · px<input id="x" type="number" step="0.1" min="-20000" max="20000"></label>
+        <label>Y · px<input id="y" type="number" step="0.1" min="-20000" max="20000"></label>
+        <label>Width · px<input id="width" type="number" step="0.1" min="8" max="10000"></label>
+        <label>Height · px<input id="height" type="number" step="0.1" min="8" max="10000"></label>
+        <label>Uniform scale %<input id="scale" type="number" step="1" min="1" max="2000"></label>
+        <label>Z-order<input id="z" type="number" step="1" min="1" max="10000"></label>
+      </div>
+      <label class="check"><input id="lock" type="checkbox"> Lock current width / height ratio</label>
+      <div class="row"><button id="back">Send back</button><button id="front">Bring front</button></div>
+      <p class="muted">X/Y = top-left of the whole visible piece. Scale % multiplies its preset reference size; setting it restores that reference aspect ratio. Resize never rearranges neighbors. Off-canvas placement is allowed.</p>
+    </fieldset>
+    <fieldset><legend>Safe presets</legend><div id="preset-description"></div><p class="muted">The bottom buttons only choose a pending preset. <b>Apply preset</b> replaces the current player count after confirmation. Other counts are untouched. Undo can restore it. Only one working layout per count is exported, not A/B/C drafts.</p></fieldset>
+  </aside>
+</main>
+<nav class="switcher" aria-label="Pending structural preset">
+  <small>Pending preset</small><button data-variant="A">A · Two-column</button><button data-variant="B">B · Line</button><button data-variant="C">C · Staggered</button><button id="apply" class="primary">Apply preset…</button>
+</nav>
+<dialog id="import-dialog" aria-labelledby="import-title">
+  <h2 id="import-title">Import all four layouts</h2><p>Choose a JSON file or paste an exported document. Import replaces all four drafts only after full validation and your confirmation. Invalid input leaves your work intact.</p>
+  <label>JSON file <input id="import-file" type="file" accept=".json,application/json"></label>
+  <label for="import-text">Or paste JSON below</label><textarea id="import-text" spellcheck="false"></textarea>
+  <div id="import-error" role="alert"></div><div class="row"><button id="load" class="primary">Validate &amp; import…</button><button id="cancel">Cancel</button></div>
+</dialog>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const W = 1920, H = 1080;
+const MODELS = ["DEFECT","IRONCLAD","SILENT","REGENT","NECROBINDER"];
+const COLORS = {DEFECT:"#79cbd7",IRONCLAD:"#d98179",SILENT:"#8ccfa8",REGENT:"#e5c57d",NECROBINDER:"#baa1db"};
+const KINDS = ["body","health-status","hand-preview","energy","stars","draw-pile","discard-pile","exhaust-pile","intent"];
+const LABELS = {body:"Character body","health-status":"Health / status","hand-preview":"Hand / deck preview",energy:"Energy",stars:"Stars","draw-pile":"Draw pile","discard-pile":"Discard pile","exhaust-pile":"Exhaust pile",intent:"Intent"};
+const PRESETS = {A:"Two-column rows · compact bodies above separate full-hand strips.",B:"Horizontal line · larger bodies share one baseline; narrow hand viewports.",C:"Staggered · alternating heights and hand strips for more breathing room."};
+const REFERENCE = {width:W,height:H,units:"reference-pixels",origin:"top-left",xDirection:"right",yDirection:"down"};
+const SCALE = "width/baseWidth and height/baseHeight; absolute top-left boxes, no parent transform. Body art fills the box; aspectRatioLocked preserves the current ratio when resizing.";
+const CONTEXT = {editable:false,source:"illustrative reserved zones, not native measurements",topHud:{x:0,y:0,width:1920,height:85},partyPanel:{x:20,y:100,width:400,height:95},humanParty:{x:50,y:280,width:725,height:520},humanHand:{x:400,y:885,width:1100,height:195},endTurn:{x:1660,y:915,width:225,height:90}};
+const round = value => Math.round(value * 10) / 10;
+const clone = value => JSON.parse(JSON.stringify(value));
+const params = new URLSearchParams(location.search);
+let count = ["1","2","3","4"].includes(params.get("players")) ? Number(params.get("players")) : 2;
+let pending = Object.hasOwn(PRESETS,params.get("variant")) ? params.get("variant") : "A";
+let layouts = Object.fromEntries([1,2,3,4].map(n => [String(n),makeLayout(n,pending)]));
+let selectedId = "corrupted-1:body", gesture = null, undoStack = [], redoStack = [], exportedSnapshot = null, revision = 0;
+
+function makeLayout(n,variant) {
+  const actors = [];
+  for(let i=0;i<n;i++) {
+    const actorId = `corrupted-${i+1}`, model = MODELS[i];
+    const baseBody = {DEFECT:[250,260],IRONCLAD:[242,278],SILENT:[240,290],REGENT:[255,305],NECROBINDER:[240,310]}[model];
+    let center,top,slotWidth,maxHeight;
+    if(n===1) { center = variant==="A"?1330:variant==="B"?1440:1190; top = variant==="A"?265:variant==="B"?360:200; slotWidth=520; maxHeight=320; }
+    else if(variant==="A") { center=n===3&&i===2?1360:1090+(i%2)*540; top=n===2?235:170+Math.floor(i/2)*370; slotWidth=n===2?445:420; maxHeight=n===2?335:130; }
+    else { const cell=1080/n; center=810+cell*(i+.5); slotWidth=cell-16; top=variant==="B"?290:n===2?200+i*160:250+(i%2)*130+i*12; maxHeight=variant==="B"?(n===2?320:275):(n===2?280:205); }
+    const factor=Math.min(n>=3?.85:1,maxHeight/baseBody[1],(slotWidth-90)/baseBody[0]);
+    const bw=round(baseBody[0]*factor),bh=round(baseBody[1]*factor);
+    const y=variant==="B"?top+maxHeight-bh:top, left=center-slotWidth/2;
+    const handY=y+bh+40, handH=n>=3?88:104, counterY=handY+handH+8;
+    const pieces=[];
+    function add(kind,x,y,width,height) { pieces.push({pieceId:`${actorId}:${kind}`,actorId,kind,characterModelId:model,x:round(x),y:round(y),width:round(width),height:round(height),baseWidth:round(width),baseHeight:round(height),z:kind==="body"?10+i:30+i,aspectRatioLocked:kind==="body"}); }
+    add("body",center-bw/2,y,bw,bh);
+    add("health-status",center-bw/2-12,y+bh+4,bw+24,30);
+    add("hand-preview",left,handY,slotWidth,handH);
+    const size=Math.min(40,(slotWidth-20)/6), gap=(slotWidth-size*6)/5;
+    add("energy",left,counterY,size,size);
+    add("stars",left+size+gap,counterY,size,size);
+    add("draw-pile",left+(size+gap)*2,counterY,size,size);
+    add("discard-pile",left+(size+gap)*3,counterY,size,size);
+    add("exhaust-pile",left+(size+gap)*4,counterY,size,size);
+    add("intent",center-47,y-44,94,36);
+    actors.push({actorId,slot:i+1,characterModelId:model,pieces});
+  }
+  return {playerCount:n,sourcePreset:variant,edited:false,actors};
+}
+function current() { return layouts[String(count)]; }
+function pieces() { return current().actors.flatMap(a=>a.pieces); }
+function selected() { return pieces().find(p=>p.pieceId===selectedId); }
+function actorFor(piece) { return current().actors.find(a=>a.actorId===piece.actorId); }
+function snapshot() { return {layouts:clone(layouts),count,selectedId}; }
+function remember(before=snapshot()) { undoStack.push(before); if(undoStack.length>80) undoStack.shift(); redoStack=[]; }
+function notify(text,error=false) { $("message").textContent=text; $("message").classList.toggle("error",error); }
+function documentState() {
+  return {schemaVersion:1,prototype:"corrupted-party-layout-editor",referenceViewport:REFERENCE,geometrySemantics:SCALE,art:"Original illustrative stand-ins, not native sprites or pixel-perfect UI.",fixedContext:CONTEXT,activePlayerCount:count,pendingPreset:pending,
+    layouts:Object.fromEntries(Object.entries(layouts).map(([key,layout])=>[key,{...layout,actors:layout.actors.map(actor=>({...actor,pieces:actor.pieces.map(p=>({...p,scaleX:p.width/p.baseWidth,scaleY:p.height/p.baseHeight}))}))}]))};
+}
+function serialized() { return JSON.stringify(documentState(),null,2); }
+function markEdited() { current().edited=true; revision++; }
+function updateURL() { const url=new URL(location.href); url.searchParams.set("players",count); url.searchParams.set("variant",pending); history.replaceState(null,"",url); }
+function svg(content,w,h) { return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">${content}</svg>`; }
+function bodyArt(model,corrupted=true) {
+  const c=COLORS[model], ink="#1e1b2a";
+  const shapes={
+    IRONCLAD:`<path d="M80 80L43 102 25 269 82 248 151 276 138 98Z" fill="#793d4b"/><path d="M84 202L114 201 103 293 76 294Z M121 200L145 198 166 291 135 294Z" fill="#665566"/><path d="M75 96L135 87 152 166 131 215 77 208 63 152Z" fill="#bda194"/><path d="M70 105L96 115 89 147 45 146 48 121Z" fill="#b6b6ae"/><path d="M137 103L166 128 166 181 145 188Z" fill="#bf9d7e"/><path d="M159 170L174 171 194 271 181 278Z" fill="#d8dde2"/><path d="M150 180L185 174" stroke="#d7b879" stroke-width="8"/><path d="M87 51L116 42 140 63 127 93 96 93Z" fill="#d5c1a9"/><path d="M89 57L113 62 128 56 125 76 97 78Z" fill="#42394b"/><path d="M97 62L108 65 M118 65L125 62" stroke="#ffcc82" stroke-width="4"/><path d="M92 54L80 21 106 46 M124 52L149 33 139 68Z" fill="#cabca5"/>`,
+    SILENT:`<path d="M104 30Q66 32 57 99L25 276 67 263 90 293 121 270 163 286 187 266 150 87Z" fill="#426b58"/><path d="M96 81L77 141 52 264 83 243 113 148 139 267 166 272 134 104Z" fill="#263d36"/><path d="M66 90L93 33 132 44 159 98 117 117Z" fill="#6a8c70"/><path d="M86 65L124 58 139 77 121 104 95 98Z" fill="#dbd8b6"/><path d="M91 76L103 73 103 86 96 88 M116 71L129 73 123 85 114 85Z" fill="#272c32"/><path d="M73 127L49 174 24 184 30 196 68 187 93 142 M140 119L164 159 190 152 200 166 160 181 125 144Z" fill="#8b9e86"/><path d="M26 186L12 192 6 247 40 201 M191 157L217 145 220 111 201 143Z" fill="#d4ded0"/><path d="M77 266L98 264 91 306 58 306 M130 267L151 274 159 302 130 306Z" fill="#55515a"/>`,
+    DEFECT:`<path d="M70 207L101 213 83 256 85 297 57 304 61 257 M119 213L149 206 162 254 146 299 118 304 133 255Z" fill="#688da6"/><path d="M51 295L84 294 91 310 43 310 M120 295L149 294 166 310 116 310Z" fill="#c4ae80"/><path d="M64 91L136 88 159 155 132 218 81 219 50 159Z" fill="#80abb1"/><path d="M81 110L127 103 138 161 110 192 79 169Z" fill="#c1c4a4"/><ellipse cx="108" cy="147" rx="18" ry="27" fill="#344c60"/><ellipse cx="108" cy="147" rx="10" ry="18" fill="#a2f6fa"/><path d="M56 96L75 112 49 164 40 214 23 208 27 158 M143 95L164 112 183 165 174 210 157 209 163 164 132 121Z" fill="#9cbabb"/><circle cx="31" cy="217" r="14" fill="#d1c3a1"/><circle cx="167" cy="215" r="14" fill="#d1c3a1"/><path d="M86 81L72 44 94 22 132 33 141 64 116 93Z" fill="#c9ba92"/><path d="M84 52L130 49 125 64 91 69Z" fill="#33485c"/><path d="M95 56L121 55" stroke="#a5f4f6" stroke-width="5"/><path d="M90 27L91 8 102 4 104 27Z" fill="#86abb6"/>`,
+    REGENT:`<path d="M69 87L135 89 165 167 194 282 137 264 91 300 32 278 48 164Z" fill="#7765a1"/><path d="M72 119L59 258 96 285 125 258 130 119Z" fill="#d2b492"/><path d="M71 265L95 265 93 309 63 309 M121 265L143 263 162 306 127 309Z" fill="#675473"/><path d="M57 113L25 153 10 134 4 147 29 177 80 137 M139 108L172 120 191 99 204 110 178 148 139 137Z" fill="#c9b7c7"/><ellipse cx="105" cy="64" rx="26" ry="31" fill="#d4c1c7"/><path d="M77 50L69 12 89 28 105 0 120 28 142 12 135 52Z" fill="#e3c37b"/><path d="M88 69L101 71 M111 70L124 66" stroke="#755188" stroke-width="4"/><path d="M188 44L193 61 212 65 193 71 188 89 183 70 167 65 183 60Z" fill="#fff0b7"/>`,
+    NECROBINDER:`<path d="M72 76L126 79 137 182 164 302 125 286 103 311 82 293 48 307 63 182Z" fill="#5e4d77"/><path d="M84 116L105 143 78 283 103 267 137 292 119 147 117 112Z" fill="#a589ad"/><ellipse cx="101" cy="54" rx="24" ry="30" fill="#b7d9d1"/><path d="M73 61Q60 13 97 10Q137 5 142 62L124 89 123 33 89 41 73 87Z" fill="#b8dcd3"/><path d="M86 54L94 53 M107 51L116 53" stroke="#4e4460" stroke-width="6"/><path d="M72 105L51 171 21 177 18 191 61 191 91 130 M128 102L151 155 175 141 185 154 153 181 119 135Z" fill="#bec6c2"/><path d="M185 65L194 64 207 307 197 310Z" fill="#738a87"/><path d="M186 68Q152 39 165 23Q188 5 210 28L220 64 204 82Z" fill="#8eb6a7"/><path d="M174 41L186 51 178 56 M203 40L195 51 204 55" fill="none" stroke="#4b6261" stroke-width="4"/>`
+  };
+  return svg(`<g stroke="${ink}" stroke-width="2" stroke-linejoin="round">${shapes[model]}</g>${corrupted?`<path d="M16 285Q110 252 216 285M25 292Q111 327 205 292" fill="none" stroke="#c79cef" stroke-width="3" opacity=".75"/><path d="M31 115L16 126 31 137 M186 89L201 100 186 111" fill="none" stroke="#d4b1ff" stroke-width="3"/>`:""}`,225,320);
+}
+function pieceArt(p) {
+  const color=COLORS[p.characterModelId], actor=actorFor(p), slot=actor.slot;
+  if(p.kind==="body") return bodyArt(p.characterModelId);
+  const box=`<rect x="1" y="1" width="198" height="68" rx="10" fill="#242332" stroke="${color}" stroke-width="2"/>`;
+  if(p.kind==="health-status") return svg(`<rect x="0" y="0" width="300" height="40" rx="8" fill="#201d2c"/><rect x="4" y="5" width="245" height="14" rx="6" fill="#a4456a"/><text x="150" y="17" text-anchor="middle" fill="white" font-size="14">Corrupted ${slot} · 68 / 80</text><text x="150" y="35" text-anchor="middle" fill="${color}" font-size="13">◆ Block 8   ↑ Strength 2   ◈ Status</text>`,300,40);
+  if(p.kind==="hand-preview") {
+    const narrow=p.width<350, visible=narrow?3:5;
+    const cards=Array.from({length:visible},(_,i)=>`<g transform="translate(${8+i*76},8)"><rect width="68" height="92" rx="6" fill="#404453" stroke="${color}" stroke-width="2"/><circle cx="12" cy="13" r="9" fill="#253642"/><text x="12" y="17" text-anchor="middle" fill="white" font-size="13">${i%2+1}</text><path d="M12 59L33 29 57 61Z" fill="${color}" opacity=".38"/><text x="34" y="81" text-anchor="middle" fill="#eee5ee" font-size="11">${["Strike","Defend","Skill","Power","Attack"][i]}</text></g>`).join("");
+    const width=visible*76+16;
+    return svg(`<rect x="1" y="1" width="${width-2}" height="112" rx="8" fill="#1c1c29" stroke="${color}"/>${cards}<text x="${width/2}" y="109" text-anchor="middle" font-size="9" fill="#d9cbea">P${slot} · ${narrow?"◀  3 of 5 visible  ▶":"5-card hand / deck preview"}</text>`,width,114);
+  }
+  if(p.kind==="intent") return svg(`${box}<text x="100" y="28" text-anchor="middle" fill="${color}" font-size="19">P${slot} INTENT</text><text x="100" y="56" text-anchor="middle" fill="#f3dee4" font-size="26">⚔ 12 × 2</text>`,200,70);
+  const title={energy:"ENERGY",stars:"STARS","draw-pile":"DRAW","discard-pile":"DISCARD","exhaust-pile":"EXHAUST"}[p.kind];
+  const val={energy:"3/3",stars:String(7+slot),"draw-pile":"12","discard-pile":"4","exhaust-pile":"0"}[p.kind];
+  return svg(`<rect x="1" y="1" width="78" height="78" rx="${p.kind==="energy"?38:12}" fill="#242333" stroke="${color}" stroke-width="2"/><text x="40" y="21" text-anchor="middle" fill="${color}" font-size="11">P${slot} ${title}</text><text x="40" y="54" text-anchor="middle" fill="#f6e7cf" font-size="29">${val}</text><text x="40" y="70" text-anchor="middle" fill="#b7adc2" font-size="9">stand-in</text>`,80,80);
+}
+function renderContext() {
+  const c=document.createElement("div"); c.className="context"; c.style.cssText="inset:0";
+  c.innerHTML=`<div class="fixed-ui" style="position:absolute;left:0;top:0;width:1920px;height:74px;font-size:23px">ACT IV · THE ARCHITECT <span style="margin-left:100px;color:#b9c8c8">♥ 72 / 80　 ◉ 145　 ◆ 3　 Relics ···</span><span style="float:right;font-size:17px">FIXED HUMAN HUD / MOCK CONTEXT</span></div>
+    <div class="fixed-ui" style="position:absolute;left:20px;top:100px;width:400px;height:85px;font-size:20px">Human party · ${count} ${count===1?"player":"players"}<br><span style="font-size:16px;color:#b0c4c6">Party panel / relics / potion space</span></div>
+    <div class="reserved" style="left:50px;top:280px;width:725px;height:520px"><span class="guide-label">HUMAN PARTY — FIXED STAND-INS</span></div>
+    <div class="reserved" style="left:810px;top:110px;width:1090px;height:745px"><span class="guide-label">CORRUPTED PARTY — EDITABLE / NOT A LIMIT</span></div>
+    <div class="context fixed-hand" style="left:400px;top:885px;width:1100px;height:195px">${["Strike","Defend","Skill","Power","Strike","Defend","Skill"].map((x,i)=>`<div class="fixed-card" style="--rot:${(i-3)*2}deg">① <b>${x}</b><small>Human hand</small></div>`).join("")}</div>
+    <div class="context fixed-ui" style="left:1660px;top:915px;width:225px;height:90px;font-size:27px;text-align:center">End Turn<br><small style="font-size:15px">FIXED / HUMAN UI</small></div>
+    <div class="context fixed-ui" style="left:65px;top:940px;font-size:30px">3 / 3 ⚡</div>
+    <div class="context guide-label" style="left:435px;top:862px">HUMAN HAND RESERVED · DO NOT HIDE WITH ENEMY UI</div>`;
+  for(let i=0;i<count;i++) {
+    const h=document.createElement("div"); h.className="context human";
+    const size=count===1?270:count===2?235:190;
+    h.style.cssText=`left:${95+(i%2)*290}px;top:${count<=2?430:300+Math.floor(i/2)*245}px;width:${size*.72}px;height:${size}px;`;
+    h.innerHTML=bodyArt(MODELS[i],false)+`<span class="human-label">Human ${i+1} · ${MODELS[i]}</span>`; c.append(h);
+  }
+  $("stage").append(c);
+}
+function paintPiece(p) {
+  const el=document.getElementById("piece-"+p.pieceId);
+  el.style.left=p.x+"px"; el.style.top=p.y+"px"; el.style.width=p.width+"px"; el.style.height=p.height+"px"; el.style.zIndex=p.z;
+  el.classList.toggle("selected",p.pieceId===selectedId);
+  el.setAttribute("aria-pressed",String(p.pieceId===selectedId));
+}
+function renderStage() {
+  $("stage").replaceChildren(); renderContext();
+  for(const p of pieces()) {
+    const el=document.createElement("div"); el.id="piece-"+p.pieceId; el.className="piece"; el.dataset.pieceId=p.pieceId;
+    el.dataset.title=`P${actorFor(p).slot} · ${LABELS[p.kind]}`; el.tabIndex=0; el.setAttribute("role","button"); el.setAttribute("aria-label",el.dataset.title+"; drag to move, arrow keys to nudge");
+    el.addEventListener("focus",()=>selectPiece(p.pieceId));
+    el.innerHTML=pieceArt(p);
+    const handle=document.createElement("span"); handle.className="handle"; handle.dataset.resize="true"; handle.title="Resize; numeric width and height also available"; el.append(handle);
+    $("stage").append(el); paintPiece(p);
+  }
+  update();
+}
+function updateLayers() {
+  const list=$("layers"); list.replaceChildren();
+  for(const p of [...pieces()].sort((a,b)=>b.z-a.z || a.pieceId.localeCompare(b.pieceId))) list.add(new Option(`z${p.z} · P${actorFor(p).slot} · ${LABELS[p.kind]}`,p.pieceId));
+  list.value=selectedId;
+}
+function update() {
+  const p=selected(),a=actorFor(p);
+  $("count").value=String(count); $("actor").replaceChildren();
+  for(const actor of current().actors) $("actor").add(new Option(`P${actor.slot} · ${actor.characterModelId}`,actor.actorId));
+  $("actor").value=a.actorId; $("character").value=a.characterModelId; updateLayers();
+  $("selected-title").textContent=`P${a.slot} · ${LABELS[p.kind]}`; $("piece-id").textContent=p.pieceId;
+  for(const key of ["x","y","width","height","z"]) $(key).value=String(round(p[key]));
+  $("scale").value=String(round(p.width/p.baseWidth*100)); $("lock").checked=p.aspectRatioLocked;
+  $("readout").textContent=`${p.pieceId}  x:${round(p.x)} y:${round(p.y)}  ${round(p.width)} × ${round(p.height)} px  scale:${(p.width/p.baseWidth).toFixed(3)} × ${(p.height/p.baseHeight).toFixed(3)}  z:${p.z}`;
+  $("draft-name").textContent=`${count}P draft · ${current().sourcePreset} ${current().edited?"· edited":"· starting preset"}`;
+  $("apply").textContent=`Apply ${pending} to ${count}P…`;
+  $("undo").disabled=!undoStack.length; $("redo").disabled=!redoStack.length;
+  $("save-status").textContent=exportedSnapshot===JSON.stringify(layouts)?"All current layouts exported. Browser session still temporary.":"Session-only / not exported. Export all 4 layouts before closing.";
+  $("json").textContent=serialized();
+}
+function selectPiece(id) {
+  if(!pieces().some(p=>p.pieceId===id)) return;
+  selectedId=id; for(const p of pieces()) paintPiece(p); update();
+}
+function fitStage() {
+  const availableHeight=Math.max(220,window.innerHeight-$("frame").getBoundingClientRect().top-175);
+  const width=Math.min(document.querySelector(".workspace").clientWidth,availableHeight*W/H);
+  $("frame").style.width=width+"px";
+  const scale=width/W;
+  $("frame").style.height=H*scale+"px"; $("stage").style.transform=`scale(${scale})`;
+  $("stage").style.setProperty("--handle-size",16/scale+"px");$("stage").style.setProperty("--handle-offset",-8/scale+"px");
+  $("fit").textContent=`1920 × 1080 · fit ${Math.round(scale*100)}%`;
+}
+// client coordinates and DOMRect are both CSS pixels, even with browser zoom / devicePixelRatio.
+function point(event) {
+  const rect=$("stage").getBoundingClientRect();
+  return {x:(event.clientX-rect.left)*W/rect.width,y:(event.clientY-rect.top)*H/rect.height};
+}
+function validGeometry(p) { return Number.isFinite(p.x)&&Math.abs(p.x)<=20000&&Number.isFinite(p.y)&&Math.abs(p.y)<=20000&&["width","height"].every(k=>Number.isFinite(p[k])&&p[k]>=8&&p[k]<=10000); }
+function moveTargets(p) { return $("group").checked?actorFor(p).pieces:[p]; }
+$("stage").addEventListener("pointerdown",event=>{
+  if(event.button!==0 || gesture) return;
+  const el=event.target.closest(".piece"); if(!el) return;
+  event.preventDefault(); selectPiece(el.dataset.pieceId); el.focus({preventScroll:true});
+  const p=selected(),targets=moveTargets(p);
+  gesture={pointerId:event.pointerId,el,start:point(event),before:snapshot(),piece:clone(p),targets:targets.map(t=>({id:t.pieceId,x:t.x,y:t.y})),resize:!!event.target.closest("[data-resize]"),changed:false};
+  el.setPointerCapture(event.pointerId);
+});
+$("stage").addEventListener("pointermove",event=>{
+  if(!gesture || event.pointerId!==gesture.pointerId) return;
+  event.preventDefault(); const g=gesture,pos=point(event),dx=pos.x-g.start.x,dy=pos.y-g.start.y,p=selected();
+  if(g.resize) {
+    let width=g.piece.width+dx,height=g.piece.height+dy;
+    if(p.aspectRatioLocked) { const ratio=Math.abs(dx/g.piece.width)>Math.abs(dy/g.piece.height)?width/g.piece.width:height/g.piece.height; width=g.piece.width*ratio; height=g.piece.height*ratio; }
+    const candidate={...p,width:round(width),height:round(height)}; if(!validGeometry(candidate)) return;
+    p.width=candidate.width;p.height=candidate.height;paintPiece(p);
+  } else {
+    const changes=g.targets.map(t=>({p:pieces().find(p=>p.pieceId===t.id),x:round(t.x+dx),y:round(t.y+dy)}));
+    if(changes.some(t=>!validGeometry({...t.p,x:t.x,y:t.y}))) return;
+    for(const t of changes) {t.p.x=t.x;t.p.y=t.y;paintPiece(t.p);}
+  }
+  g.changed=true; current().edited=true; update();
+});
+function finishGesture(event,cancel=false) {
+  if(!gesture || event && event.pointerId!==gesture.pointerId) return;
+  const g=gesture; gesture=null;
+  if(g.el.hasPointerCapture(g.pointerId)) g.el.releasePointerCapture(g.pointerId);
+  if(cancel) { layouts=g.before.layouts;selectedId=g.before.selectedId; renderStage();notify("Gesture cancelled; placement restored."); }
+  else if(g.changed) {remember(g.before);revision++;renderStage();notify("Placement updated. Export all four layouts when ready.");}
+}
+$("stage").addEventListener("pointerup",event=>finishGesture(event));
+$("stage").addEventListener("pointercancel",event=>finishGesture(event,true));
+$("stage").addEventListener("lostpointercapture",event=>finishGesture(event));
+function editGeometry(key,raw) {
+  const p=selected(),value=Number(raw),candidate={...p};
+  if(raw.trim()===""||!Number.isFinite(value)) {notify("Enter a finite number.",true);update();return;}
+  if(key==="scale"&&(value<1||value>2000)){notify("Uniform scale must be between 1% and 2000%.",true);update();return;}
+  if(key==="scale") {candidate.width=round(p.baseWidth*value/100);candidate.height=round(p.baseHeight*value/100);}
+  else {candidate[key]=key==="z"?value:round(value);if(p.aspectRatioLocked&&key==="width")candidate.height=round(value*p.height/p.width);if(p.aspectRatioLocked&&key==="height")candidate.width=round(value*p.width/p.height);}
+  if(!validGeometry(candidate)||!Number.isInteger(candidate.z)||candidate.z<1||candidate.z>10000) {notify("Invalid geometry: position ±20,000; size 8–10,000 px; integer z 1–10,000.",true);update();return;}
+  const targets=(key==="x"||key==="y")?moveTargets(p):[p],delta=value-p[key];
+  if((key==="x"||key==="y")&&targets.some(t=>!validGeometry({...t,[key]:round(t[key]+delta)}))) {notify("Actor move would exceed coordinate limits.",true);update();return;}
+  remember();
+  if(key==="x"||key==="y") for(const t of targets)t[key]=round(t[key]+delta);
+  else Object.assign(p,candidate);
+  markEdited();renderStage();notify("Geometry updated.");
+}
+for(const key of ["x","y","width","height","scale","z"]) $(key).addEventListener("change",()=>editGeometry(key,$(key).value));
+$("lock").onchange=()=>{remember();selected().aspectRatioLocked=$("lock").checked;markEdited();update();};
+$("layers").onchange=()=>selectPiece($("layers").value);
+$("actor").onchange=()=>selectPiece($("actor").value+":body");
+for(const model of MODELS) $("character").add(new Option(model,model));
+$("character").onchange=()=>{remember();const a=actorFor(selected());a.characterModelId=$("character").value;for(const p of a.pieces)p.characterModelId=a.characterModelId;markEdited();renderStage();notify("Character changed. Existing geometry kept; resize if its silhouette needs more room.");};
+$("count").onchange=()=>{finishGesture();count=Number($("count").value);if(!selected())selectedId="corrupted-1:body";updateURL();renderStage();notify(`${count}-player draft restored. Other counts retained unchanged.`);};
+$("guides").onchange=()=>$("stage").classList.toggle("guides",$("guides").checked);
+$("grid").onchange=()=>$("stage").classList.toggle("grid",$("grid").checked);
+function reorder(front) {
+  remember();const ordered=[...pieces()].sort((a,b)=>a.z-b.z),p=selected(),rest=ordered.filter(t=>t!==p);
+  if(front)rest.push(p);else rest.unshift(p);rest.forEach((t,i)=>t.z=i+1);markEdited();renderStage();
+}
+$("front").onclick=()=>reorder(true);$("back").onclick=()=>reorder(false);
+function travel(from,to) {
+  finishGesture();if(!from.length)return;to.push(snapshot());const next=from.pop();layouts=next.layouts;count=next.count;selectedId=next.selectedId;revision++;updateURL();renderStage();notify("History restored.");
+}
+$("undo").onclick=()=>travel(undoStack,redoStack);$("redo").onclick=()=>travel(redoStack,undoStack);
+document.addEventListener("keydown",event=>{
+  if(event.target.closest("input,select,textarea,button,dialog") || event.altKey || event.ctrlKey || event.metaKey) return;
+  if(event.key==="Escape"&&gesture){finishGesture(null,true);return;}
+  const offsets={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
+  if(!offsets[event.key]||gesture)return;event.preventDefault();const [dx,dy]=offsets[event.key],step=event.shiftKey?10:1,targets=moveTargets(selected());
+  if(targets.some(p=>!validGeometry({...p,x:p.x+dx*step,y:p.y+dy*step})))return;
+  remember();for(const p of targets){p.x=round(p.x+dx*step);p.y=round(p.y+dy*step);paintPiece(p);}markEdited();update();
+});
+function choosePreset(key) {
+  pending=key;document.querySelectorAll("[data-variant]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.variant===key)));
+  $("preset-description").textContent=`Pending ${key}: ${PRESETS[key]}`;$("apply").textContent=`Apply ${key} to ${count}P…`;updateURL();update();
+}
+document.querySelectorAll("[data-variant]").forEach(b=>b.onclick=()=>{choosePreset(b.dataset.variant);notify(`Preset ${pending} selected only. Current placements are unchanged. Apply to replace the ${count}P draft.`);});
+$("apply").onclick=()=>{if(!confirm(`Replace the ${count}-player draft with preset ${pending}? Hand placements for this count will be replaced. Other counts stay intact. Undo is available.`))return;remember();layouts[String(count)]=makeLayout(count,pending);selectedId="corrupted-1:body";revision++;renderStage();notify(`Applied ${pending} to ${count}P only.`);};
+$("count").addEventListener("change",()=>$("apply").textContent=`Apply ${pending} to ${count}P…`);
+function validateDocument(doc) {
+  const fail=message=>{throw new Error(message);};
+  if(!doc||doc.schemaVersion!==1)fail("Unsupported schemaVersion; expected 1.");
+  if(doc.prototype!=="corrupted-party-layout-editor")fail("Not a corrupted-party layout editor document.");
+  if(JSON.stringify(doc.referenceViewport)!==JSON.stringify(REFERENCE)) {
+    if(!doc.referenceViewport||Object.entries(REFERENCE).some(([k,v])=>doc.referenceViewport[k]!==v))fail("Reference viewport must be 1920 × 1080, reference-pixels, top-left, right/down.");
+  }
+  if(!doc.layouts||typeof doc.layouts!=="object"||Array.isArray(doc.layouts)||Object.keys(doc.layouts).sort().join(",")!=="1,2,3,4")fail("Layouts must contain exactly player counts 1, 2, 3, 4.");
+  if(![1,2,3,4].includes(doc.activePlayerCount))fail("Invalid activePlayerCount.");
+  if(!Object.hasOwn(PRESETS,doc.pendingPreset))fail("Invalid pending preset.");
+  const clean={};
+  for(const n of [1,2,3,4]) {
+    const layout=doc.layouts[String(n)];
+    if(!layout||layout.playerCount!==n||!Array.isArray(layout.actors)||layout.actors.length!==n)fail(`Layout ${n}: actor count mismatch.`);
+    if(!Object.hasOwn(PRESETS,layout.sourcePreset)||typeof layout.edited!=="boolean")fail(`Layout ${n}: invalid draft metadata.`);
+    const ids=new Set(),slots=new Set();
+    const actors=layout.actors.map(a=>{
+      if(!a||!Number.isInteger(a.slot)||a.slot<1||a.slot>n||slots.has(a.slot))fail(`Layout ${n}: duplicate or invalid actor slot.`);
+      slots.add(a.slot);
+      if(a.actorId!==`corrupted-${a.slot}`||ids.has(a.actorId))fail(`Layout ${n}: invalid or duplicate actorId.`);
+      ids.add(a.actorId);
+      if(!MODELS.includes(a.characterModelId))fail(`Layout ${n}: unsupported character model.`);
+      if(!Array.isArray(a.pieces)||a.pieces.length!==KINDS.length)fail(`Layout ${n}, ${a.actorId}: expected ${KINDS.length} independent pieces.`);
+      const kinds=new Set();
+      const pieces=a.pieces.map(p=>{
+        if(!p||!KINDS.includes(p.kind)||kinds.has(p.kind))fail(`Layout ${n}: invalid or repeated piece kind.`);
+        kinds.add(p.kind);
+        if(p.actorId!==a.actorId||p.characterModelId!==a.characterModelId||p.pieceId!==`${a.actorId}:${p.kind}`||ids.has(p.pieceId))fail(`Layout ${n}: duplicate id or mismatched piece ownership.`);
+        ids.add(p.pieceId);
+        if(!validGeometry(p)||!["baseWidth","baseHeight"].every(k=>Number.isFinite(p[k])&&p[k]>=8&&p[k]<=10000))fail(`Layout ${n}, ${p.pieceId}: invalid geometry.`);
+        if(!Number.isInteger(p.z)||p.z<1||p.z>10000||typeof p.aspectRatioLocked!=="boolean")fail(`Layout ${n}, ${p.pieceId}: invalid z-order or aspect lock.`);
+        if(!Number.isFinite(p.scaleX)||!Number.isFinite(p.scaleY)||Math.abs(p.scaleX-p.width/p.baseWidth)>1e-8||Math.abs(p.scaleY-p.height/p.baseHeight)>1e-8)fail(`Layout ${n}, ${p.pieceId}: scale must match dimensions / base size.`);
+        return Object.fromEntries(["pieceId","actorId","kind","characterModelId","x","y","width","height","baseWidth","baseHeight","z","aspectRatioLocked"].map(k=>[k,p[k]]));
+      });
+      return {actorId:a.actorId,slot:a.slot,characterModelId:a.characterModelId,pieces};
+    });
+    clean[String(n)]={playerCount:n,sourcePreset:layout.sourcePreset,edited:layout.edited,actors};
+  }
+  return {layouts:clean,count:doc.activePlayerCount,pending:doc.pendingPreset};
+}
+$("export").onclick=()=>{
+  finishGesture();const text=serialized(),url=URL.createObjectURL(new Blob([text+"\n"],{type:"application/json"})),a=document.createElement("a");
+  a.href=url;a.download=`architect-corrupted-party-layouts-1-4p-${new Date().toISOString().replace(/[:.]/g,"-")}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  exportedSnapshot=JSON.stringify(layouts);update();notify("JSON download requested (all 4 layouts). Keep the file and attach it or give Copilot its path. Check your browser's downloads.");
+};
+$("copy").onclick=async()=>{
+  finishGesture();const text=serialized();
+  try {if(!navigator.clipboard?.writeText)throw new Error("Clipboard unavailable");await navigator.clipboard.writeText(text);notify("All four layouts copied. Paste into a JSON file to keep them; clipboard is not durable storage.");}
+  catch { $("json-details").open=true;const range=document.createRange();range.selectNodeContents($("json"));const selection=getSelection();selection.removeAllRanges();selection.addRange(range);notify("Clipboard blocked. Live JSON is selected; press Ctrl/Cmd+C, or use Export.",true); }
+};
+$("import").onclick=()=>{finishGesture();$("import-error").textContent="";$("import-dialog").showModal();};
+$("cancel").onclick=()=>$("import-dialog").close();
+let fileRead=0;
+$("import-file").onchange=async()=>{
+  const file=$("import-file").files[0],request=++fileRead;if(!file)return;
+  if(file.size>2*1024*1024){$("import-error").textContent="Choose a JSON file smaller than 2 MB.";return;}
+  try {const text=await file.text();if(request!==fileRead)return;$("import-text").value=text;$("import-error").textContent="File loaded into preview. Validate & import to apply it.";}catch(error){$("import-error").textContent="Could not read file: "+error.message;}
+};
+$("load").onclick=()=>{
+  try {
+    const text=$("import-text").value;if(text.length>2*1024*1024)throw new Error("JSON exceeds 2 MB.");
+    const incoming=validateDocument(JSON.parse(text));
+    if(!confirm("Replace ALL FOUR current drafts with this validated JSON? Undo can restore your session."))return;
+    remember();layouts=incoming.layouts;count=incoming.count;pending=incoming.pending;selectedId="corrupted-1:body";revision++;renderStage();choosePreset(pending);$("import-dialog").close();notify("All four layouts imported successfully. Export to keep any further edits.");
+  }catch(error){$("import-error").textContent="Import rejected: "+error.message;notify("Import rejected. Current drafts are unchanged.",true);}
+};
+window.addEventListener("beforeunload",event=>{if(revision>0&&exportedSnapshot!==JSON.stringify(layouts)){event.preventDefault();event.returnValue="";}});
+window.addEventListener("resize",fitStage);
+new ResizeObserver(fitStage).observe(document.querySelector(".workspace"));renderStage();choosePreset(pending);fitStage();
+</script>
+</body>
+</html>

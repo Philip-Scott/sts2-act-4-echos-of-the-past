@@ -36,6 +36,7 @@ internal static class NativeMechanicsPlaytest
         await CreatureCmd.Heal(human.Creature, 1000);
         human.Creature.RemoveAllPowersInternalExcept();
         actor.Body.RemoveAllPowersInternalExcept();
+        await NativeCombatOwnershipPlaytest.Relics(human, actor);
         OrbCmd.RemoveSlots(actor.Player, actor.State.OrbQueue.Capacity);
         actor.Player.MaxEnergy = 10;
         actor.State.ResetEnergy();

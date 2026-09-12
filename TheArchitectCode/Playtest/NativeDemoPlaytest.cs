@@ -92,6 +92,11 @@ internal static class NativeDemoPlaytest
         }
         var partySize = Enumerable.Range(2, 3).FirstOrDefault(count =>
             CommandLineHelper.HasArg($"architect-native-party-{count}"));
+        if (CommandLineHelper.HasArg("architect-native-party-layout-prototype"))
+        {
+            await NativePartyPlaytest.Run(game, prototypeOnly: true);
+            return;
+        }
         if (partySize != 0 || CommandLineHelper.HasArg("architect-native-party") ||
             CommandLineHelper.HasArg("architect-native-party-layout"))
         {

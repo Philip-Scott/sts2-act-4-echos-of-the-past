@@ -8,6 +8,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Acts;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
@@ -25,6 +26,9 @@ namespace TheArchitect.TheArchitectCode.Playtest;
 internal static class ArchitectHistoryPlaytest
 {
     private static bool _started;
+    private static readonly Func<NMainMenu, Task> ContinueSavedRun =
+        AccessTools.MethodDelegate<Func<NMainMenu, Task>>(
+            AccessTools.Method(typeof(NMainMenu), "OnContinueButtonPressedAsync"));
     private static bool Enabled => CommandLineHelper.HasArg("architect-history-setup");
     private static bool ResumeEnabled => CommandLineHelper.HasArg("architect-resume-slot2");
     private static readonly Lazy<ArchitectHistorySetup> Configuration = new(() =>
@@ -55,9 +59,16 @@ internal static class ArchitectHistoryPlaytest
             throw new InvalidDataException("Slot 2 has no saved run to resume.");
         if (save.Players.Count != 1)
             throw new InvalidDataException("Live resume only supports single-player saves.");
-        var run = RunState.FromSerializable(save);
-        await RunManager.Instance.SetUpSavedSingleplayer(run, save);
-        await game.LoadRun(run, save.PreFinishedRoom);
+        if (RunManager.Instance.DebugOnlyGetState() != null)
+        {
+            MainFile.Logger.Info("Live resume is already being handled by native Continue.");
+            return;
+        }
+        // Native Continue disables its button before loading and owns transitions/error cleanup.
+        await ContinueSavedRun(game.MainMenu ??
+            throw new InvalidOperationException("The native Continue screen is unavailable."));
+        var run = RunManager.Instance.DebugOnlyGetState() ??
+            throw new InvalidOperationException("Native Continue did not restore the saved run.");
         var deadline = DateTime.UtcNow.AddSeconds(60);
         var player = run.Players.Single();
         while (run.CurrentRoom is CombatRoom combat &&

@@ -29,26 +29,33 @@ namespace TheArchitect.TheArchitectCode.Playtest;
 
 internal static class NativePartyPlaytest
 {
-    internal static async Task Run(NGame game, bool layoutOnly = false, int? partySize = null)
+    internal static async Task Run(NGame game, bool layoutOnly = false, int? partySize = null,
+        bool prototypeOnly = false)
     {
         Require(NativeDemoSafety.Enabled, "party probes require disposable storage and Steam disabled");
         var cases = partySize is { } size ? new[] { (size, size == 2 ? 0 : 8) } :
             layoutOnly ? [(4, 8)] : [(2, 0), (3, 8), (4, 8)];
         foreach (var (count, ascension) in cases)
-            await Exercise(game, count, ascension, layoutOnly);
+            await Exercise(game, count, ascension, layoutOnly, prototypeOnly);
+        if (prototypeOnly)
+        {
+            MainFile.Logger.Info("NATIVE PARTY LAYOUT PROTOTYPE CAPTURED: A/B/C for 2-4 enemies; not a combat-suite result.");
+            game.GetTree().Quit();
+            return;
+        }
         MainFile.Logger.Info(layoutOnly ? "NATIVE PARTY LAYOUT PASSED" :
             $"NATIVE PARTY PASSED: {(partySize?.ToString() ?? "2-4")} humans and saved enemies; counterpart names/targets, AOE, fixed HP, independent turns, sequential/AoE handoff.");
         game.GetTree().Quit();
     }
 
-    private static async Task Exercise(NGame game, int count, int ascension, bool layoutOnly)
+    private static async Task Exercise(NGame game, int count, int ascension, bool layoutOnly, bool prototypeOnly)
     {
         CharacterModel[] characters = [ModelDb.Character<Ironclad>(), ModelDb.Character<Defect>(),
             ModelDb.Character<Necrobinder>(), ModelDb.Character<Silent>()];
         var players = Enumerable.Range(0, count).Select(index =>
             Player.CreateForNewRun(characters[index], UnlockState.all, (ulong)index + 1)).ToArray();
         var snapshots = players.Select(CorruptedPlayerSnapshot.Capture).ToArray();
-        foreach (var player in players)
+        foreach (var player in players.Where(_ => !prototypeOnly))
         {
             player.Creature.SetMaxHpInternal(1000);
             player.Creature.SetCurrentHpInternal(1000);
@@ -97,6 +104,12 @@ internal static class NativePartyPlaytest
             $"{count}: native boss HP initialization supports Act 4");
         var enemies = combat.Enemies.Where(creature => creature.Monster is CorruptedPlayer).ToArray();
         var actors = enemies.Select(creature => ((CorruptedPlayer)creature.Monster!).Native!).ToArray();
+        if (prototypeOnly)
+        {
+            await CorruptedPartyLayoutPrototype.Capture(game, enemies);
+            await game.ReturnToMainMenu();
+            return;
+        }
         Require(enemies.Length == count && combat.Players.Count == count && run.Players.Count == count,
             $"{count}: complete party loaded without enrolling private actors");
         Require(actors.Select(actor => actor.Player.NetId).Distinct().Count() == count,
@@ -201,6 +214,8 @@ internal static class NativePartyPlaytest
         for (var index = 0; index < bounds.Length; index++)
             Require(bounds.Skip(index + 1).All(other => !bounds[index].Intersects(other)),
                 $"{count}: member {index} preview does not overlap another member");
+        await NativeEnemyResourcePlaytest.Verify(game, actors.Select(actor => actor.Player).ToArray(), panels);
+        await NativeEnemyResourcePlaytest.VerifyFullRelicBar(game, players[0], panels);
         if (layoutOnly)
         {
             await game.ReturnToMainMenu();
@@ -216,6 +231,7 @@ internal static class NativePartyPlaytest
         await EndTurn(players, 3);
         Require(actors[0].CompletedTurns == 3 && actors.Skip(1).All(actor => actor.CompletedTurns == 2),
             $"{count}: extra turns do not advance other corrupted players");
+        await NativeCombatOwnershipPlaytest.Party(players, actors);
 
         var hand = players[0].PlayerCombatState!.Hand.Cards.ToArray();
         var energy = players[0].PlayerCombatState!.Energy;
@@ -225,6 +241,8 @@ internal static class NativePartyPlaytest
             $"{count}: an early death cleans only its own actor");
         Require(!HasEnergyCounter(panels[0]) && panels.Skip(1).All(HasEnergyCounter),
             $"{count}: an early death detaches only its own native energy counter");
+        Require(!HasStarCounter(panels[0]) && panels.Skip(1).All(HasStarCounter),
+            $"{count}: an early death detaches only its own native star counter");
         Require(!combat.Enemies.Any(creature => creature.Monster is ArchitectBoss),
             $"{count}: Architect is absent while any corrupted member remains");
         await CreatureCmd.Damage(context, enemies.Skip(1), 10000, ValueProp.Unpowered | ValueProp.Unblockable,
@@ -234,6 +252,8 @@ internal static class NativePartyPlaytest
             $"{count}: the final AoE produces exactly one Architect and cleans every actor");
         Require(panels.All(panel => !HasEnergyCounter(panel)),
             $"{count}: the final AoE detaches all defeated native energy counters");
+        Require(panels.All(panel => !HasStarCounter(panel)),
+            $"{count}: the final AoE detaches all defeated native star counters");
         var boss = combat.Enemies.Single(creature => creature.Monster is ArchitectBoss);
         Require(boss.MaxHp == (int)Creature.ScaleHpForMultiplayer(boss.Monster!.MaxInitialHp, combat.Encounter, count, 2),
             $"{count}: Architect uses the native final-act boss HP tier");
@@ -264,6 +284,10 @@ internal static class NativePartyPlaytest
     private static bool HasEnergyCounter(CorruptedPlayerTelegraph panel) =>
         GodotObject.IsInstanceValid(panel) &&
         panel.FindChild("Energy", true, false).GetChildren().OfType<NEnergyCounter>().Any();
+
+    private static bool HasStarCounter(CorruptedPlayerTelegraph panel) =>
+        GodotObject.IsInstanceValid(panel) &&
+        panel.FindChild("Stars", true, false).GetChildren().OfType<NStarCounter>().Any();
 
     private static Action PrepareTargetingProbe(Player[] players, NativeCorruptedPlayer[] actors)
     {

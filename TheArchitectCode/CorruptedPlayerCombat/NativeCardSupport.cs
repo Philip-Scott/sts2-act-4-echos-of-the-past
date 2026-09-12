@@ -28,8 +28,6 @@ internal static class NativeCardSupport
     {
         if (card.GetType().Assembly != typeof(CardModel).Assembly)
             return "Unsupported: third-party card effects";
-        if (card.MultiplayerConstraint == CardMultiplayerConstraint.MultiplayerOnly)
-            return "Unsupported: co-op-only card";
         if (card.Enchantment is { } enchantment && enchantment.GetType().Assembly != typeof(CardModel).Assembly)
             return "Unsupported: third-party enchantment";
         if (card.Affliction is { } affliction && affliction.GetType().Assembly != typeof(CardModel).Assembly ||

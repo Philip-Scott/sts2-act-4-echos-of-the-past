@@ -1,0 +1,176 @@
+<!doctype html>
+<!-- Throwaway study: three native formations with each enemy's hand/resources below its body. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Corrupted party layout prototype</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #10151b; color: #edf1f4; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header { padding: 18px 24px 12px; border-bottom: 1px solid #34404b; }
+    .heading { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    h1 { font-size: 20px; margin: 0; }
+    .tag { color: #ffd482; border: 1px solid #6b5633; padding: 3px 7px; font-size: 11px; letter-spacing: .08em; }
+    header p { margin: 9px 0 0; color: #aebcc7; font-size: 13px; }
+    .controls { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+    button, select, a { font: inherit; }
+    button, select { color: inherit; background: #25313b; border: 1px solid #596b78; border-radius: 5px; padding: 7px 11px; }
+    button { cursor: pointer; }
+    button:hover, select:hover { background: #344651; }
+    button:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid #73dcff; outline-offset: 3px; }
+    a { color: #8cdfff; }
+    .control-label { color: #b4c1ca; font-size: 13px; }
+    main { padding: 14px 24px 110px; }
+    figure { margin: 0; }
+    .capture { width: 100%; height: calc(100vh - 295px); min-height: 260px; background: #080c10; display: grid; place-items: center; }
+    .capture img { width: 100%; height: 100%; object-fit: contain; min-height: 0; }
+    figcaption { padding: 10px 0; display: flex; justify-content: space-between; gap: 15px; flex-wrap: wrap; font-size: 13px; color: #b4c1ca; }
+    #description { max-width: 85ch; }
+    details { border-top: 1px solid #34404b; margin-top: 8px; padding-top: 12px; }
+    summary { cursor: pointer; color: #a8bac8; font-size: 13px; }
+    pre { padding: 12px; background: #0a1016; color: #a6d7c2; overflow: auto; max-height: 400px; font-size: 12px; }
+    .switcher { position: fixed; z-index: 2; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 9px; border-radius: 40px; background: #f2d398; color: #171d24; box-shadow: 0 4px 28px #000a; }
+    .switcher button { border-radius: 100%; background: #171d24; color: #fff; border: 0; width: 40px; height: 40px; padding: 0; font-size: 22px; }
+    .switcher output { min-width: 210px; text-align: center; font-size: 14px; font-weight: 700; }
+    @media (max-width: 600px) {
+      header { padding: 14px 12px; }
+      main { padding: 12px 12px 110px; }
+      .capture { height: auto; min-height: 0; aspect-ratio: 16 / 9; }
+      h1 { font-size: 17px; }
+      .switcher { gap: 7px; max-width: calc(100vw - 20px); }
+      .switcher output { min-width: 170px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="heading">
+      <span class="tag">THROWAWAY / NOT INSTALLED</span>
+      <h1>Corrupted party: hands below their owners</h1>
+    </div>
+    <p>Compare spacing and character size inside the actual combat screen. These are captured native scenes, not live combat controls.</p>
+    <div class="controls">
+      <label class="control-label" for="players">Corrupted players</label>
+      <select id="players">
+        <option value="2">2 enemies</option>
+        <option value="3">3 enemies</option>
+        <option value="4">4 enemies</option>
+      </select>
+      <label class="control-label" for="variant">Formation</label>
+      <select id="variant">
+        <option value="A">A - Two-column shelves</option>
+        <option value="B">B - Single-line formation</option>
+        <option value="C">C - Staggered formation</option>
+      </select>
+      <a id="original" target="_blank" rel="noopener">Open full-resolution capture</a>
+      <a href="corrupted-party-layout-editor-prototype.html?variant=A&amp;players=4">Arrange your own layout</a>
+    </div>
+  </header>
+  <main>
+    <figure>
+      <div class="capture"><img id="image" alt=""></div>
+      <figcaption>
+        <span id="description"></span>
+        <span>Fixture stars: distinct nonzero balances, explicitly granted for visibility.</span>
+      </figcaption>
+    </figure>
+    <details>
+      <summary>Show current prototype state and capture geometry</summary>
+      <pre id="state"></pre>
+    </details>
+  </main>
+  <nav class="switcher" aria-label="Prototype variant switcher">
+    <button id="previous" aria-label="Previous formation">&#8592;</button>
+    <output id="current" aria-live="polite"></output>
+    <button id="next" aria-label="Next formation">&#8594;</button>
+  </nav>
+  <script>
+    const variants = {
+      A: {
+        name: "Two-column shelves",
+        description: "Separate enemy stations in two columns. At three or four enemies, two rows preserve all five opening cards but require much smaller character bodies."
+      },
+      B: {
+        name: "Single-line formation",
+        description: "One horizontal enemy line with larger bodies than the two-row layout. At four enemies, each hand shows only part of its cards and requires horizontal scrolling."
+      },
+      C: {
+        name: "Staggered formation",
+        description: "Offset enemy ranks preserve depth and separate the hand panels visually. Bodies stay larger than the two-row layout, but four-enemy hands require horizontal scrolling."
+      }
+    };
+    const keys = Object.keys(variants);
+    const playerSelect = document.getElementById("players");
+    const variantSelect = document.getElementById("variant");
+    const image = document.getElementById("image");
+    let metadata = null;
+
+    function selection() {
+      const params = new URLSearchParams(location.search);
+      const variant = keys.includes(params.get("variant")) ? params.get("variant") : "A";
+      const players = ["2", "3", "4"].includes(params.get("players")) ? params.get("players") : "4";
+      return { variant, players };
+    }
+
+    function render() {
+      const { variant, players } = selection();
+      const formation = variants[variant];
+      const source = `party-layout-prototype-captures/party-${players}-layout-${variant}.png`;
+      playerSelect.value = players;
+      variantSelect.value = variant;
+      image.src = source;
+      image.alt = `${players} Corrupted Players: ${formation.name}, with hands and resource counters beneath each enemy.`;
+      document.getElementById("original").href = source;
+      document.getElementById("description").textContent = formation.description;
+      document.getElementById("current").textContent = `${variant} - ${formation.name}`;
+      document.getElementById("state").textContent = JSON.stringify({
+        prototypeOnly: true,
+        variant,
+        formation: formation.name,
+        corruptedPlayers: Number(players),
+        image: source,
+        fixtureStars: Array.from({ length: Number(players) }, (_, index) => 7 + index),
+        liveGameModified: false,
+        captureMetadata: metadata?.captures.find(capture =>
+          capture.variant === variant && capture.players === Number(players)) ?? null
+      }, null, 2);
+    }
+
+    function navigate(changes) {
+      const url = new URL(location.href);
+      const state = { ...selection(), ...changes };
+      url.searchParams.set("variant", state.variant);
+      url.searchParams.set("players", state.players);
+      history.replaceState(null, "", url);
+      render();
+    }
+
+    function cycle(direction) {
+      const index = keys.indexOf(selection().variant);
+      navigate({ variant: keys[(index + direction + keys.length) % keys.length] });
+    }
+
+    playerSelect.addEventListener("change", () => navigate({ players: playerSelect.value }));
+    variantSelect.addEventListener("change", () => navigate({ variant: variantSelect.value }));
+    document.getElementById("previous").addEventListener("click", () => cycle(-1));
+    document.getElementById("next").addEventListener("click", () => cycle(1));
+    window.addEventListener("popstate", render);
+    document.addEventListener("keydown", event => {
+      if (event.target.closest("input, textarea, select, [contenteditable]")) return;
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        cycle(event.key === "ArrowLeft" ? -1 : 1);
+      }
+    });
+    render();
+    fetch("party-layout-prototype-captures/layout-metadata.json")
+      .then(response => {
+        if (!response.ok) throw new Error(`Capture metadata unavailable: ${response.status}`);
+        return response.json();
+      })
+      .then(value => { metadata = value; render(); });
+  </script>
+</body>
+</html>

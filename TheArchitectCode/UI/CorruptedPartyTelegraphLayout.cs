@@ -15,12 +15,16 @@ internal sealed class CorruptedPartyTelegraphLayout
     private int _users;
     private bool _membersDirty = true;
     private ulong _frame = ulong.MaxValue;
+    private (int Revision, Vector2 Size, Vector2 Viewport, float Top)? _placementInputs;
     internal int RebuildCount { get; private set; }
 
     private sealed class Member
     {
         internal Vector2 Position;
         internal float Spacing;
+        internal Vector2 Intent;
+        internal Transform2D Transform;
+        internal Vector2 PanelPosition;
     }
 
     private CorruptedPartyTelegraphLayout(ICombatState combat)
@@ -80,8 +84,12 @@ internal sealed class CorruptedPartyTelegraphLayout
                     continue;
                 }
                 var position = new Vector2(node.Visuals.IntentPosition.GlobalPosition.X, node.Position.Y);
-                changed |= position != member.Position;
+                var intent = node.Visuals.IntentPosition.GlobalPosition;
+                var transform = node.GetGlobalTransform();
+                changed |= position != member.Position || intent != member.Intent || transform != member.Transform;
                 member.Position = position;
+                member.Intent = intent;
+                member.Transform = transform;
             }
             if (changed)
             {
@@ -96,5 +104,29 @@ internal sealed class CorruptedPartyTelegraphLayout
             }
         }
         return _members.TryGetValue(anchor, out var entry) ? entry.Spacing : float.PositiveInfinity;
+    }
+
+    internal Vector2 Position(NCreature anchor, Vector2 size, Vector2 viewport, float topMargin)
+    {
+        Spacing(anchor);
+        var inputs = (RebuildCount, size, viewport, topMargin);
+        if (_placementInputs != inputs)
+        {
+            var members = _members.Values.ToArray();
+            var desired = members.Select(member =>
+            {
+                var scale = CorruptedPartyLayoutGeometry.Scale(member.Spacing, size.X, member.Transform.Scale.X);
+                var displayed = size * member.Transform.Scale * scale;
+                return new CorruptedPartyLayoutGeometry.Bounds(
+                    member.Intent.X - displayed.X / 2f,
+                    Math.Min(member.Intent.Y - displayed.Y + 24f, viewport.Y - displayed.Y - 12f),
+                    displayed.X, displayed.Y);
+            }).ToArray();
+            var placed = CorruptedPartyLayoutGeometry.Place(desired, viewport.X, viewport.Y, topMargin);
+            for (var index = 0; index < members.Length; index++)
+                members[index].PanelPosition = new Vector2(placed[index].X, placed[index].Y);
+            _placementInputs = inputs;
+        }
+        return _members.TryGetValue(anchor, out var member) ? member.PanelPosition : Vector2.Zero;
     }
 }
