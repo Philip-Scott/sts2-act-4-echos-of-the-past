@@ -4,6 +4,7 @@ using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Animation;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -121,6 +122,7 @@ public sealed class CorruptedPlayer : CustomMonsterModel
             _telegraph = CorruptedPlayerTelegraph.Attach(node, Creature, ShowNativeState);
             Native.Changed += ShowNativeState;
             ShowNativeState();
+            NativeDownfallSupport.RefreshVisuals(Native);
         }
     }
 
@@ -133,6 +135,13 @@ public sealed class CorruptedPlayer : CustomMonsterModel
 
     private Task ExecuteTurn(IReadOnlyList<Creature> targets) =>
         (Native ?? throw new InvalidOperationException("The native Corrupted Player has not been initialized.")).ExecuteTurn();
+
+    // Advance before late hooks extinguish Inferno, including on private extra turns.
+    public override Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side,
+        IEnumerable<Creature> participants) =>
+        side == CombatSide.Enemy && participants.Contains(Creature) && Native != null
+            ? Native.FinishModTurn()
+            : Task.CompletedTask;
 
     public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature,
         bool wasRemovalPrevented, float deathAnimLength)

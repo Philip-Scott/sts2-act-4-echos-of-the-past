@@ -6,6 +6,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
+using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 namespace TheArchitect.TheArchitectCode.Persistence;
 
@@ -14,7 +15,9 @@ public sealed partial record CorruptedPlayerSnapshot
     public static CorruptedPlayerSnapshot Capture(Player player)
     {
         var cards = player.Deck.Cards.Select(card =>
-            JsonSerializer.SerializeToElement(card.ToSerializable(), JsonSerializationUtility.GetTypeInfo<SerializableCard>())).ToArray();
+            JsonSerializer.SerializeToElement(
+                NativeCardSerialization.ToSerializable(card),
+                JsonSerializationUtility.GetTypeInfo<SerializableCard>())).ToArray();
         var character = player.Character.Id.ToString();
         var hp = (int)player.Creature.MaxHp;
         return new(character, hp, cards, Hash(character, hp, cards));

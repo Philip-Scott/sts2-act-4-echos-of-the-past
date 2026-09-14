@@ -35,14 +35,16 @@ namespace TheArchitect.TheArchitectCode.Playtest;
 internal static class NativePartyPlaytest
 {
     internal static async Task Run(NGame game, bool layoutOnly = false, int? partySize = null,
-        bool prototypeOnly = false, bool manual = false)
+        bool prototypeOnly = false, bool manual = false, bool downfall = false)
     {
         Require(NativeDemoSafety.Enabled, "party probes require disposable storage and Steam disabled");
+        Require(!downfall || manual && partySize == 4, "Downfall inspection requires a manual four-member party");
         if (manual)
         {
             Require(NativeDemoSafety.SharedVisible && partySize is >= 1 and <= 4 &&
                 !layoutOnly && !prototypeOnly, "manual inspection requires one visible party size");
-            await Exercise(game, partySize!.Value, partySize <= 2 ? 0 : 8, false, false, manual: true);
+            await Exercise(game, partySize!.Value, partySize <= 2 ? 0 : 8, false, false,
+                manual: true, downfall: downfall);
             return;
         }
         var cases = partySize is { } size ? new[] { (size, size == 2 ? 0 : 8) } :
@@ -61,13 +63,13 @@ internal static class NativePartyPlaytest
     }
 
     private static async Task Exercise(NGame game, int count, int ascension, bool layoutOnly, bool prototypeOnly,
-        bool manual = false)
+        bool manual = false, bool downfall = false)
     {
         CharacterModel[] characters = [ModelDb.Character<Ironclad>(), ModelDb.Character<Defect>(),
             ModelDb.Character<Necrobinder>(), ModelDb.Character<Silent>()];
         var players = Enumerable.Range(0, count).Select(index =>
             Player.CreateForNewRun(characters[index], UnlockState.all, (ulong)index + 1)).ToArray();
-        var snapshots = players.Select(player => manual || layoutOnly
+        var snapshots = downfall ? NativeDownfallPlaytest.InspectionParty() : players.Select(player => manual || layoutOnly
             ? InspectionSnapshot(player)
             : CorruptedPlayerSnapshot.Capture(player)).ToArray();
         var run = RunState.CreateForNewRun(players,
@@ -108,7 +110,9 @@ internal static class NativePartyPlaytest
             state.BindOrigin(origin);
             state.EnterParty(frozen);
         }
-        await PreloadManager.LoadRunAssets(characters.Take(count));
+        var savedCharacters = snapshots.Select(snapshot => ModelDb.All.OfType<CharacterModel>()
+            .Single(character => character.Id.ToString() == snapshot.CharacterId));
+        await PreloadManager.LoadRunAssets(characters.Take(count).Concat(savedCharacters).Distinct());
         manager.Launch();
         game.RootSceneContainer.SetCurrentScene(NRun.Create(run));
         await manager.EnterAct(3, doTransition: false);
@@ -126,6 +130,15 @@ internal static class NativePartyPlaytest
         {
             Require(enemies.Length == count && combat.Players.Count == count && run.Players.Count == count,
                 $"{count}: complete manual party loaded");
+            if (downfall)
+                foreach (var actor in actors)
+                {
+                    actor.AssertIdentity();
+                    Require(actor.DownfallInitialized && actor.Cards.Count == 5 &&
+                        actor.Cards.All(card => actor.UnsupportedReason(card) == null) &&
+                        actor.State.Hand.Cards.Count == 5,
+                        $"{actor.Player.Character.Id}: all five Downfall showcase cards ready");
+                }
             await NativeDemoPlaytest.Capture($"party-{count}-manual-opening");
             MainFile.Logger.Info($"NATIVE PARTY MANUAL READY: {count} humans and {count} corrupted enemies; unsaved local simulation, no automated turns.");
             return;

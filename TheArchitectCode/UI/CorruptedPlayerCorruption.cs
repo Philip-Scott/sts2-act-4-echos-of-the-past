@@ -1,4 +1,5 @@
 using Godot;
+using HarmonyLib;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 
 namespace TheArchitect.TheArchitectCode.UI;
@@ -82,11 +83,13 @@ public partial class CorruptedPlayerCorruption : Node
     private NCreature? _creature;
     private CorruptedPlayerBinding _back = null!;
     private CorruptedPlayerBinding _front = null!;
-    private sealed class BodyEffect(Node2D body, CanvasGroup group, ShaderMaterial material)
+    private sealed class BodyEffect(Node2D body, CanvasGroup? group, ShaderMaterial? material)
     {
         internal Node2D Body { get; } = body;
-        internal CanvasGroup Group { get; } = group;
-        internal ShaderMaterial Material { get; } = material;
+        internal Node Parent { get; } = body.GetParent();
+        internal CanvasGroup? Group { get; } = group;
+        internal ShaderMaterial? Material { get; } = material;
+        internal Node2D Anchor => Group ?? Body;
         internal Rect2? Rect;
         internal float Strength = float.NaN;
     }
@@ -123,7 +126,7 @@ public partial class CorruptedPlayerCorruption : Node
         if (visuals.GetNodeOrNull<Node2D>("%PhobiaModeVisuals") is { } alternate)
             effect.Wrap(alternate, "BoundEchoPhobiaBody");
 
-        var group = effect._bodies[0].Group;
+        var group = effect._bodies[0].Anchor;
         var parent = group.GetParent();
         effect._back = new CorruptedPlayerBinding
         {
@@ -142,6 +145,13 @@ public partial class CorruptedPlayerCorruption : Node
 
     private void Wrap(Node2D body, string name)
     {
+        // Nested CanvasGroups share the screen backbuffer. Keep native compositors
+        // (and their custom smoke/particle shaders) intact, with bindings only.
+        if (ContainsCanvasGroup(body))
+        {
+            _bodies.Add(new BodyEffect(body, null, null));
+            return;
+        }
         var parent = body.GetParent();
         var index = body.GetIndex();
         var material = new ShaderMaterial { Shader = EchoShader.Value };
@@ -161,6 +171,25 @@ public partial class CorruptedPlayerCorruption : Node
         body.ZIndex = 0;
         body.ZAsRelative = true;
         _bodies.Add(new BodyEffect(body, group, material));
+    }
+
+    internal static bool ContainsCanvasGroup(Node node) =>
+        node is CanvasGroup || node.GetChildren().Any(ContainsCanvasGroup);
+
+    internal static bool SupportsNativeHue(Material? material) =>
+        material == null || material is ShaderMaterial { Shader: { } shader } &&
+        shader.GetShaderUniformList().Any(uniform => uniform.AsGodotDictionary()["name"].AsString() == "h");
+
+    [HarmonyPatch(typeof(NCreatureVisuals), nameof(NCreatureVisuals.SetScaleAndHue))]
+    internal static class CorruptedVisualHuePatch
+    {
+        private static void Prefix(NCreatureVisuals __instance, ref float hue)
+        {
+            if (!Mathf.IsZeroApprox(hue) &&
+                __instance.GetNodeOrNull<CorruptedPlayerCorruption>("BoundEcho") != null &&
+                !SupportsNativeHue(__instance.SpineBody?.GetNormalMaterial()))
+                hue = 0f;
+        }
     }
 
     public override void _Ready()
@@ -183,7 +212,12 @@ public partial class CorruptedPlayerCorruption : Node
         {
             var body = effect.Body;
             var group = effect.Group;
-            var material = effect.Material;
+            if (group == null)
+            {
+                anyVisible |= IsInstanceValid(body) && body.GetParent() == effect.Parent && body.IsVisibleInTree();
+                continue;
+            }
+            var material = effect.Material!;
             // Native death VFX take the original body into their own viewport.
             bool attached = IsInstanceValid(body) && body.GetParent() == group;
             group.Visible = attached && body.Visible && ApplyInheritedModulation(group);

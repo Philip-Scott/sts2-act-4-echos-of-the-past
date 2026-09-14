@@ -16,6 +16,18 @@ run becomes a real party member, and `LocalContext` is unchanged.
 
 Native save restoration preserves card IDs, upgrades, installed enchantments,
 saved properties and BaseLib extended card/modifier data.
+For nonempty BaseLib modifier payloads, the runtime load object has a property
+container so BaseLib 3.4.5's property-fill deserializer runs; raw snapshots stay
+unchanged. Modifier listeners from private piles join combat dispatch exactly
+once, including global gem cost modifiers and delayed modifier hooks.
+Native card-cloning call sites also check for a wholly omitted modifier collection
+and invoke BaseLib's registered clone callback when needed. This preserves generated
+Gem ownership and clone hooks even when inlining bypasses BaseLib's clone postfix.
+Snapshot capture similarly invokes BaseLib's registered save getters if an inlined
+native serializer omitted its extension data, rather than saving an empty modifier payload.
+Live combat roster getters and their callers explicitly exclude registered corrupted
+actors. This prevents cached player predicates from mistaking an owned enemy body
+for a party member; the separate card-effect view still exposes its private players.
 Combat copies retain their native deck-version relationship.
 Cards execute through `SpendResources` and `OnPlayWrapper` inside the enemy move,
 including live source/target hooks, native resource spending, powers, pile
@@ -50,6 +62,10 @@ Installed mod model call sites, including their async state machines, receive th
 same bridges when the first Corrupted Player is constructed, after content mods
 have loaded. Each assembly is processed once; later encounters also pick up
 newly loaded assemblies.
+Registered keyword prefixes also use BaseLib's keyword registry at rewritten
+text call sites, preventing inlined vanilla enum names from becoming numeric
+localization keys. Native gold rewards retain their hooks and private gold
+mutation; only their local-player sound lookup skips actor-only private runs.
 
 The real turn loop owns side hooks. Actor energy and hand draw are prepared at
 the start of the human turn, including the opening turn, so the human can inspect
@@ -127,6 +143,13 @@ slots. Corrupted Player-owned Osty uses the enemy container and mirrored owner-r
 position, with native health, hitbox, summon/revive and scaling behavior. Ordinary
 human pet layout is unchanged.
 
+Bound Echo preserves native body materials. Bodies that already contain a
+`CanvasGroup` (such as Downfall Hexaghost's smoke) keep their native compositor
+and receive only the independent corruption bindings; nesting another
+screen-buffer compositor can render an opaque rectangle. Enemy scale remains
+native, but Bound Echo visuals skip random hue when their existing Spine
+material cannot accept the native `h` uniform, without replacing custom materials.
+
 Directional card effects face the human party from the Corrupted Player's side.
 Dagger throws and impacts, scratches, and stabs translate native player-facing
 flags at card call sites without changing monster effects. Sweeping Beam mirrors
@@ -136,12 +159,63 @@ their native target-derived rotation rather than being flipped a second time.
 ## Explicit boundaries
 
 Installed third-party cards, enchantments, afflictions and BaseLib card modifiers
-are not excluded based on their assembly. They execute their own effects and
+are not generally excluded based on their assembly (the version-checked Downfall
+adapter below is an explicit safety exception). They execute their own effects and
 combat hooks, including generated and automatically played cards. Populated
 BaseLib typed save dictionaries are restored by the normal loader, not stripped.
 This does not emulate arbitrary human-only mod interfaces, custom global state,
 or character mechanics that require uncaptured relics. Those may require
 mod-specific bridges; third-party compatibility is not universal.
+
+### Optional Downfall adapter
+
+`NativeDownfallSupport` binds only an already-loaded `Downfall` assembly with the
+verified **0.1.16.0** version and expected method signatures. There is no Downfall
+package, assembly reference, manifest dependency, or attempt to load it from disk.
+Absence leaves native actor behavior unchanged. An unverified version or API
+boundary logs an incompatibility and marks affected corrupted cards (including
+Downfall modifiers) Unsupported without rewriting their saved data.
+
+After the private `PlayerCombatState` exists, the adapter performs owner-specific
+ghostwheel and spellbook initialization and assigns three slime slots to Slime Boss.
+It does not replay `BeforeCombatStart` globally, borrow the real party list, reset
+the human's resources, or acquire relics. Fresh combat state supplies Champ's
+default no-stance state.
+
+Private ghostflames and active Champ stances are included once in combat listeners.
+Ghostflame/stance combat views resolve opponents relative to their owner;
+ghostflame choice callbacks use the actor's context instead of the local human's
+network identity. Ignited ghostwheels advance after their own enemy turns,
+including extra turns, before late hooks extinguish Inferno. Their display is
+hidden on cleanup. Slime creation
+uses the existing private pet factory, and slime effect combat views stay with
+that owner. Spellbook and native pile-command call sites use BaseLib's public
+custom-pile API to avoid inlined vanilla lookups rejecting custom pile types,
+including Automaton's Stash. Human-owned models retain their normal ownership
+and resource semantics.
+
+Keyword playtests also exercise socketed Gem modifiers through snapshot restore
+and combat hooks. Private-pile modifiers join the hook listener set once; runtime
+loading supplies an empty property container when BaseLib's nonempty modifier
+payload would otherwise bypass its property-fill loader. Raw snapshots remain
+unchanged. Fatal Bounty uses native gold mutation and hooks without requesting
+local-human sound feedback from an enemy-only run. Custom keyword text call sites
+use BaseLib's registry even when vanilla prefix lookups were pre-inlined, retaining
+Downfall's card-text formatting.
+
+Native cloning and save call sites also guard BaseLib extension data against
+inlined callbacks. A wholly omitted modifier collection is copied through
+BaseLib's registered clone callback, including modifier ownership and lifecycle
+hooks; an already populated collection is not copied twice. Snapshot capture
+uses BaseLib's registered save getters when extension capture was omitted.
+Custom-pile callers consult BaseLib before the vanilla pile switch. Concrete
+live combat roster getters exclude registered corrupted actors explicitly,
+while the actor's separate combat view still exposes its Corrupted Party.
+
+This adapter covers these verified lifecycle boundaries, not arbitrary future
+Downfall internals or every card, custom selector, modifier, and multiplayer
+combination. Installed-mod regression scenarios live in `NativeDownfallPlaytest`;
+optional-assembly/version/API rejection cases also run without Downfall installed.
 
 Unrecognized saved extension formats remain visibly labelled **Unsupported**,
 not played or spent as fake no-op actions, and do not execute card/modifier combat
@@ -289,6 +363,40 @@ needed. Disk usage grows with retained screenshots/logs, not duplicated games.
 bytes; it must contain complete TheArchitect and BaseLib bundles. Without it,
 TheArchitect comes from `artifacts/mods` and BaseLib is copied from the installed
 game. Do not invoke the native test gate in a normal saved session.
+
+### Playtest video
+
+Add `--record` to an automated private-display run to retain `playtest.mp4`
+(H.264, 30 FPS, no audio), `recording.log`, and a `recording.json` receipt with
+frame count, dimensions, and duration. This requires `ffmpeg` with `libx264`
+and `ffprobe`. Recording begins after the private game window opens, includes
+loading and the entire scenario, and finalizes on normal completion or the
+launcher's `stop` command. Recorder failure fails the run instead of silently
+omitting the video. A forcibly killed launcher may leave an incomplete MP4.
+`--record` deliberately rejects `--shared-visible`: it never records the shared
+desktop or other users' windows.
+
+```sh
+ARCHITECT_MODS_INPUT="$PWD/artifacts/downfall-mods" \
+  bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" \
+  --downfall-champ --downfall-keywords --record --label downfall-champ-keywords
+```
+
+The optional bundle must contain Downfall as well as BaseLib and TheArchitect.
+`--downfall-keywords` selects mechanic assertions rather than the existing
+starter-card smoke scenario; combine it with one `--downfall-<character>` flag.
+Successful catalog serialization alone is not evidence that card effects or
+keywords were exercised.
+
+The keyword scenarios start both sides at 1000 HP and each corrupted turn at
+10 energy. Controlled probes check conditional effects, ownership, resource
+changes and pile transitions, then restore representative cards through the
+snapshot loader and draw/discard until every selected and generated playable
+card has played. `downfall-keywords.json` records assertions, card plays and
+explicit coverage gaps. Unplayable cards require non-play assertions rather than
+being counted as played. The fatal Bounty boundary lowers current human HP to
+one for the final killing blow; maximum HP remains 1000. Recording mode adds
+probe/result captions and pauses without changing ordinary gameplay.
 
 ### Linux dependencies and rendering tradeoffs
 

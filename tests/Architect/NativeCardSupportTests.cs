@@ -32,6 +32,34 @@ internal static class NativeCardSupportTests
             });
         }
 
+        test("native support: nonempty modifiers reach BaseLib's property-fill loader", () =>
+        {
+            using var document = JsonDocument.Parse("""
+                {"save_dict_List[BaseLib.Abstracts.CardModifier+ModifierSave]":
+                    {"BaseLibCardModifiers":[{"Id":"CARD_MODIFIER.PROBE","Amount":3}]}}
+                """);
+            var raw = document.RootElement;
+            var original = raw.GetRawText();
+            var saved = new SerializableCard();
+            var loaded = NativeCardSupport.ForNativeLoad(raw, saved);
+            check(ReferenceEquals(saved, loaded) && loaded.Props != null,
+                "A null Props would bypass BaseLib 3.4.5's modifier loader inserted at SavedProperties.Fill.");
+            check(raw.GetRawText() == original && !raw.TryGetProperty("props", out _),
+                "Normalize only the runtime load object, never the persisted source snapshot.");
+            var props = loaded.Props;
+            check(ReferenceEquals(props, NativeCardSupport.ForNativeLoad(raw, saved).Props),
+                "Repeated loads must preserve an existing property container.");
+        });
+        test("native support: empty modifiers do not fabricate saved properties", () =>
+        {
+            using var document = JsonDocument.Parse("""
+                {"save_dict_List[BaseLib.Abstracts.CardModifier+ModifierSave]":{"BaseLibCardModifiers":[]}}
+                """);
+            var saved = new SerializableCard();
+            check(NativeCardSupport.ForNativeLoad(document.RootElement, saved).Props == null,
+                "Cards without modifier payloads retain the vanilla null-property path.");
+        });
+
         foreach (var json in new[]
         {
             """{"unrecognized_extension":{"value":1}}""",

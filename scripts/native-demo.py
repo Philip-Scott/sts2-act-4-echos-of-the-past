@@ -19,6 +19,9 @@ import time
 ROOT = Path(__file__).resolve().parent.parent
 RUNS = ROOT / "artifacts/native-demo"
 CACHE_PATHS = ("cache/mesa_shader_cache", "xdg/SlayTheSpire2/shader_cache")
+DOWNFALL_SCENARIOS = tuple("downfall-" + name for name in (
+    "snecko", "slimeboss", "hermit", "hexaghost", "guardian", "champ", "awakened", "automaton"))
+MANUAL_PARTIES = ("party-1", "party-2", "party-3", "party-4", "downfall-party")
 
 
 def required_file(path):
@@ -70,6 +73,35 @@ def stop_child(process):
         except subprocess.TimeoutExpired:
             process.kill()
             process.wait()
+
+
+def recording_command(run, resolution):
+    return [tool("ffmpeg"), "-hide_banner", "-loglevel", "warning", "-n",
+            "-f", "x11grab", "-framerate", "30", "-video_size", resolution,
+            "-i", ":0", "-an", "-c:v", "libx264", "-preset", "ultrafast",
+            "-crf", "23", "-pix_fmt", "yuv420p", "-threads", "2",
+            "-movflags", "+faststart", str(run / "playtest.mp4")]
+
+
+def finish_recording(recorder, run):
+    try:
+        if recorder.poll() is None:
+            recorder.communicate(input=b"q\n", timeout=30)
+        if recorder.returncode != 0:
+            raise ValueError(f"Video recording failed; inspect {run}/recording.log.")
+        probe = subprocess.run(
+            [tool("ffprobe"), "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=width,height,nb_frames:format=duration",
+             "-of", "json", str(run / "playtest.mp4")],
+            check=True, capture_output=True, text=True, timeout=15)
+        video = json.loads(probe.stdout)
+        if (not video.get("streams") or
+                int(video["streams"][0].get("nb_frames", 0)) < 1 or
+                float(video.get("format", {}).get("duration", 0)) <= 0):
+            raise ValueError(f"Recording contains no video frames: {run}/playtest.mp4")
+        write_json(run / "recording.json", video)
+    finally:
+        stop_child(recorder)
 
 
 def seed_shader_cache(run, game, requested=None, cold=False):
@@ -154,14 +186,23 @@ def sandbox_command(game, run, xvfb, render_threads=4, shared_display=None, rend
 
 
 def launch(args):
-    if args.manual and (not args.shared_visible or args.scenario not in ("party-1", "party-2", "party-3", "party-4")):
-        raise ValueError("--manual requires --shared-visible and --party-1, --party-2, --party-3 or --party-4.")
+    if args.manual and (not args.shared_visible or args.scenario not in MANUAL_PARTIES):
+        raise ValueError("--manual requires --shared-visible and --party-1/2/3/4 or --downfall-party.")
+    if args.scenario == "downfall-party" and not args.manual:
+        raise ValueError("--downfall-party requires --manual and --shared-visible.")
     if args.scenario == "party-1" and not args.manual:
         raise ValueError("--party-1 requires --manual.")
     if args.layout_only and (args.manual or args.scenario not in ("party-2", "party-3", "party-4")):
         raise ValueError("--layout-only requires --party-2, --party-3 or --party-4 without --manual.")
+    if getattr(args, "downfall_keywords", False) and args.scenario not in DOWNFALL_SCENARIOS:
+        raise ValueError("--downfall-keywords requires a --downfall-<character> scenario.")
+    if getattr(args, "record", False):
+        if args.shared_visible:
+            raise ValueError("--record requires a private display; shared desktop recording is not allowed.")
+        tool("ffmpeg")
+        tool("ffprobe")
     game = required_file(Path(args.game) / "SlayTheSpire2").parent
-    requires_snapshot = args.scenario not in ("ancient", "saved-run", "relic-art", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption")
+    requires_snapshot = args.scenario not in DOWNFALL_SCENARIOS + ("downfall-party", "ancient", "saved-run", "relic-art", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption")
     if requires_snapshot and not os.environ.get("ARCHITECT_SNAPSHOT_INPUT"):
         raise ValueError("Set ARCHITECT_SNAPSHOT_INPUT to the captured snapshot to copy (never modified).")
     snapshot = required_file(os.environ["ARCHITECT_SNAPSHOT_INPUT"]) if (
@@ -190,12 +231,17 @@ def launch(args):
     required_file("/usr/share/glvnd/egl_vendor.d/50_mesa.json")
     mods = Path(os.environ.get("ARCHITECT_MODS_INPUT", ROOT / "artifacts/mods")).resolve()
     required_file(mods / "TheArchitect/TheArchitect.dll")
+    if args.scenario in DOWNFALL_SCENARIOS + ("downfall-party",):
+        for suffix in ("dll", "json", "pck"):
+            required_file(mods / f"Downfall/Downfall.{suffix}")
     RUNS.mkdir(parents=True, exist_ok=True)
     run = Path(tempfile.mkdtemp(prefix=f"run-{time.strftime('%Y%m%d-%H%M%S')}-{args.label}-",
                                dir=RUNS))
     metadata = {"id": run.name, "worktree": str(ROOT), "game": str(game),
                 "label": args.label, "scenario": args.scenario, "state": "preparing",
                 "manual": args.manual,
+                "record": getattr(args, "record", False),
+                "downfall_keywords": getattr(args, "downfall_keywords", False),
                 "layout_only": args.layout_only,
                 "render_threads": None if args.shared_visible else args.render_threads,
                 "display_mode": "shared-visible" if args.shared_visible else "virtual",
@@ -369,7 +415,8 @@ def serve(args):
                         os.urandom(16).hex()], check=True)
     elif os.environ.get("DISPLAY") != metadata["host_display"]:
         raise ValueError("Shared-visible display does not match its launch receipt.")
-    xvfb = game = None
+    xvfb = game = recorder = None
+    recording_log = None
     def interrupt(signum, _frame):
         raise SystemExit(128 + signum)
     signal.signal(signal.SIGTERM, interrupt)
@@ -404,6 +451,10 @@ def serve(args):
             command.append("--architect-native-party-manual")
         if metadata.get("layout_only"):
             command.append("--architect-native-party-layout")
+        if metadata.get("downfall_keywords"):
+            command.append("--architect-native-downfall-keywords")
+        if metadata.get("record"):
+            command.append("--architect-native-recording")
         game = subprocess.Popen(command, cwd=metadata["game"])
         metadata.update(state="running", display=metadata["host_display"] if shared_visible else ":0 (private namespace)",
                         game_pid=game.pid, display_pid=xvfb.pid if xvfb else None,
@@ -411,6 +462,13 @@ def serve(args):
                         namespaces={name: os.readlink(f"/proc/self/ns/{name}")
                                     for name in ("pid", "net", "ipc", "mnt")})
         write_json(run / "run.json", metadata)
+        if metadata.get("record"):
+            if shared_visible:
+                raise ValueError("Recording must use a private display.")
+            recording_log = (run / "recording.log").open("wb")
+            recorder = subprocess.Popen(recording_command(run, resolution),
+                                        stdin=subprocess.PIPE, stdout=recording_log,
+                                        stderr=subprocess.STDOUT)
         print(f"NATIVE INSTANCE {json.dumps(metadata)}", flush=True)
         with socket.socket(socket.AF_UNIX) as server:
             # Relative addresses avoid AF_UNIX's 108-byte limit in long worktree paths.
@@ -419,6 +477,8 @@ def serve(args):
             server.listen(4)
             server.settimeout(0.25)
             while game.poll() is None:
+                if recorder is not None and recorder.poll() is not None:
+                    raise ValueError(f"Video recorder exited before the game; inspect {run}/recording.log.")
                 if xvfb is not None and xvfb.poll() is not None:
                     raise ValueError("Private display exited; see display.log.")
                 try:
@@ -445,8 +505,14 @@ def serve(args):
         return game.returncode
     finally:
         stop_child(game)
-        stop_child(xvfb)
-        (run / "control.sock").unlink(missing_ok=True)
+        try:
+            if recorder is not None:
+                finish_recording(recorder, run)
+        finally:
+            if recording_log is not None:
+                recording_log.close()
+            stop_child(xvfb)
+            (run / "control.sock").unlink(missing_ok=True)
 
 
 def control(args):
@@ -489,9 +555,13 @@ def main():
     run.add_argument("--shared-visible", action="store_true",
                      help="Opt in to GPU windows on the shared desktop; no external input automation.")
     run.add_argument("--manual", action="store_true",
-                     help="Leave a shared-visible --party-1/2/3/4 fight open with GUI input enabled.")
+                     help="Leave a shared-visible --party-1/2/3/4 or --downfall-party fight open with GUI input enabled.")
     run.add_argument("--layout-only", action="store_true",
                      help="Check a --party-2/3/4 inspection layout and card hover, then exit without playing turns.")
+    run.add_argument("--downfall-keywords", action="store_true",
+                     help="Exercise keyword mechanics for the selected --downfall-<character> scenario.")
+    run.add_argument("--record", action="store_true",
+                     help="Record the private display to the run's playtest.mp4 (requires ffmpeg and ffprobe).")
     run.add_argument("--render-device", default="/dev/dri/renderD128",
                      help="Mesa GPU render node for --shared-visible (default: /dev/dri/renderD128).")
     run.add_argument("--render-threads", type=int, choices=range(1, 17), default=4,
@@ -500,7 +570,7 @@ def main():
     cache.add_argument("--cache-from", help="Copy shader caches from this completed run ID.")
     cache.add_argument("--cold", action="store_true", help="Do not seed shader caches from a completed run.")
     scenarios = run.add_mutually_exclusive_group()
-    for scenario in ("loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "previews", "media", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption"):
+    for scenario in DOWNFALL_SCENARIOS + ("downfall-party", "loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "previews", "media", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption"):
         scenarios.add_argument("--" + scenario, dest="scenario", action="store_const", const=scenario)
     run.set_defaults(scenario="default")
     for action in ("status", "capture", "stop", "pointer", "click", "key", "_serve"):

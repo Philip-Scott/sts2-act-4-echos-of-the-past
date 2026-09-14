@@ -17,6 +17,58 @@ SPEC.loader.exec_module(demo)
 
 
 class NativeDemoTests(unittest.TestCase):
+    def test_recording_rejects_shared_desktop_before_accessing_files(self):
+        with patch.object(demo, "required_file") as required:
+            with self.assertRaisesRegex(ValueError, "private display"):
+                demo.launch(SimpleNamespace(manual=False, layout_only=False, scenario="downfall-champ",
+                                            shared_visible=True, record=True))
+            required.assert_not_called()
+
+    def test_keyword_mode_requires_downfall_character(self):
+        with patch.object(demo, "required_file") as required:
+            with self.assertRaisesRegex(ValueError, "--downfall-keywords requires"):
+                demo.launch(SimpleNamespace(manual=False, layout_only=False, scenario="party",
+                                            downfall_keywords=True))
+            required.assert_not_called()
+
+    def test_recording_uses_only_private_display_and_run_output(self):
+        with patch.object(demo, "tool", side_effect=lambda name: "/usr/bin/" + name):
+            command = demo.recording_command(Path("/run-test"), "1280x720")
+        self.assertEqual(command[command.index("-i") + 1], ":0")
+        self.assertEqual(command[-1], "/run-test/playtest.mp4")
+        self.assertIn("-n", command)
+        self.assertEqual(command[command.index("-video_size") + 1], "1280x720")
+
+    def test_recording_finalizes_and_requires_real_frames(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            run = Path(temporary)
+            recorder = Mock(returncode=0)
+            recorder.poll.side_effect = [None, 0]
+            result = Mock(stdout=json.dumps({"streams": [{"width": 1280, "height": 720, "nb_frames": "90"}],
+                                            "format": {"duration": "3.0"}}))
+            with patch.object(demo, "tool", return_value="/usr/bin/ffprobe"), \
+                 patch.object(demo.subprocess, "run", return_value=result):
+                demo.finish_recording(recorder, run)
+            recorder.communicate.assert_called_once_with(input=b"q\n", timeout=30)
+            self.assertEqual(json.loads((run / "recording.json").read_text())["format"]["duration"], "3.0")
+            recorder.terminate.assert_not_called()
+            for output in ({"streams": [], "format": {"duration": "0"}},
+                           {"streams": [{"nb_frames": "0"}], "format": {"duration": "1"}}):
+                recorder = Mock(returncode=0)
+                recorder.poll.return_value = 0
+                with patch.object(demo, "tool", return_value="/usr/bin/ffprobe"), \
+                     patch.object(demo.subprocess, "run", return_value=Mock(stdout=json.dumps(output))):
+                    with self.assertRaisesRegex(ValueError, "no video frames"):
+                        demo.finish_recording(recorder, run)
+
+    def test_recording_failure_is_not_reported_as_success(self):
+        recorder = Mock(returncode=1)
+        recorder.poll.return_value = 1
+        with patch.object(demo.subprocess, "run") as probe:
+            with self.assertRaisesRegex(ValueError, "Video recording failed"):
+                demo.finish_recording(recorder, Path("/run-test"))
+            probe.assert_not_called()
+
     def test_manual_requires_visible_individual_party_before_accessing_files(self):
         for visible, scenario in ((False, "party-2"), (True, "party"), (True, "ancient")):
             with self.subTest(visible=visible, scenario=scenario), \
@@ -38,6 +90,14 @@ class NativeDemoTests(unittest.TestCase):
         with patch.object(demo, "required_file") as required:
             with self.assertRaisesRegex(ValueError, "--party-1 requires --manual"):
                 demo.launch(SimpleNamespace(manual=False, scenario="party-1"))
+            required.assert_not_called()
+
+    def test_downfall_party_requires_visible_manual_mode(self):
+        with patch.object(demo, "required_file") as required:
+            with self.assertRaisesRegex(ValueError, "--downfall-party requires"):
+                demo.launch(SimpleNamespace(manual=False, scenario="downfall-party"))
+            with self.assertRaisesRegex(ValueError, "--manual requires"):
+                demo.launch(SimpleNamespace(manual=True, shared_visible=False, scenario="downfall-party"))
             required.assert_not_called()
 
     def test_sandbox_has_private_devices_and_namespaces_and_no_host_display(self):
@@ -89,7 +149,7 @@ class NativeDemoTests(unittest.TestCase):
             run_save.write_text('{"saved_run":true}')
             (root / "scripts").mkdir()
             (root / "scripts/native-demo-settings.json").write_text("{}")
-            for mod in ("TheArchitect", "BaseLib"):
+            for mod in ("TheArchitect", "BaseLib", "Downfall"):
                 (mods / mod).mkdir(parents=True)
                 for suffix in ("dll", "json", "pck"):
                     (mods / mod / f"{mod}.{suffix}").write_text("original")
@@ -130,6 +190,26 @@ class NativeDemoTests(unittest.TestCase):
                     corruption_result = demo.launch(SimpleNamespace(game=str(game), label="corruption",
                         scenario="corruption", resolution="1280x720", cache_from=None, cold=True, manual=False, layout_only=False,
                         render_threads=4, shared_visible=False, render_device="/dev/dri/renderD128"))
+                    for scenario in demo.DOWNFALL_SCENARIOS:
+                        self.assertEqual(demo.launch(SimpleNamespace(game=str(game), label=scenario,
+                            scenario=scenario, resolution="1280x720", cache_from=None, cold=True, manual=False,
+                            layout_only=False, render_threads=4, shared_visible=False,
+                            render_device="/dev/dri/renderD128", record=True, downfall_keywords=True)), 0)
+                        downfall_run = next((root / "runs").glob(f"run-*-{scenario}-*"))
+                        self.assertFalse((downfall_run / "snapshot-input.json").exists())
+                        receipt = json.loads((downfall_run / "run.json").read_text())
+                        self.assertIsNone(receipt["snapshot_sha256"])
+                        self.assertIn("Downfall/Downfall.dll", receipt["mods"])
+                        self.assertTrue(receipt["record"])
+                        self.assertTrue(receipt["downfall_keywords"])
+                    (mods / "Downfall/Downfall.dll").unlink()
+                    run_count = len(list((root / "runs").iterdir()))
+                    with self.assertRaises(FileNotFoundError):
+                        demo.launch(SimpleNamespace(game=str(game), label="missing-downfall",
+                            scenario="downfall-champ", resolution="1280x720", cache_from=None, cold=True,
+                            manual=False, layout_only=False, render_threads=4, shared_visible=False,
+                            render_device="/dev/dri/renderD128"))
+                    self.assertEqual(len(list((root / "runs").iterdir())), run_count)
                     for size in (2, 3, 4):
                         scenario = f"party-{size}"
                         self.assertEqual(demo.launch(SimpleNamespace(game=str(game), label=scenario,

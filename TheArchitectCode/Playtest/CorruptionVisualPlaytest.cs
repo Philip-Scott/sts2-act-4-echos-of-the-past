@@ -27,9 +27,9 @@ namespace TheArchitect.TheArchitectCode.Playtest;
 internal static class CorruptionVisualPlaytest
 {
     private sealed record NativeMaterial(CanvasItem Node, Material? Material, bool UseParentMaterial);
-    private sealed record NativeBody(Node2D Body, Node? Owner, NativeMaterial[] Materials);
+    private sealed record NativeBody(Node2D Body, Node Parent, Node? Owner, bool NativeCompositor, NativeMaterial[] Materials);
     private static readonly ConditionalWeakTable<NCreatureVisuals, NativeBody[]> NativeBodies = new();
-    internal static bool RecordingNativeVisuals { get; private set; }
+    internal static bool RecordingNativeVisuals { get; set; }
 
     internal static async Task Run(NGame game)
     {
@@ -96,7 +96,10 @@ internal static class CorruptionVisualPlaytest
             $"{label}: animated bindings reuse their stroke geometry on idle frames");
         actor.AssertIdentity();
         if (character is Ironclad)
+        {
+            AssertHueMaterialContract(node.Visuals);
             await AssertCompositorModulation(game, Find<CanvasGroup>(node.Visuals, "BoundEchoBody"));
+        }
 
         var normalMaterial = humanNode.Body.Material;
         var normalModulate = humanNode.Body.Modulate;
@@ -190,7 +193,8 @@ internal static class CorruptionVisualPlaytest
         foreach (var scale in new[] { 0.75f, 1.25f, 1f })
         {
             node.ScaleTo(scale, 0.25);
-            await Task.Delay(350);
+            await WaitFor(() => node.Visuals.Scale.IsEqualApprox(Vector2.One * scale * node.Visuals.DefaultScale),
+                $"{label} native ScaleTo({scale})");
             Require(node.Visuals.Scale.IsEqualApprox(Vector2.One * scale * node.Visuals.DefaultScale),
                 $"{label}: native ScaleTo({scale}) completes with the corruption effect attached");
             AssertIsolation(node, humanNode, label);
@@ -315,7 +319,8 @@ internal static class CorruptionVisualPlaytest
     {
         var bodies = new[] { visuals.GetNode<Node2D>("%Visuals"),
             visuals.GetNodeOrNull<Node2D>("%PhobiaModeVisuals") }.OfType<Node2D>();
-        NativeBodies.Add(visuals, bodies.Select(body => new NativeBody(body, body.Owner,
+        NativeBodies.Add(visuals, bodies.Select(body => new NativeBody(body, body.GetParent(), body.Owner,
+            CorruptedPlayerCorruption.ContainsCanvasGroup(body),
             new Node[] { body }.Concat(Descendants(body)).OfType<CanvasItem>()
                 .Select(item => new NativeMaterial(item, item.Material, item.UseParentMaterial)).ToArray())).ToArray());
     }
@@ -326,11 +331,89 @@ internal static class CorruptionVisualPlaytest
             "production visuals were observed before corruption attachment");
         foreach (var native in bodies!)
         {
-            Require(native.Body.GetParent() is CanvasGroup && native.Body.Owner == native.Owner &&
+            Require((native.NativeCompositor ? native.Body.GetParent() == native.Parent :
+                    native.Body.GetParent() is CanvasGroup) && native.Body.Owner == native.Owner &&
                 native.Materials.All(entry => entry.Node.Material == entry.Material &&
                     entry.Node.UseParentMaterial == entry.UseParentMaterial),
                 $"production attachment retained {native.Body.Name}, its scene owner and all {native.Materials.Length} native body materials");
         }
+    }
+
+    internal static void AssertHueMaterialContract(NCreatureVisuals visuals)
+    {
+        var spine = visuals.SpineBody
+            ?? throw new InvalidOperationException("Hue material probe requires native Spine visuals.");
+        var original = spine.GetNormalMaterial();
+        var scale = visuals.DefaultScale;
+        using var canvas = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.PremultAlpha };
+        using var customShader = new Shader
+        {
+            Code = "shader_type canvas_item; uniform float spin_speed = 0.6; void fragment() { COLOR.r *= spin_speed; }"
+        };
+        using var custom = new ShaderMaterial { Shader = customShader };
+        using var hueShader = new Shader
+        {
+            Code = "shader_type canvas_item; uniform float h = 0.0; void fragment() { COLOR.r += h; }"
+        };
+        using var hue = new ShaderMaterial { Shader = hueShader };
+        custom.SetShaderParameter("spin_speed", 0.6f);
+        hue.SetShaderParameter("h", 0f);
+        try
+        {
+            foreach (var material in new Material[] { canvas, custom, hue })
+            {
+                spine.SetNormalMaterial(material);
+                visuals.SetScaleAndHue(0.87f, 0.12f);
+                Require(spine.GetNormalMaterial() == material &&
+                    Mathf.IsEqualApprox(visuals.DefaultScale, 0.87f) &&
+                    visuals.Scale.IsEqualApprox(Vector2.One * 0.87f),
+                    $"native scale/hue preserves {material.GetType().Name} and still applies scale");
+            }
+            var actualHue = hue.GetShaderParameter("h").AsSingle();
+            var actualSpin = custom.GetShaderParameter("spin_speed").AsSingle();
+            Require(Mathf.IsEqualApprox(actualHue, 0.12f), $"supported hue remains native ({actualHue})");
+            Require(Mathf.IsEqualApprox(actualSpin, 0.6f) && CorruptedPlayerCorruption.SupportsNativeHue(null),
+                $"unrelated custom uniforms ({actualSpin}) and null-material support survive");
+        }
+        finally
+        {
+            spine.SetNormalMaterial(original!);
+            visuals.SetScaleAndHue(scale, 0f);
+        }
+    }
+
+    internal static async Task AssertNativeCompositor(NGame game, NCreature node)
+    {
+        var body = node.Visuals.GetNode<Node2D>("%Visuals");
+        Require(CorruptedPlayerCorruption.ContainsCanvasGroup(body) && body.GetParent() == node.Visuals &&
+            !Descendants(node.Visuals).Any(child => child.Name == "BoundEchoBody") &&
+            Find<Node2D>(node.Visuals, "BoundEchoBack").GetParent() == body.GetParent() &&
+            Find<Node2D>(node.Visuals, "BoundEchoFront").GetParent() == body.GetParent(),
+            "native compositor stays unwrapped with independent corruption bindings");
+        var smoke = Descendants(body).OfType<MeshInstance2D>().ToArray();
+        Require(smoke.Length == 3 && smoke.All(mesh => mesh.Material is ShaderMaterial material &&
+                material.Shader.GetShaderUniformList().Any(uniform => uniform.AsGodotDictionary()["name"].AsString() == "spin_speed")),
+            "all three native smoke meshes retain their custom animated shader materials");
+        await game.AwaitProcessFrame();
+        await game.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        using var image = game.GetViewport().GetTexture().GetImage();
+        var bounds = node.Visuals.GetNode<Control>("%Bounds");
+        var pixelScale = new Vector2(image.GetWidth(), image.GetHeight()) / game.GetViewport().GetVisibleRect().Size;
+        var white = 0;
+        var sampled = 0;
+        for (var y = 0.1f; y < 0.9f; y += 0.025f)
+        for (var x = 0.1f; x < 0.9f; x += 0.025f)
+        {
+            var pixel = bounds.GetGlobalTransformWithCanvas() * (bounds.Size * new Vector2(x, y)) * pixelScale;
+            if (pixel.X < 0 || pixel.Y < 0 || pixel.X >= image.GetWidth() || pixel.Y >= image.GetHeight())
+                continue;
+            var color = image.GetPixel((int)pixel.X, (int)pixel.Y);
+            sampled++;
+            if (color.R > 0.95f && color.G > 0.95f && color.B > 0.95f)
+                white++;
+        }
+        Require(sampled > 100 && white < sampled / 10,
+            $"native compositor capture has no opaque white rectangle ({white}/{sampled} white samples)");
     }
 
     internal static async Task AssertCachedUpdates(NGame game, NCreature node)

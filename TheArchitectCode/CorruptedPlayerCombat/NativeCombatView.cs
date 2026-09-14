@@ -1,6 +1,7 @@
 using System.Reflection;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
@@ -118,8 +119,37 @@ internal static class NativeCombatCallSites
         AccessTools.PropertyGetter(typeof(Creature), nameof(Creature.IsPlayer));
     private static readonly MethodInfo MultiplayerConstraintGetter =
         AccessTools.PropertyGetter(typeof(IRunState), nameof(IRunState.CardMultiplayerConstraint));
+    private static readonly MethodInfo LocalPlayerGetter = AccessTools.Method(
+        typeof(MegaCrit.Sts2.Core.Context.LocalContext), nameof(MegaCrit.Sts2.Core.Context.LocalContext.GetMe),
+        [typeof(IPlayerCollection)]);
     private static readonly Dictionary<MethodInfo, MethodInfo> Replacements = new()
     {
+        [AccessTools.PropertyGetter(typeof(CombatState), nameof(CombatState.Players))] =
+            AccessTools.Method(typeof(NativeCombatRoster), nameof(NativeCombatRoster.Players)),
+        [AccessTools.PropertyGetter(typeof(ICombatState), nameof(ICombatState.Players))] =
+            AccessTools.Method(typeof(NativeCombatRoster), nameof(NativeCombatRoster.Players)),
+        [AccessTools.PropertyGetter(typeof(CombatState), nameof(CombatState.PlayerCreatures))] =
+            AccessTools.Method(typeof(NativeCombatRoster), nameof(NativeCombatRoster.PlayerCreatures)),
+        [AccessTools.PropertyGetter(typeof(ICombatState), nameof(ICombatState.PlayerCreatures))] =
+            AccessTools.Method(typeof(NativeCombatRoster), nameof(NativeCombatRoster.PlayerCreatures)),
+        [AccessTools.Method(typeof(AbstractModel), "MutableClone")] =
+            AccessTools.Method(typeof(NativeCardCloning), nameof(NativeCardCloning.MutableClone)),
+        [AccessTools.Method(typeof(CardModel), nameof(CardModel.ToMutable))] =
+            AccessTools.Method(typeof(NativeCardCloning), nameof(NativeCardCloning.ToMutable)),
+        [AccessTools.Method(typeof(CardModel), nameof(CardModel.ToSerializable))] =
+            AccessTools.Method(typeof(NativeCardSerialization), nameof(NativeCardSerialization.ToSerializable)),
+        [AccessTools.Method(typeof(AbstractModel), nameof(AbstractModel.ClonePreservingMutability))] =
+            AccessTools.Method(typeof(NativeCardCloning), nameof(NativeCardCloning.ClonePreservingMutability)),
+        [AccessTools.Method(typeof(CardPile), nameof(CardPile.Get), [typeof(PileType), typeof(Player)])] =
+            AccessTools.Method(typeof(NativeCombatCallSites), nameof(Pile)),
+        [AccessTools.Method(typeof(PileTypeExtensions), nameof(PileTypeExtensions.GetPile))] =
+            AccessTools.Method(typeof(NativeCombatCallSites), nameof(Pile)),
+        [KeywordMethod("GetLocKeyPrefix")] =
+            AccessTools.Method(typeof(NativeCombatCallSites), nameof(KeywordPrefix)),
+        [KeywordMethod("GetTitle")] =
+            AccessTools.Method(typeof(NativeCombatCallSites), nameof(KeywordTitle)),
+        [KeywordMethod("GetDescription")] =
+            AccessTools.Method(typeof(NativeCombatCallSites), nameof(KeywordDescription)),
         [AccessTools.Method(typeof(MultiplayerScalingModel), nameof(MultiplayerScalingModel.GetMultiplayerScaling))] =
             AccessTools.Method(typeof(ArchitectMultiplayerScaling), nameof(ArchitectMultiplayerScaling.GetScaling)),
         [AccessTools.PropertyGetter(typeof(CardModel), nameof(CardModel.CombatState))] =
@@ -147,6 +177,9 @@ internal static class NativeCombatCallSites
     private static MethodInfo? Replacement(MethodInfo called, Type? declaringType)
     {
         var cardEffect = IsCardEffect(declaringType);
+        if (called == LocalPlayerGetter && declaringType?.DeclaringType == typeof(MegaCrit.Sts2.Core.Commands.PlayerCmd) &&
+            declaringType.Name.StartsWith("<GainGold>", StringComparison.Ordinal))
+            return AccessTools.Method(typeof(NativeCombatCallSites), nameof(GoldFeedbackPlayer));
         if (called == IsPlayerGetter &&
             (cardEffect || IsCoopAllyPower(declaringType) ||
              IsCardCommand(declaringType)))
@@ -155,12 +188,44 @@ internal static class NativeCombatCallSites
             return AccessTools.Method(typeof(NativeCombatCallSites), nameof(CardMultiplayerConstraint));
         if (Replacements.TryGetValue(called, out var replacement))
             return replacement;
+        if (NativeDownfallSupport.Replacement(called, declaringType) is { } downfall)
+            return downfall;
         if (cardEffect && CorruptedPlayerAttackVfx.Replacement(called) is { } visual)
             return visual;
         return called.IsGenericMethod && called.GetGenericMethodDefinition() == AddPet
             ? AccessTools.Method(typeof(NativePetFactory), nameof(NativePetFactory.AddPet)).MakeGenericMethod(called.GetGenericArguments())
             : null;
     }
+
+    private static Player? GoldFeedbackPlayer(IPlayerCollection? collection)
+    {
+        // Native gold rewards still run their hooks and mutate their private player;
+        // only the local-player sound lookup has no meaning in an actor-only run.
+        if (collection is IRunState run && run.Players.Count > 0 &&
+            run.Players.All(player => NativeCorruptedPlayer.TryGet(player, out _)))
+            return null;
+        return MegaCrit.Sts2.Core.Context.LocalContext.GetMe(collection);
+    }
+
+    private static MethodInfo KeywordMethod(string name) => AccessTools.Method(
+        typeof(CardKeyword).Assembly.GetType("MegaCrit.Sts2.Core.Entities.Cards.CardKeywordExtensions", true), name);
+
+    // Native pile wrappers can inline CardPile.Get before BaseLib installs its custom-pile detour.
+    private static CardPile? Pile(PileType type, Player player) =>
+        player.PlayerCombatState is { } state &&
+        BaseLib.Patches.Content.CustomPiles.GetCustomPile(state, type) is { } custom
+            ? custom : CardPile.Get(type, player);
+
+    // BaseLib's prefix detour can be inlined away in the game's keyword text callers.
+    private static string KeywordPrefix(CardKeyword keyword) =>
+        BaseLib.Patches.Content.CustomKeywords.KeywordIDs.TryGetValue((int)keyword, out var info)
+            ? info.Key : MegaCrit.Sts2.Core.Helpers.StringHelper.Slugify(keyword.ToString());
+
+    private static MegaCrit.Sts2.Core.Localization.LocString KeywordTitle(CardKeyword keyword) =>
+        new("card_keywords", KeywordPrefix(keyword) + ".title");
+
+    private static MegaCrit.Sts2.Core.Localization.LocString KeywordDescription(CardKeyword keyword) =>
+        new("card_keywords", KeywordPrefix(keyword) + ".description");
 
     internal static void Install(Harmony harmony)
     {
@@ -188,6 +253,7 @@ internal static class NativeCombatCallSites
             assembly.GetReferencedAssemblies().Any(reference =>
                 reference.Name == typeof(CardModel).Assembly.GetName().Name)))
         {
+            NativeDownfallSupport.Install(assembly, harmony);
             var patched = 0;
             foreach (var type in assembly.GetTypes().Where(IsModelEffect))
                 patched += PatchType(harmony, type);

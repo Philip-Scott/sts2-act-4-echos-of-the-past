@@ -33,6 +33,7 @@ public sealed class NativeCorruptedPlayer
     public bool Executing { get; private set; }
     public bool Cleaned { get; private set; }
     internal bool HandPrepared { get; private set; }
+    internal bool DownfallInitialized { get; }
     public IReadOnlyList<CardModel> Cards { get; }
     public event Action? Changed;
     internal event Action? TurnStarting;
@@ -47,6 +48,7 @@ public sealed class NativeCorruptedPlayer
     private readonly int _threadId = Environment.CurrentManagedThreadId;
     private bool _endTurnRequested;
     internal event Action<CardModel>? CardPlayed;
+    internal Func<CardModel, Task>? CardPlaybackPause { get; set; }
 
     public NativeCorruptedPlayer(Creature body, CharacterModel character, IReadOnlyList<JsonElement> deck, string seed,
         Creature? counterpart = null)
@@ -94,6 +96,7 @@ public sealed class NativeCorruptedPlayer
         }
         Player.ResetCombatState();
         Player.PopulateCombatState(run.Rng.Shuffle, combat);
+        DownfallInitialized = NativeDownfallSupport.Initialize(this);
         Cards = State.DrawPile.Cards.ToArray();
         for (var i = 0; i < Cards.Count; i++)
             _cardIds.Add(Cards[i], $"snapshot:{i}");
@@ -233,6 +236,8 @@ public sealed class NativeCorruptedPlayer
                 Trace($"played:{next.Id.Entry}");
                 CardPlayed?.Invoke(next);
                 Changed?.Invoke();
+                if (CardPlaybackPause is { } pause)
+                    await pause(next);
             }
             foreach (var (card, reason) in _reasons.Where(entry => entry.Key.Pile == State.Hand))
                 MainFile.Logger.Info($"NATIVE unplayed {card.Id}: {reason}");
@@ -307,6 +312,13 @@ public sealed class NativeCorruptedPlayer
         Changed?.Invoke();
     }
 
+    internal Task FinishModTurn() =>
+        CanAct && State.Phase == PlayerTurnPhase.End
+            ? NativeDownfallSupport.AfterTurn(this, _context)
+            : Task.CompletedTask;
+
+    internal Task RunOwnedChoice(Func<PlayerChoiceContext, Task> action) => action(_context);
+
     public void Cleanup()
     {
         if (Cleaned)
@@ -318,6 +330,7 @@ public sealed class NativeCorruptedPlayer
         if (Executing)
             return;
         Cleaned = true;
+        NativeDownfallSupport.Cleanup(this);
         HandPrepared = false;
         State.Phase = PlayerTurnPhase.None;
         State.AfterCombatEnd();
@@ -325,6 +338,7 @@ public sealed class NativeCorruptedPlayer
         TurnStarting = null;
         TurnFinished = null;
         CardPlayed = null;
+        CardPlaybackPause = null;
         MainFile.Logger.Info("NATIVE actor cleaned up");
     }
 
@@ -340,7 +354,8 @@ public sealed class NativeCorruptedPlayer
     internal void RequestEndTurn() => _endTurnRequested = true;
 
     internal string? UnsupportedReason(CardModel card) =>
-        _unsupported.GetValueOrDefault(card.DeckVersion ?? card);
+        _unsupported.GetValueOrDefault(card.DeckVersion ?? card) ??
+        NativeDownfallSupport.UnsupportedReason(Player, card);
 
     internal static bool IncludeHook(AbstractModel model)
     {
@@ -453,8 +468,31 @@ internal static class NativeCorruptedPlayerParticipantPatch
 internal static class NativeCorruptedPlayerMonsterHooksPatch
 {
     private static void Postfix(CombatState __instance, ref IEnumerable<AbstractModel> __result) =>
-        __result = __result.Where(NativeCorruptedPlayer.IncludeHook)
-            .Concat(NativeCorruptedPlayer.In(__instance).Select(actor => actor.Body.Monster!));
+        __result = WithActors(__result.Where(NativeCorruptedPlayer.IncludeHook), __instance);
+
+    private static IEnumerable<AbstractModel> WithActors(IEnumerable<AbstractModel> original, CombatState combat)
+    {
+        var seen = new HashSet<AbstractModel>();
+        foreach (var model in original)
+        {
+            seen.Add(model);
+            yield return model;
+        }
+        foreach (var actor in NativeCorruptedPlayer.In(combat).Where(actor => !actor.Cleaned))
+        {
+            if (seen.Add(actor.Body.Monster!))
+                yield return actor.Body.Monster!;
+            foreach (var model in NativeDownfallSupport.HookListeners(actor))
+                if (seen.Add(model))
+                    yield return model;
+            // BaseLib discovers modifier listeners only through real combat players.
+            foreach (var modifier in actor.State.AllPiles.SelectMany(pile => pile.Cards)
+                         .SelectMany(BaseLib.Abstracts.CardModifier.Modifiers)
+                         .Where(NativeCorruptedPlayer.IncludeHook))
+                if (seen.Add(modifier))
+                    yield return modifier;
+        }
+    }
 }
 
 [HarmonyPatch(typeof(Hook), nameof(Hook.AfterDamageGiven))]

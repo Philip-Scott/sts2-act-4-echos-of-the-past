@@ -139,6 +139,17 @@ formats remain visibly **Unsupported**; the original saved JSON is preserved.
 Missing saved models block entry with an actionable error rather than silently
 dropping cards. This is not a claim that every vanilla card combination has been
 audited. See [native Corrupted Player behavior and boundaries](TheArchitectCode/CorruptedPlayerCombat/README.md).
+
+**Optional Downfall support:** when Downfall **0.1.16** is already loaded, an
+actor-scoped adapter initializes ghostwheels, spellbooks, and Slime Boss slots,
+includes ghostflame/stance combat hooks, and advances corrupted ghostwheels on
+their own turns. Ghostflame targeting/choices and slime creation retain enemy
+ownership and private RNG. The adapter neither enrolls enemies in the human party
+nor grants starter relics. Downfall is not required, bundled, or referenced by the
+build. Unverified Downfall versions/API layouts are logged and their corrupted
+cards/effects are explicitly marked **Unsupported**, rather than guessing at
+changed internals. This is not blanket coverage of every Downfall card or UI.
+
 The vanilla post-Act 3 dialogue and attack sequence now plays after **either**
 Architect outcome. After the Architect's final attack, the whole party is bound
 and gradually takes on the Bound Echo corruption effect instead of playing the
@@ -202,6 +213,38 @@ captures, and reject external mouse/keyboard commands. Desktop focus is still
 shared; see the native Corrupted Player README for the tradeoff and measured timings.
 **Changing XDG_DATA_HOME alone
 does not isolate Steam Cloud or real saves.**
+
+Downfall integration probes use the installed mod's real models rather than synthetic
+cards. Build to a separate bundle with
+`scripts/build.sh --mods-path artifacts/downfall-mods`, then copy the installed
+`BaseLib` and `Downfall` DLL/JSON/PCK files into matching subdirectories of that
+bundle. Set `ARCHITECT_MODS_INPUT` to its absolute path and run, for example,
+`bash scripts/native-demo.sh run "/path/to/Slay the Spire 2" --downfall-champ`.
+The independent scenarios are `--downfall-snecko`, `--downfall-slimeboss`,
+`--downfall-hermit`, `--downfall-hexaghost`, `--downfall-guardian`,
+`--downfall-champ`, `--downfall-awakened`, and `--downfall-automaton`.
+They need no saved snapshot, do not install anything into the live game, and fail
+explicitly if a requested character or required mod is unavailable.
+Each scenario checks its registered card catalog's snapshot round trips, three
+ordinary Corrupted Player starter-deck turns without relics, human RNG isolation,
+and controlled normal/upgraded attack and Block effects, ownership, and energy.
+Snecko additionally covers the Overflow hand-size boundary; Slime Boss covers
+Goop application, bonus damage, consumption, owned slime pets and their automatic
+commands. Champ covers stance listeners and its Defensive finisher. Hexaghost
+covers initialized Float, forced/natural ignition, opposing targets, and enemy-turn
+advancement including Inferno wraparound, instead of treating its flame-augmented
+attacks as plain Strikes. Every character checks private resource initialization
+and preservation of the human's custom state. Runs use disposable Instant
+animation preferences and a longer turn deadline for software rendering.
+Catalog serialization is **not** evidence that every card's effect works.
+Run receipts record the exact mod-file hashes; logs and captures remain under
+`artifacts/native-demo/<run-id>/`.
+
+For a visible, interactive four-enemy Downfall showcase, use
+`--downfall-party --manual --shared-visible` with that same mod bundle.
+Hexaghost, Awakened, Slime Boss, and Champ each have a five-card deck featuring
+ghostflames/Soulburn, Conjure/Chant, Goop/Consume/Tackle/slimes, or stances/Finishers,
+respectively. The disposable fight opens on the human turn without automated plays.
 
 The ending scenario needs no snapshot input:
 `bash scripts/native-demo.sh run "/path/to/Slay the Spire 2" --ending`.

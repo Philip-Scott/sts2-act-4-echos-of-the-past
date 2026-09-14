@@ -81,6 +81,17 @@ internal static class NativeDemoPlaytest
             game.AddChild(new NativeDemoObserver());
         }
         await Task.Delay(2000);
+        if (CommandLineHelper.HasArg("architect-native-downfall-party"))
+        {
+            await NativePartyPlaytest.Run(game, partySize: 4,
+                manual: CommandLineHelper.HasArg("architect-native-party-manual"), downfall: true);
+            return;
+        }
+        if (NativeDownfallPlaytest.RequestedCharacter is { } downfallCharacter)
+        {
+            await NativeDownfallPlaytest.Run(game, downfallCharacter);
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-native-ending"))
         {
             await ArchitectEndingPlaytest.Run(game);
@@ -462,20 +473,21 @@ internal static class NativeDemoPlaytest
         JsonSerializationUtility.GetTypeInfo<SerializableRunRngSet>());
     internal static string AllRng(Player player) => RngSnapshot(player) +
         JsonSerializer.Serialize(player.PlayerRng.ToSerializable(), new JsonSerializerOptions { IncludeFields = true });
-    internal static Task PlayerTurn(Player player, int turn) => WaitFor(() =>
+    internal static Task PlayerTurn(Player player, int turn, int timeoutSeconds = 60) => WaitFor(() =>
         player.PlayerCombatState is { Phase: PlayerTurnPhase.Play } state && state.TurnNumber == turn &&
         CombatManager.Instance.IsPartOfPlayerTurn(player) && !CombatManager.Instance.IsStarting &&
         player.Creature.CombatState is { CurrentSide: CombatSide.Player } combat &&
-        NativeCorruptedPlayer.In(combat).All(actor => actor.State.Phase == PlayerTurnPhase.None && actor.HandPrepared));
+        NativeCorruptedPlayer.In(combat).All(actor => actor.State.Phase == PlayerTurnPhase.None && actor.HandPrepared),
+        timeoutSeconds);
     private static void Require(bool condition, string description)
     {
         if (!condition)
             throw new InvalidOperationException("NATIVE ASSERTION FAILED: " + description);
         MainFile.Logger.Info("NATIVE ASSERT: " + description);
     }
-    private static async Task WaitFor(Func<bool> condition)
+    private static async Task WaitFor(Func<bool> condition, int timeoutSeconds = 60)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(60);
+        var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
         while (!condition())
         {
             if (DateTime.UtcNow > deadline)

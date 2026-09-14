@@ -10,8 +10,20 @@ internal static class NativeCardSupport
 {
     // Preserve raw extension data in the snapshot, but don't run its deserializers
     // while restoring a card that has already been excluded from native execution.
-    internal static SerializableCard ForNativeLoad(JsonElement raw, SerializableCard saved) =>
-        SavedReason(raw) == null ? saved : new SerializableCard
+    internal static SerializableCard ForNativeLoad(JsonElement raw, SerializableCard saved)
+    {
+        if (SavedReason(raw) == null)
+        {
+            // BaseLib 3.4.5 inserts its modifier loader at SavedProperties.Fill.
+            // Vanilla's null-conditional skips that hook on cards without saved properties.
+            if (raw.TryGetProperty("save_dict_List[BaseLib.Abstracts.CardModifier+ModifierSave]", out var extension) &&
+                extension.ValueKind == JsonValueKind.Object &&
+                extension.TryGetProperty("BaseLibCardModifiers", out var modifiers) &&
+                modifiers.ValueKind == JsonValueKind.Array && modifiers.GetArrayLength() > 0)
+                saved.Props ??= new();
+            return saved;
+        }
+        return new SerializableCard
         {
             Id = saved.Id,
             CurrentUpgradeLevel = saved.CurrentUpgradeLevel,
@@ -19,6 +31,7 @@ internal static class NativeCardSupport
             Props = saved.Props,
             FloorAddedToDeck = saved.FloorAddedToDeck
         };
+    }
 
     internal static string? SavedReason(JsonElement raw)
     {

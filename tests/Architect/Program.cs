@@ -180,6 +180,7 @@ UnwrittenBonusTests.Run(Test);
 HistoryIconTests.Run(Test);
 HandheldMirrorTests.Run(Test, Check);
 NativeCardSupportTests.Run(Test, Check);
+NativeDownfallApiTests.Run(Test, Check);
 CorruptedPartyTests.Run(Test, Check);
 CorruptedEnemyUiTests.Run(Test, Check);
 InvincibleCounterTests.Run(Test, Check);
