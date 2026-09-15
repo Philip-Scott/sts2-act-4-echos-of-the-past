@@ -34,6 +34,7 @@ internal static class WatcherTooltipPlaytest
     {
         Require(NativeDemoSafety.Enabled && !NativeDemoSafety.SharedVisible,
             "Focused tooltip rendering requires the private isolated launcher.");
+        WatcherPowerIconPlaytest.CheckFallbacks();
         await Task.Delay(5000);
         var player = Player.CreateForNewRun<Ironclad>(UnlockState.all, 1);
         var run = RunState.CreateForNewRun([player],
@@ -98,6 +99,7 @@ internal static class WatcherTooltipPlaytest
                 Require(tip.Description == expected, $"{tip.Title} active power shares the exact tooltip wording.");
                 MainFile.Logger.Info($"WATCHER TOOLTIP POWER ICON: {power.Id} path={power.PackedIconPath}, " +
                     $"resource={tip.Icon?.ResourcePath}, big={power.CustomBigIconPath}, beta={power.CustomBigBetaIconPath}");
+                WatcherPowerIconPlaytest.CheckPower(power, tip.Icon);
                 await Render(power.HoverTips.ToArray(), $"watcher-tooltip-power-{tip.Title!.ToLowerInvariant()}", null, calmText);
             }
             finally

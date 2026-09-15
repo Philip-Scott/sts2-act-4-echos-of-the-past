@@ -1,13 +1,29 @@
 using System.Buffers.Binary;
 using System.Reflection;
 using System.Xml.Linq;
+using BaseLib.Abstracts;
 using MegaCrit.Sts2.Core.Models;
 using TheArchitect.TheArchitectCode.Enchantments;
+using TheArchitect.TheArchitectCode.Powers;
 
 internal static class EnchantmentIconTests
 {
     internal static void Run(Action<string, Action> test)
     {
+        test("Watcher power art: packed and inspection paths use matching original stance icons", () =>
+        {
+            foreach (var (type, slug) in new[]
+                { (typeof(WrathStancePower), "wrath"), (typeof(CalmStancePower), "calm") })
+            {
+                if (ModelDb.GetByIdOrNull<PowerModel>(ModelDb.GetId(type)) == null)
+                    ModelDb.Inject(type);
+                var power = (CustomPowerModel)ModelDb.GetById<PowerModel>(ModelDb.GetId(type));
+                Check(power.CustomPackedIconPath == $"res://TheArchitect/images/enchantments/{slug}.png",
+                    $"{slug}: packed power icon");
+                Check(power.CustomBigIconPath == $"res://TheArchitect/images/enchantments/big/{slug}.png",
+                    $"{slug}: large power icon");
+            }
+        });
         test("Watcher enchantment art: distinct native-sized RGBA assets and editable sources", () =>
         {
             var root = new DirectoryInfo(AppContext.BaseDirectory);

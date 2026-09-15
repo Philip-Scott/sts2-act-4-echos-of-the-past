@@ -112,6 +112,10 @@ editable sources are `TheArchitect/images/enchantments/{wrath,calm}.svg`; regene
 each PNG with `magick -background none -density 768 <source.svg> -resize 64x64 -strip PNG32:<output.png>`.
 Matching 256x256 inspection textures live in `images/enchantments/big`; rasterize the
 same sources at density 1536 and resize to 256x256 for those variants.
+Stance powers share this artwork. Two retained Godot texture aliases cover their
+exact mod-owned native atlas paths when native getters bypass BaseLib's custom-path
+patches; vanilla power resources are unchanged. The `--stance-tooltips` scenario
+compares fallback and actual power-tip pixels against the original textures.
 The private `scripts/native-demo.sh run "/path/to/Slay the Spire 2" --enchantment-art --resolution 1920x1080`
 scenario verifies packed textures and restored-deck/hand card markers beside native enchantments.
 Mirror can copy owned relic types, including modded relics, by default.

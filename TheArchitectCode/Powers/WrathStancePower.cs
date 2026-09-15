@@ -14,8 +14,8 @@ public sealed class WrathStancePower : CustomPowerModel
 {
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Single;
-    public override string CustomPackedIconPath => "res://TheArchitect/images/relics/violet_lotus.png";
-    public override string CustomBigIconPath => "res://TheArchitect/images/relics/big/violet_lotus.png";
+    public override string CustomPackedIconPath => "res://TheArchitect/images/enchantments/wrath.png";
+    public override string CustomBigIconPath => "res://TheArchitect/images/enchantments/big/wrath.png";
 
     public override Task AfterApplied(Creature? applier, CardModel? cardSource)
     {
