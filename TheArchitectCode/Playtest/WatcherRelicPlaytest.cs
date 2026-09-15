@@ -14,6 +14,7 @@ using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Nodes.Relics;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
 using MegaCrit.Sts2.Core.ValueProps;
 using TheArchitect.TheArchitectCode.Enchantments;
@@ -25,6 +26,52 @@ namespace TheArchitect.TheArchitectCode.Playtest;
 internal static class WatcherRelicPlaytest
 {
     private static ICombatState? _openingScryCombat;
+
+    internal static async Task CheckEggCounterDisplay(Player player)
+    {
+        Require(NativeDemoSafety.Enabled, "Egg counter display probe requires disposable storage.");
+        var egg = (NurembergEgg)ModelDb.GetById<RelicModel>(
+            new ModelId("RELIC", "THEARCHITECT-NUREMBERG_EGG")).ToMutable();
+        egg.Owner = player;
+        var holder = NRelicInventoryHolder.Create(egg) ??
+            throw new InvalidOperationException("Cannot create the native Egg inventory holder.");
+        NGame.Instance!.AddChild(holder);
+        try
+        {
+            holder.Position = new Vector2(450, 270);
+            holder.Scale = Vector2.One * 2;
+            await NGame.Instance.AwaitProcessFrame();
+            var counter = (Control)AccessTools.Field(typeof(NRelicInventoryHolder), "_amountLabel").GetValue(holder)!;
+            await egg.BeforeCombatStart();
+            var card = ModelDb.Card<DefendIronclad>().ToMutable();
+            card.Owner = player;
+            CardPlay Play(int index = 0, int count = 1) => new()
+            {
+                Card = card, Player = player, PlayIndex = index, PlayCount = count,
+                Target = null, IsAutoPlay = false, ResultPile = PileType.Discard, Resources = default
+            };
+            for (var i = 0; i < 11; i++)
+                await egg.BeforeCardPlayed(Play());
+            Require(counter.Visible && egg.DisplayAmount == 11, "Native Egg counter is visible while building to twelve.");
+            await NativeDemoPlaytest.Capture("egg-counter-before");
+            await egg.BeforeCardPlayed(Play(0, 3));
+            await egg.AfterCardPlayed(new ThrowingPlayerChoiceContext(), Play(0, 3));
+            await egg.AfterCardPlayed(new ThrowingPlayerChoiceContext(), Play(1, 3));
+            Require(counter.Visible, "Native Egg counter remains visible until the replay sequence finishes.");
+            await egg.AfterCardPlayed(new ThrowingPlayerChoiceContext(), Play(2, 3));
+            Require(!counter.Visible && !egg.ShowCounter, "Final replay hides the actual native Egg counter.");
+            await NativeDemoPlaytest.Capture("egg-counter-spent");
+            await egg.AfterCombatEnd(null!);
+            Require(!counter.Visible, "Native Egg counter remains hidden between combats.");
+            await egg.BeforeCombatStart();
+            Require(counter.Visible && egg.DisplayAmount == 0, "Next combat restores the actual native counter at zero.");
+            await NativeDemoPlaytest.Capture("egg-counter-rearmed");
+        }
+        finally
+        {
+            holder.QueueFree();
+        }
+    }
 
     internal static async Task Run(Player player)
     {
@@ -99,6 +146,17 @@ internal static class WatcherRelicPlaytest
         await ClearCombatCards(player);
         var egg = (NurembergEgg)await Obtain("NUREMBERG_EGG", player);
         await egg.BeforeCombatStart();
+        NRelicInventoryHolder? holder = null;
+        await WaitFor(() =>
+        {
+            holder = NGame.Instance!.FindChildren("*", recursive: true, owned: false)
+                .OfType<NRelicInventoryHolder>().SingleOrDefault(candidate =>
+                    ReferenceEquals(AccessTools.Field(typeof(NRelicInventoryHolder), "_subscribedRelic")
+                        .GetValue(candidate), egg));
+            return holder != null;
+        });
+        var counter = (Control)AccessTools.Field(typeof(NRelicInventoryHolder), "_amountLabel").GetValue(holder)!;
+        Require(counter.Visible, "Egg counter is visible before its trigger.");
         var context = new ThrowingPlayerChoiceContext();
         var permanent = player.Deck.Cards.Select(card => card.ToSerializable()).ToArray();
         CardModel? twelfth = null;
@@ -111,6 +169,8 @@ internal static class WatcherRelicPlaytest
             Require(plays == (number == 12 ? 3 : 1), $"Native Egg card {number} resolves the correct number of plays.");
             Require(card.Pile?.Type == (number == 12 ? PileType.Exhaust : PileType.Discard),
                 $"Native Egg card {number} resolves into the correct final pile.");
+            Require(egg.ShowCounter == (number < 12) && counter.Visible == egg.ShowCounter,
+                $"Native Egg card {number} refreshes the counter's actual visibility.");
             if (number == 12) twelfth = card;
         }
         Require(egg.DisplayAmount == 12 && twelfth!.Keywords.Contains(CardKeyword.Exhaust),
@@ -123,6 +183,10 @@ internal static class WatcherRelicPlaytest
         await egg.AfterCombatEnd(null!);
         Require(egg.DisplayAmount == 0 && !twelfth!.Keywords.Contains(CardKeyword.Exhaust),
             "Egg lifecycle reset clears its counter and temporary keyword.");
+        Require(!egg.ShowCounter && !counter.Visible, "Spent Egg counter stays hidden after combat.");
+        await egg.BeforeCombatStart();
+        Require(egg.ShowCounter && counter.Visible && egg.DisplayAmount == 0,
+            "Next combat restores the native Egg counter at zero.");
         await RelicCmd.Remove(egg);
     }
 

@@ -329,6 +329,36 @@ internal static class WatcherRelicTests
             Check(relic.ModifyCardPlayCount(card, null, 1) == 1, "Already-tripled cards still consume the trigger.");
         });
 
+        test("Nuremberg Egg: counter hides after the final replay and rearms only for the next combat", () =>
+        {
+            var owner = Player();
+            var relic = Owned<NurembergEgg>(owner);
+            var card = Card<StrikeIronclad>(owner, owner.PlayerCombatState!.Hand);
+            var otherCard = Card<StrikeIronclad>(owner);
+            var otherPlayerCard = Card<StrikeIronclad>(Player());
+            relic.BeforeCombatStart().GetAwaiter().GetResult();
+            Check(relic.ShowCounter && relic.DisplayAmount == 0);
+            for (var i = 0; i < 11; i++)
+                relic.BeforeCardPlayed(Play(card)).GetAwaiter().GetResult();
+            var refreshes = 0;
+            relic.DisplayAmountChanged += () => refreshes++;
+            relic.BeforeCardPlayed(Play(card, 0, 3)).GetAwaiter().GetResult();
+            Check(relic.ShowCounter && relic.DisplayAmount == 12 && refreshes == 1);
+            relic.AfterCardPlayed(Context, Play(card, 0, 3)).GetAwaiter().GetResult();
+            relic.AfterCardPlayed(Context, Play(card, 1, 3)).GetAwaiter().GetResult();
+            relic.AfterCardPlayed(Context, Play(otherCard)).GetAwaiter().GetResult();
+            relic.AfterCardPlayed(Context, Play(otherPlayerCard)).GetAwaiter().GetResult();
+            Check(relic.ShowCounter && refreshes == 1, "Only the triggered card's final replay spends the counter.");
+            relic.AfterCardPlayed(Context, Play(card, 2, 3)).GetAwaiter().GetResult();
+            Check(!relic.ShowCounter && relic.DisplayAmount == 12 && refreshes == 2);
+            relic.AfterCardPlayed(Context, Play(card, 2, 3)).GetAwaiter().GetResult();
+            Check(refreshes == 2, "Counter visibility refreshes only once for completion.");
+            relic.AfterCombatEnd(null!).GetAwaiter().GetResult();
+            Check(!relic.ShowCounter && relic.DisplayAmount == 0);
+            relic.BeforeCombatStart().GetAwaiter().GetResult();
+            Check(relic.ShowCounter && relic.DisplayAmount == 0);
+        });
+
         test("Nuremberg Egg: Exhaust attaches only to original combat card and resets between combats", () =>
         {
             var owner = Player();

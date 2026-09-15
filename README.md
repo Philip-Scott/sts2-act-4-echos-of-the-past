@@ -77,7 +77,7 @@ use the native multiplayer synchronization. Candidates have equal weights within
 | Discipline | Diamond Hand | After the opening draw, apply combat-only Glam to a random eligible unenchanted card in hand. |
 | Discipline | Deus Ex Machina | Upon pickup, enchant 3 random eligible deck cards with Sown. |
 | Discipline | Violet Lotus | Upon pickup, enchant 2 random deck cards with Wrath and 2 other cards with Calm. |
-| Transcendence | Nuremberg Egg | The 12th card played each combat is replayed twice, then the original Exhausts. Once per combat. |
+| Transcendence | Nuremberg Egg | The 12th card played each combat is replayed twice, then the original Exhausts. Its counter hides after the replay sequence and returns next combat. |
 | Transcendence | Ritual Dagger | Start combat with 1 Ritual and 3 Vulnerable. |
 | Transcendence | Deva Form | After the first mid-combat reshuffle, gain 1 additional Energy at the start of each subsequent turn. Does not stack. |
 | Transcendence | Handheld Mirror | Acquire a copy of 3 random relics. |
@@ -310,7 +310,8 @@ It covers the direct Act 3 handoff, both outcomes, and full-party binding using
 all five base characters. Its simulated multiplayer party is not a live network test.
 
 Calm surrounds its owner with animated pale-blue wind; Wrath adds a pulsing red aura
-and rising sparks. These independent overlays preserve native character materials
+and rising sparks. Both stay close to the body and fade to transparent before the
+edges of their drawing area. These independent overlays preserve native character materials
 and Corrupted Players' Bound Echo effects. They follow only the stance owner and
 are removed with the power, owner death, combat end, or scene teardown.
 The private-display visual regression needs no user snapshot:

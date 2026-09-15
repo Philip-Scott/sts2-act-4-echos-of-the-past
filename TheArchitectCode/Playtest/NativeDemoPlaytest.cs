@@ -116,6 +116,7 @@ internal static class NativeDemoPlaytest
             CommandLineHelper.HasArg($"architect-native-party-{count}"));
         if (CommandLineHelper.HasArg("architect-native-stance-vfx"))
         {
+            await WatcherStanceVisualPlaytest.CheckShaderBounds(game);
             await NativePartyPlaytest.Run(game, partySize: 3, stanceVfxOnly: true);
             return;
         }

@@ -110,8 +110,7 @@ public partial class WatcherStanceVfx : Node2D
             throw new InvalidOperationException("Watcher stance VFX requires non-empty creature bounds.");
         _boundsTransform = transform;
         _boundsSize = size;
-        var area = rect.GrowIndividual(rect.Size.X * 0.4f, rect.Size.Y * 0.18f,
-            rect.Size.X * 0.4f, rect.Size.Y * 0.13f);
+        var area = EffectArea(rect);
         Vector2[] corners = [area.Position, new(area.End.X, area.Position.Y),
             area.End, new(area.Position.X, area.End.Y)];
         foreach (var layer in _layers)
@@ -122,6 +121,10 @@ public partial class WatcherStanceVfx : Node2D
         }
         GeometryBuildCount++;
     }
+
+    internal static Rect2 EffectArea(Rect2 body) =>
+        body.GrowIndividual(body.Size.X * 0.4f, body.Size.Y * 0.18f,
+            body.Size.X * 0.4f, body.Size.Y * 0.13f);
 
     private void Unsubscribe()
     {

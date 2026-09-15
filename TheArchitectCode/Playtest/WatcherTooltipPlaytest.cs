@@ -45,6 +45,8 @@ internal static class WatcherTooltipPlaytest
         var combat = new CombatState(runState: run);
         player.ResetCombatState();
         combat.AddPlayer(player);
+        await WatcherStanceVisualPlaytest.CheckShaderBounds(game);
+        await WatcherRelicPlaytest.CheckEggCounterDisplay(player);
         await Run(player);
         game.GetTree().Quit();
     }

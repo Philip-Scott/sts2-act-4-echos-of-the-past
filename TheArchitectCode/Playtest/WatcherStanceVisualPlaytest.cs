@@ -20,6 +20,78 @@ namespace TheArchitect.TheArchitectCode.Playtest;
 
 internal static class WatcherStanceVisualPlaytest
 {
+    internal static async Task CheckShaderBounds(NGame game)
+    {
+        Require(NativeDemoSafety.Enabled && !NativeDemoSafety.SharedVisible, "private shader footprint probe");
+        foreach (var bodySize in new[] { new Vector2(120, 260), new Vector2(240, 180) })
+        foreach (var wrath in new[] { false, true })
+        {
+            var area = WatcherStanceVfx.EffectArea(new Rect2(Vector2.Zero, bodySize));
+            var viewport = new SubViewport
+            {
+                Size = new Vector2I(Mathf.CeilToInt(area.Size.X), Mathf.CeilToInt(area.Size.Y)),
+                World2D = new World2D(),
+                TransparentBg = true,
+                Disable3D = true,
+                RenderTargetUpdateMode = SubViewport.UpdateMode.Always
+            };
+            game.AddChild(viewport);
+            try
+            {
+                var materials = new List<ShaderMaterial>();
+                foreach (var front in new[] { false, true })
+                {
+                    var material = new ShaderMaterial { Shader = WatcherStanceShader.Resource };
+                    material.SetShaderParameter("body_rect",
+                        new Vector4(-area.Position.X, -area.Position.Y, bodySize.X, bodySize.Y));
+                    material.SetShaderParameter("wrath", wrath);
+                    material.SetShaderParameter("front_layer", front);
+                    viewport.AddChild(new Polygon2D
+                    {
+                        Polygon = [Vector2.Zero, new(area.Size.X, 0), area.Size, new(0, area.Size.Y)],
+                        Material = material
+                    });
+                    materials.Add(material);
+                }
+                foreach (var time in new[] { 0f, 1.7f, 4.9f })
+                {
+                    foreach (var material in materials)
+                        material.SetShaderParameter("effect_time", time);
+                    await game.AwaitProcessFrame();
+                    await game.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+                    using var image = viewport.GetTexture().GetImage();
+                    var edgeAlpha = 0f;
+                    var visible = 0;
+                    var horizontalExtent = 0f;
+                    for (var y = 0; y < image.GetHeight(); y++)
+                    for (var x = 0; x < image.GetWidth(); x++)
+                    {
+                        var alpha = image.GetPixel(x, y).A;
+                        if (x < 2 || y < 2 || x >= image.GetWidth() - 2 || y >= image.GetHeight() - 2)
+                            edgeAlpha = Mathf.Max(edgeAlpha, alpha);
+                        if (alpha <= 1f / 255)
+                            continue;
+                        visible++;
+                        horizontalExtent = Mathf.Max(horizontalExtent,
+                            Mathf.Abs((x + 0.5f + area.Position.X) / bodySize.X - 0.5f));
+                    }
+                    var label = $"{(wrath ? "wrath" : "calm")}-{bodySize.X}x{bodySize.Y}-{time:F1}";
+                    Require(image.SavePng(System.IO.Path.Combine(NativeDemoSafety.RuntimePath,
+                        $"stance-shader-{label}.png")) == Error.Ok, $"{label}: captured shader alpha");
+                    Require(visible > bodySize.X * bodySize.Y * 0.02f, $"{label}: stance remains visibly rendered");
+                    Require(edgeAlpha <= 1f / 255,
+                        $"{label}: padded quad edges are transparent (maximum alpha={edgeAlpha:F4})");
+                    Require(horizontalExtent <= 0.8f,
+                        $"{label}: glow stays close to the body (half-width={horizontalExtent:F4})");
+                }
+            }
+            finally
+            {
+                viewport.QueueFree();
+            }
+        }
+    }
+
     internal static void EnchantFixture(Player[] players)
     {
         Require(NativeDemoSafety.Enabled, "fixture is disposable");
