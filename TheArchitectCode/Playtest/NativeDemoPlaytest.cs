@@ -86,6 +86,11 @@ internal static class NativeDemoPlaytest
             await WatcherTooltipPlaytest.RunFocused(game);
             return;
         }
+        if (CommandLineHelper.HasArg("architect-native-watcher-audio"))
+        {
+            await NativePartyPlaytest.Run(game, partySize: 2, audioOnly: true);
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-native-downfall-party"))
         {
             await NativePartyPlaytest.Run(game, partySize: 4,

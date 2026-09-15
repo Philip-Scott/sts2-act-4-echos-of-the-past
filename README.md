@@ -87,6 +87,15 @@ Playing a Wrath-enchanted card enters Wrath: your Attacks deal 50% more damage,
 and enemy damage against you is increased by 50%. Playing a Calm-enchanted
 card enters Calm; leaving Calm grants 1 Energy. Entering the same stance again
 does not count as leaving it. Stances last until changed and reset after combat.
+True stance changes play the matching Watcher entry sound for every character,
+including remote and Corrupted Players; same-stance reentry stays silent.
+Only **your own character** starts a Calm or Wrath background loop, after its
+entry sound finishes. That loop stops on leaving the stance, death, or combat
+teardown. Remote and Corrupted Players never keep your background loop alive.
+The Watcher's Ancient arrival plays Mantra with Divinity ambience, which continues
+through choosing a gift and viewing the map until entering the next floor.
+All six sounds use native SFX/master volume, background mute, and pause behavior;
+they do not replace the game's music or other ambience.
 Deus Ex Machina and Violet Lotus are offered only when at least three or four
 eligible unenchanted cards remain, respectively. If another pickup effect changes
 the deck before a copied relic resolves, it enchants the remaining eligible cards
@@ -97,6 +106,18 @@ are excluded only from new Ancient offers. Their model IDs, effects, localizatio
 and artwork remain available to existing saves and run history. Medieval Meal
 retains the original `LAST_MEAL` identity; The Watcher retains the original
 `THE_UNWRITTEN` event identity. No saved relic is replaced or removed.
+
+The optional private audio regression scenario is
+`scripts/native-demo.py run "$STS2_PATH" --watcher-audio --render-threads 2`.
+It requires PipeWire, WirePlumber, and `pactl` in addition to the normal private
+display tools. It creates its own PulseAudio-compatible server and null sink
+inside the disposable namespace, never connects to desktop audio, and records
+`watcher-audio.wav` under that run's artifact directory. It exercises the six
+packaged Oggs, loop boundaries, local versus remote/Corrupted ownership, native
+SFX mute/unmute, pause, Ancient/map/floor lifetime, and combat/menu teardown.
+The supplied 44.1 kHz stereo Vorbis originals are unchanged under
+`TheArchitect/audio/watcher/`; loop files have no embedded loop tags, so playback
+explicitly loops their full approximately ten-second streams from offset zero.
 
 First and Repeat Visits use the same pool. Turn counts include extra turns, and
 the Corrupted Player-to-Architect transition does not restart bonuses or copied

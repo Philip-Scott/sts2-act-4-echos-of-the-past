@@ -18,11 +18,27 @@ SPEC.loader.exec_module(demo)
 
 class NativeDemoTests(unittest.TestCase):
     def test_watcher_probes_reject_shared_desktop_before_accessing_files(self):
-        for scenario in ("enchantment-art", "stance-tooltips", "stance-vfx"):
+        for scenario in ("enchantment-art", "stance-tooltips", "stance-vfx", "watcher-audio"):
             with self.subTest(scenario=scenario), patch.object(demo, "required_file") as required:
                 with self.assertRaisesRegex(ValueError, "private display"):
                     demo.launch(SimpleNamespace(scenario=scenario, shared_visible=True))
                 required.assert_not_called()
+
+    def test_watcher_audio_server_has_only_a_private_socket_and_null_sink(self):
+        with patch.object(demo, "tool", side_effect=lambda name: "/usr/bin/" + name):
+            command = demo.private_audio_command()
+        self.assertEqual(command, ["/usr/bin/pipewire", "-c", str(demo.ROOT / "scripts/native-demo-audio.conf")])
+        config = (demo.ROOT / "scripts/native-demo-audio.conf").read_text()
+        self.assertIn("support.null-audio-sink", config)
+        self.assertIn("unix:/tmp/watcher-audio.sock", config)
+        self.assertNotIn("api.alsa", config)
+        self.assertNotIn("udev", config)
+
+    def test_watcher_audio_rejects_shared_desktop_before_accessing_files(self):
+        with patch.object(demo, "required_file") as required:
+            with self.assertRaisesRegex(ValueError, "private display"):
+                demo.launch(SimpleNamespace(scenario="watcher-audio", shared_visible=True))
+            required.assert_not_called()
 
     def test_recording_rejects_shared_desktop_before_accessing_files(self):
         with patch.object(demo, "required_file") as required:

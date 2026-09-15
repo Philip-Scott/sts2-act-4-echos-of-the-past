@@ -83,6 +83,10 @@ def recording_command(run, resolution):
             "-movflags", "+faststart", str(run / "playtest.mp4")]
 
 
+def private_audio_command():
+    return [tool("pipewire"), "-c", str(ROOT / "scripts/native-demo-audio.conf")]
+
+
 def finish_recording(recorder, run):
     try:
         if recorder.poll() is None:
@@ -186,7 +190,7 @@ def sandbox_command(game, run, xvfb, render_threads=4, shared_display=None, rend
 
 
 def launch(args):
-    if args.scenario in ("enchantment-art", "stance-tooltips", "stance-vfx") and args.shared_visible:
+    if args.scenario in ("enchantment-art", "stance-tooltips", "stance-vfx", "watcher-audio") and args.shared_visible:
         raise ValueError(f"--{args.scenario} requires a private display; omit --shared-visible.")
     if args.manual and (not args.shared_visible or args.scenario not in MANUAL_PARTIES):
         raise ValueError("--manual requires --shared-visible and --party-1/2/3/4 or --downfall-party.")
@@ -203,8 +207,12 @@ def launch(args):
             raise ValueError("--record requires a private display; shared desktop recording is not allowed.")
         tool("ffmpeg")
         tool("ffprobe")
+    if args.scenario == "watcher-audio":
+        tool("pipewire")
+        tool("wireplumber")
+        tool("pactl")
     game = required_file(Path(args.game) / "SlayTheSpire2").parent
-    requires_snapshot = args.scenario not in DOWNFALL_SCENARIOS + ("downfall-party", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx")
+    requires_snapshot = args.scenario not in DOWNFALL_SCENARIOS + ("downfall-party", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "watcher-audio", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx")
     if requires_snapshot and not os.environ.get("ARCHITECT_SNAPSHOT_INPUT"):
         raise ValueError("Set ARCHITECT_SNAPSHOT_INPUT to the captured snapshot to copy (never modified).")
     snapshot = required_file(os.environ["ARCHITECT_SNAPSHOT_INPUT"]) if (
@@ -417,8 +425,9 @@ def serve(args):
                         os.urandom(16).hex()], check=True)
     elif os.environ.get("DISPLAY") != metadata["host_display"]:
         raise ValueError("Shared-visible display does not match its launch receipt.")
-    xvfb = game = recorder = None
+    xvfb = game = recorder = audio_server = audio_policy = None
     recording_log = None
+    audio_log = None
     def interrupt(signum, _frame):
         raise SystemExit(128 + signum)
     signal.signal(signal.SIGTERM, interrupt)
@@ -435,9 +444,28 @@ def serve(args):
             if (xvfb is not None and xvfb.poll() is not None) or time.monotonic() > deadline:
                 raise ValueError(f"X11 display is unavailable; inspect {run}/launcher.log and display.log.")
             time.sleep(0.1)
+        if metadata["scenario"] == "watcher-audio":
+            if shared_visible:
+                raise ValueError("Watcher audio requires private devices and audio server.")
+            # /tmp is this run's private bind, and this short socket avoids AF_UNIX path limits.
+            os.environ["PULSE_SERVER"] = "unix:/tmp/watcher-audio.sock"
+            os.environ["PIPEWIRE_RUNTIME_DIR"] = "/tmp"
+            os.environ["PIPEWIRE_REMOTE"] = "watcher-audio"
+            audio_log = (run / "audio-server.log").open("w")
+            audio_server = subprocess.Popen(private_audio_command(), stdout=audio_log,
+                                            stderr=subprocess.STDOUT)
+            deadline = time.monotonic() + 15
+            while subprocess.run(["pactl", "info"], stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL, timeout=2).returncode:
+                if audio_server.poll() is not None or time.monotonic() > deadline:
+                    raise ValueError("Private audio server failed; inspect audio-server.log.")
+                time.sleep(0.1)
+            audio_policy = subprocess.Popen([tool("wireplumber")], stdout=audio_log,
+                                            stderr=subprocess.STDOUT)
         command = [str(Path(metadata["game"]) / "SlayTheSpire2"),
                    "--display-driver", "x11", "--rendering-method", "gl_compatibility",
-                   "--windowed", "--resolution", resolution, "--audio-driver", "Dummy",
+                   "--windowed", "--resolution", resolution, "--audio-driver",
+                   "PulseAudio" if metadata["scenario"] == "watcher-audio" else "Dummy",
                    "--max-fps", "30",
                    "--log-file", str(run / "game.log"), "--force-steam", "off",
                    "--architect-native-test"]
@@ -483,6 +511,10 @@ def serve(args):
                     raise ValueError(f"Video recorder exited before the game; inspect {run}/recording.log.")
                 if xvfb is not None and xvfb.poll() is not None:
                     raise ValueError("Private display exited; see display.log.")
+                if audio_server is not None and audio_server.poll() is not None:
+                    raise ValueError("Private audio server exited; see audio-server.log.")
+                if audio_policy is not None and audio_policy.poll() is not None:
+                    raise ValueError("Private audio policy exited; see audio-server.log.")
                 try:
                     connection, _ = server.accept()
                 except socket.timeout:
@@ -513,6 +545,10 @@ def serve(args):
         finally:
             if recording_log is not None:
                 recording_log.close()
+            stop_child(audio_policy)
+            stop_child(audio_server)
+            if audio_log is not None:
+                audio_log.close()
             stop_child(xvfb)
             (run / "control.sock").unlink(missing_ok=True)
 
@@ -572,7 +608,7 @@ def main():
     cache.add_argument("--cache-from", help="Copy shader caches from this completed run ID.")
     cache.add_argument("--cold", action="store_true", help="Do not seed shader caches from a completed run.")
     scenarios = run.add_mutually_exclusive_group()
-    for scenario in DOWNFALL_SCENARIOS + ("downfall-party", "loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "previews", "media", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx"):
+    for scenario in DOWNFALL_SCENARIOS + ("downfall-party", "loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "watcher-audio", "previews", "media", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx"):
         scenarios.add_argument("--" + scenario, dest="scenario", action="store_const", const=scenario)
     run.set_defaults(scenario="default")
     for action in ("status", "capture", "stop", "pointer", "click", "key", "_serve"):

@@ -35,9 +35,12 @@ namespace TheArchitect.TheArchitectCode.Playtest;
 internal static class NativePartyPlaytest
 {
     internal static async Task Run(NGame game, bool layoutOnly = false, int? partySize = null,
-        bool prototypeOnly = false, bool manual = false, bool downfall = false, bool stanceVfxOnly = false)
+        bool prototypeOnly = false, bool manual = false, bool downfall = false, bool stanceVfxOnly = false,
+        bool audioOnly = false)
     {
         Require(NativeDemoSafety.Enabled, "party probes require disposable storage and Steam disabled");
+        Require(!audioOnly || !NativeDemoSafety.SharedVisible && !manual && partySize == 2,
+            "audio probes require a private two-player fixture");
         Require(!downfall || manual && partySize == 4, "Downfall inspection requires a manual four-member party");
         if (manual)
         {
@@ -50,8 +53,11 @@ internal static class NativePartyPlaytest
         var cases = partySize is { } size ? new[] { (size, size == 2 ? 0 : 8) } :
             layoutOnly ? [(4, 8)] : [(2, 0), (3, 8), (4, 8)];
         foreach (var (count, ascension) in cases)
-            await Exercise(game, count, ascension, layoutOnly, prototypeOnly, stanceVfxOnly: stanceVfxOnly);
-        if (stanceVfxOnly)
+            await Exercise(game, count, ascension, layoutOnly, prototypeOnly,
+                stanceVfxOnly: stanceVfxOnly, audioOnly: audioOnly);
+        if (audioOnly)
+            MainFile.Logger.Info("WATCHER AUDIO SMOKE PASSED: native SFX PCM, local-only loops, all-owner cues, Ancient/map/floor and combat/run cleanup.");
+        if (stanceVfxOnly || audioOnly)
         {
             game.GetTree().Quit();
             return;
@@ -68,7 +74,7 @@ internal static class NativePartyPlaytest
     }
 
     private static async Task Exercise(NGame game, int count, int ascension, bool layoutOnly, bool prototypeOnly,
-        bool manual = false, bool downfall = false, bool stanceVfxOnly = false)
+        bool manual = false, bool downfall = false, bool stanceVfxOnly = false, bool audioOnly = false)
     {
         CharacterModel[] characters = [ModelDb.Character<Ironclad>(), ModelDb.Character<Defect>(),
             ModelDb.Character<Necrobinder>(), ModelDb.Character<Silent>()];
@@ -122,7 +128,11 @@ internal static class NativePartyPlaytest
         await PreloadManager.LoadRunAssets(characters.Take(count).Concat(savedCharacters).Distinct());
         manager.Launch();
         game.RootSceneContainer.SetCurrentScene(NRun.Create(run));
+        if (audioOnly)
+            WatcherAudioPlaytest.Begin(game);
         await manager.EnterAct(3, doTransition: false);
+        if (audioOnly)
+            await WatcherAudioPlaytest.Ancient(game, players[0]);
         await manager.EnterMapCoord(run.Map.BossMapPoint.coord);
         await Ready(players, 1);
         var combat = players[0].Creature.CombatState!;
@@ -136,6 +146,11 @@ internal static class NativePartyPlaytest
         if (stanceVfxOnly)
         {
             await WatcherStanceVisualPlaytest.Run(game, players, actors);
+            return;
+        }
+        if (audioOnly)
+        {
+            await WatcherAudioPlaytest.Combat(game, players, actors);
             return;
         }
         if (manual)

@@ -16,6 +16,8 @@
     <Compile Include="../../TheArchitectCode/Powers/ArchitectInvinciblePower.cs" Link="ArchitectInvinciblePower.cs" />
     <Compile Include="../../TheArchitectCode/Powers/ArchitectBeatOfDeathPower.cs" Link="ArchitectBeatOfDeathPower.cs" />
     <Compile Include="../../TheArchitectCode/Powers/*Stance*.cs" />
+    <Compile Include="../../TheArchitectCode/Audio/WatcherAudio.cs" />
+    <Compile Include="../../TheArchitectCode/Audio/WatcherStanceAudio.cs" />
     <Compile Include="../../TheArchitectCode/Enchantments/*.cs" />
     <Compile Include="../../TheArchitectCode/Acts/ArchitectMap.cs" Link="ArchitectMap.cs" />
     <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/CorruptedPartyPhase.cs" Link="CorruptedPartyPhase.cs" />

@@ -6,6 +6,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.TestSupport;
 using MegaCrit.Sts2.Core.ValueProps;
+using TheArchitect.TheArchitectCode.Audio;
 using TheArchitect.TheArchitectCode.UI;
 
 namespace TheArchitect.TheArchitectCode.Powers;
@@ -20,7 +21,10 @@ public sealed class WrathStancePower : CustomPowerModel
     public override Task AfterApplied(Creature? applier, CardModel? cardSource)
     {
         if (TestMode.IsOff)
+        {
             WatcherStanceVfx.Attach(this);
+            WatcherAudio.Enter(this);
+        }
         return Task.CompletedTask;
     }
 
