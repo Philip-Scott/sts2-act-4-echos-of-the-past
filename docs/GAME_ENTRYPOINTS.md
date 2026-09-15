@@ -1,7 +1,7 @@
 # Game integration and upgrade-risk inventory
 
 Snapshot: **2026-09-12**, working tree based on `b8bb892`, **including uncommitted and untracked C# changes**. This describes the source currently present, not necessarily the installed DLL or published release.
-Watcher content, enchantment, stance-visual and relic-hook rows updated **2026-09-15**; the patch census retains the original snapshot scope.
+Watcher content, enchantment, stance-visual, audio and relic-hook rows updated **2026-09-15**; the patch census retains the original snapshot scope.
 
 Declared compatibility: Slay the Spire 2 **public-beta 0.111.0** (README: build `24724944`, game commit `41cef1ea`), **BaseLib 3.4.5**, .NET 9, Godot.NET SDK 4.5.1. See [project references](../TheArchitect.csproj), [mod manifest](../TheArchitect.json), and [README](../README.md). Game and Harmony assemblies come from the selected local game installation, not version-pinned NuGet packages. The manifest declares minimum versions, not a guarantee of compatibility with later versions.
 
@@ -132,6 +132,17 @@ Paths below are relative to `TheArchitectCode/`. Each row is one `[HarmonyPatch]
 | `Encounters/ArchitectEncounter.cs` / `PrepareArchitectEncounterPatch` | `EncounterModel.GenerateMonstersWithSlots` | Pre | Supply run context before virtual monster generation. **Medium/High**, callback order. |
 | `Monsters/CorruptedPlayer.cs` / `CorruptedPlayerPartyHealthPatch` | `Creature.ScaleMonsterHpForMultiplayer` | Pre | Skip double-scaling Corrupted Players; map Act 4 to native final-act tier for Architect/ending encounter. **High**, native scaling table and assumptions. |
 
+### Audio/WatcherAudioLifecycle.cs (6; added after the original patch census)
+
+| Patch class | Native target | Kind | Purpose / upgrade risk |
+| --- | --- | --- | --- |
+| `WatcherRunAudio` | `NRun._Ready` | Post | Attach one run-owned audio controller using the exact local creature from the native network identity. **Medium** run/view initialization order. |
+| `WatcherAncientAudio` | `NEventRoom._Ready` | Post | Start Mantra and Divinity only for the current mutable Watcher event, not previews. **Medium** event/view identity. |
+| `WatcherCombatAudioReset` | `CombatManager.Reset` | Pre | Cancel stance subscriptions, loops and pending cues before reset. **Medium** reset ordering. |
+| `WatcherAncientAudioNextFloor` | `RunManager.EnterMapPointInternal` | Pre | Stop Ancient audio when leaving for the next floor, not on gift selection or map display. **Medium** navigation contract. |
+| `WatcherAncientAudioNextAct` | `RunManager.EnterAct` | Pre | Stop Ancient ambience on act transition. **Medium** transition ordering. |
+| `WatcherRunAudioCleanup` | `RunManager.CleanUp` | Pre | Stop all owned voices before the run is discarded. **Medium** cleanup ordering. |
+
 ## 4. Save, multiplayer and non-patch boundaries
 
 | Boundary / source | Native API/data involved | Upgrade failure mode |
@@ -155,6 +166,7 @@ Current error policies are not uniform: missing/invalid solo lineage can log and
 | `TheUnwritten`, `UnwrittenPresentation` | `res://scenes/events/ancient_event_layout.tscn`, native title/offer geometry | **Medium**. Layout changes can overlap or hide content even when event logic works. |
 | `WatcherStanceVfx`, `WatcherStanceShader` | `NCreature._Ready` postfix; exact owner `Visuals/%Bounds`; two cached procedural shader quads | **Medium/High** scene coupling. Restore pre-view powers without duplicate effects; preserve character materials/hierarchy, Bound Echo and unrelated pets. Geometry updates only when cached bounds change. |
 | `WatcherStanceIcons` | `Resource.TakeOverPath`, strongly retained `AtlasTexture` aliases for the two `power_atlas.sprites/thearchitect-*_stance_power.tres` paths | **Medium** native path contract. Both native fallback and BaseLib custom paths must resolve the same original pixels, even when nonvirtual native getters are inlined. No vanilla resource aliases are replaced. |
+| `WatcherAudio`, `WatcherStanceAudio` | Native `SFX`/`Master` buses, `NMuteInBackgroundHandler`, pausable `AudioStreamPlayer`, Ogg import/raw loading; `RoomEntered`, `CombatEnded`, power removal, owner HP/death and view exit | **Medium** audio/lifecycle contracts. Entry cues follow each true owner transition; only the exact local creature drives background stance loops. Pending cue completion must not revive a departed stance. Supplied Oggs are packaged unchanged, and unrelated music/ambience is not replaced. |
 | `ArchitectRoomBackgrounds` | Rest `BgContainer` child 0; `RestSiteBG`, foreground/dither/lighting paths; shop `SceneContainer`, `BgContainer`, lights and `stars` | **High** scene-tree coupling. `GetNode` assumes these paths; native fire, logs, lighting, merchant and character containers must remain functional. |
 | `ArchitectMapIcons`, map layout patches | `%Icon`, private map containers/tweens and layout constants | **High**. Scene and IL assumptions coexist. |
 | `CorruptedPlayer.CreateCustomVisuals` | Every restored native character's visual scene, `%Visuals`, animator/SFX | **Medium/High**. One character can break while others still render. Additional UI/pet dependencies are catalogued with their integration hooks below. |
