@@ -31,7 +31,8 @@ internal static class EnchantmentArtPlaytest
         };
         game.AddChild(backdrop);
         EnchantmentModel[] enchantments =
-            [ModelDb.Enchantment<Wrath>(), ModelDb.Enchantment<Calm>(), ModelDb.Enchantment<Sown>(), ModelDb.Enchantment<Glam>()];
+            [ArchitectModels.WrathEnchantment, ArchitectModels.CalmEnchantment,
+                ModelDb.Enchantment<Sown>(), ModelDb.Enchantment<Glam>()];
         var textures = new List<byte[]>();
         for (var i = 0; i < enchantments.Length; i++)
         {

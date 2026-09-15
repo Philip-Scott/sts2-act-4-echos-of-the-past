@@ -12,6 +12,7 @@
     <Reference Include="sts2" HintPath="$(Sts2DataDir)/sts2.dll" />
     <Reference Include="GodotSharp" HintPath="$(Sts2DataDir)/GodotSharp.dll" />
     <Reference Include="0Harmony" HintPath="$(Sts2DataDir)/0Harmony.dll" />
+    <Compile Include="../../TheArchitectCode/ArchitectModels.Watcher.cs" />
     <Compile Include="../../TheArchitectCode/Powers/ArchitectInvinciblePower.cs" Link="ArchitectInvinciblePower.cs" />
     <Compile Include="../../TheArchitectCode/Powers/ArchitectBeatOfDeathPower.cs" Link="ArchitectBeatOfDeathPower.cs" />
     <Compile Include="../../TheArchitectCode/Powers/*Stance*.cs" />

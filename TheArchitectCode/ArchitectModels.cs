@@ -7,7 +7,7 @@ using TheArchitect.TheArchitectCode.Powers;
 
 namespace TheArchitect.TheArchitectCode;
 
-internal static class ArchitectModels
+internal static partial class ArchitectModels
 {
     internal static readonly ModelId ActId = new("ACT", "THEARCHITECT-ARCHITECT_ACT");
     internal static readonly ModelId EncounterId = new("ENCOUNTER", "THEARCHITECT-ARCHITECT_ENCOUNTER");

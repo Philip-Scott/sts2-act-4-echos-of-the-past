@@ -32,7 +32,8 @@ internal static class WatcherTooltipPlaytest
 
     internal static async Task RunFocused(NGame game)
     {
-        Require(NativeDemoSafety.Enabled, "Focused tooltip rendering requires the isolated launcher.");
+        Require(NativeDemoSafety.Enabled && !NativeDemoSafety.SharedVisible,
+            "Focused tooltip rendering requires the private isolated launcher.");
         await Task.Delay(5000);
         var player = Player.CreateForNewRun<Ironclad>(UnlockState.all, 1);
         var run = RunState.CreateForNewRun([player],
@@ -55,7 +56,7 @@ internal static class WatcherTooltipPlaytest
         var energy = PreloadManager.Cache.GetTexture2D(energyPath);
         Require(energy.GetWidth() > 0 && energy.GetHeight() > 0, "The native Energy sprite loads.");
 
-        foreach (var enchantment in new EnchantmentModel[] { ModelDb.Enchantment<Wrath>(), ModelDb.Enchantment<Calm>() })
+        foreach (var enchantment in new EnchantmentModel[] { ArchitectModels.WrathEnchantment, ArchitectModels.CalmEnchantment })
         {
             var card = player.Creature.CombatState!.CreateCard<DefendIronclad>(player);
             card.AddKeyword(CardKeyword.Exhaust);
@@ -74,20 +75,20 @@ internal static class WatcherTooltipPlaytest
             player.Creature.CombatState.RemoveCard(card);
         }
 
-        var lotus = ModelDb.Relic<VioletLotus>().HoverTipsExcludingRelic.ToArray();
+        var lotus = ArchitectModels.VioletLotus.HoverTipsExcludingRelic.ToArray();
         Require(lotus.Length == 2 && lotus.OfType<HoverTip>().Count(tip => tip.Title == "Wrath") == 1 &&
             lotus.OfType<HoverTip>().Count(tip => tip.Title == "Calm") == 1,
             "Violet Lotus emits exactly one explanation for each stance.");
         var lotusEnergyPrefix = RunManager.Instance.GetLocalCharacterEnergyIconPrefix() ??
-            EnergyIconHelper.GetPrefix(ModelDb.Enchantment<Calm>());
+            EnergyIconHelper.GetPrefix(ArchitectModels.CalmEnchantment);
         var lotusCalmText = CalmPrefix + $"[img]res://images/packed/sprite_fonts/{lotusEnergyPrefix}_energy_icon.png[/img]";
         Require(lotus.OfType<HoverTip>().Single(tip => tip.Title == "Calm").Description == lotusCalmText,
             "Violet Lotus uses the local player's Energy sprite, or the native colorless sprite outside a run.");
         await Render(lotus, "watcher-tooltip-lotus", null, lotusCalmText);
 
         foreach (var power in new CustomPowerModel[]
-            { (WrathStancePower)ModelDb.Power<WrathStancePower>().ToMutable(),
-                (CalmStancePower)ModelDb.Power<CalmStancePower>().ToMutable() })
+            { (WrathStancePower)ArchitectModels.WrathStance.ToMutable(),
+                (CalmStancePower)ArchitectModels.CalmStance.ToMutable() })
         {
             power.ApplyInternal(player.Creature, 1);
             try

@@ -23,6 +23,7 @@ using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Runs.History;
 using MegaCrit.Sts2.Core.TestSupport;
 using MegaCrit.Sts2.Core.ValueProps;
+using TheArchitect.TheArchitectCode;
 using TheArchitect.TheArchitectCode.Enchantments;
 using TheArchitect.TheArchitectCode.Powers;
 using TheArchitect.TheArchitectCode.Relics;
@@ -47,6 +48,17 @@ internal static class WatcherRelicTests
             typeof(RitualPower), typeof(VulnerablePower), typeof(ArtifactPower)
         })
             ModelDb.Inject(type);
+
+        RegisterWatcherModelIds();
+
+        test("Watcher: saved model IDs resolve independently of generic lookup caches", () =>
+        {
+            Check(ReferenceEquals(ArchitectModels.WrathEnchantment, ModelDb.Enchantment<Wrath>()));
+            Check(ReferenceEquals(ArchitectModels.CalmEnchantment, ModelDb.Enchantment<Calm>()));
+            Check(ReferenceEquals(ArchitectModels.WrathStance, ModelDb.Power<WrathStancePower>()));
+            Check(ReferenceEquals(ArchitectModels.CalmStance, ModelDb.Power<CalmStancePower>()));
+            Check(ReferenceEquals(ArchitectModels.VioletLotus, ModelDb.Relic<VioletLotus>()));
+        });
 
         WatcherTooltipTests.Run(test);
 
@@ -178,9 +190,9 @@ internal static class WatcherRelicTests
             var existing = Card<StrikeIronclad>(owner, owner.Deck);
             existing.EnchantInternal(ModelDb.Enchantment<Glam>().ToMutable(), 1);
             var preserved = existing.Enchantment;
-            Check(RandomDeckEnchantments.Apply<Sown>(owner, 3).Count == 3);
-            Check(RandomDeckEnchantments.Apply<Wrath>(owner, 2).Count == 2);
-            Check(RandomDeckEnchantments.Apply<Calm>(owner, 2).Count == 2);
+            Check(RandomDeckEnchantments.Apply(owner, ModelDb.Enchantment<Sown>(), 3).Count == 3);
+            Check(RandomDeckEnchantments.Apply(owner, ArchitectModels.WrathEnchantment, 2).Count == 2);
+            Check(RandomDeckEnchantments.Apply(owner, ArchitectModels.CalmEnchantment, 2).Count == 2);
             Check(owner.Deck.Cards.Count(c => c.Enchantment is Sown) == 3);
             Check(owner.Deck.Cards.Count(c => c.Enchantment is Wrath) == 2);
             Check(owner.Deck.Cards.Count(c => c.Enchantment is Calm) == 2);
@@ -491,6 +503,22 @@ internal static class WatcherRelicTests
                 }
             });
         });
+    }
+
+    private static void RegisterWatcherModelIds()
+    {
+        // The headless test assembly has no mod prefix; expose its canonical objects at the saved IDs too.
+        var models = (Dictionary<ModelId, AbstractModel>)AccessTools.Field(typeof(ModelDb), "_contentById")
+            .GetValue(null)!;
+        foreach (var (id, type) in new[]
+        {
+            (ArchitectModels.WrathEnchantmentId, typeof(Wrath)),
+            (ArchitectModels.CalmEnchantmentId, typeof(Calm)),
+            (ArchitectModels.WrathStanceId, typeof(WrathStancePower)),
+            (ArchitectModels.CalmStanceId, typeof(CalmStancePower)),
+            (ArchitectModels.VioletLotusId, typeof(VioletLotus))
+        })
+            models[id] = ModelDb.GetById<AbstractModel>(ModelDb.GetId(type));
     }
 
     private static CardPlay Play(CardModel card, int index = 0, int count = 1) =>

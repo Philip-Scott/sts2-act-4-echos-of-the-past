@@ -17,7 +17,7 @@ internal static class WatcherStances
             await PowerCmd.Remove(calm);
             await PlayerCmd.GainEnergy(1, card.Owner);
         }
-        await PowerCmd.Apply<WrathStancePower>(context, owner, 1, owner, card);
+        await PowerCmd.Apply(context, ArchitectModels.WrathStance.ToMutable(), owner, 1, owner, card);
     }
 
     internal static async Task EnterCalm(PlayerChoiceContext context, CardModel card)
@@ -28,6 +28,6 @@ internal static class WatcherStances
 
         if (owner.GetPower<WrathStancePower>() is { } wrath)
             await PowerCmd.Remove(wrath);
-        await PowerCmd.Apply<CalmStancePower>(context, owner, 1, owner, card);
+        await PowerCmd.Apply(context, ArchitectModels.CalmStance.ToMutable(), owner, 1, owner, card);
     }
 }

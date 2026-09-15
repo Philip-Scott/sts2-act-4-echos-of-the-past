@@ -4,6 +4,7 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Enchantments;
 using MegaCrit.Sts2.Core.Models.RelicPools;
 
@@ -15,7 +16,8 @@ public sealed class DeusExMachina : UnwrittenRelic
     public DeusExMachina() =>
         this.AddCustomAncientSpawnCondition(ancient => ancient.Owner is { } player && CanReceive(player));
 
-    internal static bool CanReceive(Player player) => RandomDeckEnchantments.HasEligibleCards<Sown>(player, 3);
+    internal static bool CanReceive(Player player) =>
+        RandomDeckEnchantments.HasEligibleCards(player, ModelDb.Enchantment<Sown>(), 3);
 
     public override bool HasUponPickupEffect => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(3)];
@@ -23,7 +25,7 @@ public sealed class DeusExMachina : UnwrittenRelic
 
     public override Task AfterObtained()
     {
-        var cards = RandomDeckEnchantments.Apply<Sown>(Owner, DynamicVars.Cards.IntValue);
+        var cards = RandomDeckEnchantments.Apply(Owner, ModelDb.Enchantment<Sown>(), DynamicVars.Cards.IntValue);
         if (cards.Count > 0)
             CardCmd.Preview(cards);
         return Task.CompletedTask;

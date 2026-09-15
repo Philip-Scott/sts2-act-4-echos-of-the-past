@@ -131,20 +131,20 @@ internal static class WatcherRelicPlaytest
         await ClearCombatCards(player);
         player.Creature.RemoveAllPowersInternalExcept();
         var context = new ThrowingPlayerChoiceContext();
-        async Task Enchanted<T>() where T : EnchantmentModel
+        async Task Enchanted(EnchantmentModel enchantment)
         {
             var card = Card<DefendIronclad>(player);
-            CardCmd.Enchant<T>(card, 1);
+            CardCmd.Enchant(enchantment.ToMutable(), card, 1);
             await CardCmd.AutoPlay(context, card, null);
         }
         var energy = player.PlayerCombatState!.Energy;
-        await Enchanted<Calm>();
-        await Enchanted<Calm>();
+        await Enchanted(ArchitectModels.CalmEnchantment);
+        await Enchanted(ArchitectModels.CalmEnchantment);
         Require(player.Creature.GetPower<CalmStancePower>() != null &&
             player.Creature.GetPower<WrathStancePower>() == null && player.PlayerCombatState.Energy == energy,
             "Native enchanted plays enter Calm; repeating Calm pays no Energy.");
-        await Enchanted<Wrath>();
-        await Enchanted<Wrath>();
+        await Enchanted(ArchitectModels.WrathEnchantment);
+        await Enchanted(ArchitectModels.WrathEnchantment);
         Require(player.Creature.GetPower<CalmStancePower>() == null &&
             player.Creature.GetPower<WrathStancePower>() != null && player.PlayerCombatState.Energy == energy + 1,
             "Native Calm-to-Wrath transition pays exactly one Energy; repeated Wrath does not stack.");
@@ -162,7 +162,7 @@ internal static class WatcherRelicPlaytest
         await CreatureCmd.Damage(context, player.Creature, 10, ValueProp.Move, target, null, null);
         Require(hp - player.Creature.CurrentHp == 15,
             $"Native enemy damage is multiplied by 1.5 in Wrath (actual damage: {hp - player.Creature.CurrentHp}).");
-        await Enchanted<Calm>();
+        await Enchanted(ArchitectModels.CalmEnchantment);
         player.Creature.LoseBlockInternal(player.Creature.Block);
         hp = player.Creature.CurrentHp;
         await CreatureCmd.Damage(context, player.Creature, 10, ValueProp.Move, target, null, null);

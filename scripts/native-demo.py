@@ -186,7 +186,7 @@ def sandbox_command(game, run, xvfb, render_threads=4, shared_display=None, rend
 
 
 def launch(args):
-    if args.scenario in ("enchantment-art", "stance-vfx") and args.shared_visible:
+    if args.scenario in ("enchantment-art", "stance-tooltips", "stance-vfx") and args.shared_visible:
         raise ValueError(f"--{args.scenario} requires a private display; omit --shared-visible.")
     if args.manual and (not args.shared_visible or args.scenario not in MANUAL_PARTIES):
         raise ValueError("--manual requires --shared-visible and --party-1/2/3/4 or --downfall-party.")

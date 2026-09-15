@@ -9,18 +9,17 @@ internal static class RandomDeckEnchantments
 {
     private static readonly Logger Logger = new("TheArchitect", LogType.Generic);
 
-    internal static bool HasEligibleCards<T>(Player owner, int count) where T : EnchantmentModel =>
-        EligibleCards(owner, ModelDb.Enchantment<T>()).Take(count).Count() == count;
+    internal static bool HasEligibleCards(Player owner, EnchantmentModel enchantment, int count) =>
+        EligibleCards(owner, enchantment).Take(count).Count() == count;
 
-    internal static IReadOnlyList<CardModel> Apply<T>(Player owner, int count)
-        where T : EnchantmentModel
+    internal static IReadOnlyList<CardModel> Apply(Player owner, EnchantmentModel enchantment, int count)
     {
-        var selected = Select(owner, ModelDb.Enchantment<T>(), count);
+        var selected = Select(owner, enchantment, count);
         if (selected.Count < count)
-            Logger.Warn($"Only {selected.Count} of {count} cards remain eligible for {ModelDb.Enchantment<T>().Id}; " +
+            Logger.Warn($"Only {selected.Count} of {count} cards remain eligible for {enchantment.Id}; " +
                 "applying the available enchantments without replacing existing ones.");
         foreach (var card in selected)
-            CardCmd.Enchant<T>(card, 1);
+            CardCmd.Enchant(enchantment.ToMutable(), card, 1);
         return selected;
     }
 
