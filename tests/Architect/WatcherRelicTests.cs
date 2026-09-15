@@ -47,6 +47,8 @@ internal static class WatcherRelicTests
         })
             ModelDb.Inject(type);
 
+        WatcherTooltipTests.Run(test);
+
         test("Watcher: Ancient rarity, pickup effects, and exact native power amounts", () =>
         {
             (RelicModel Relic, string Key, int Amount)[] values =

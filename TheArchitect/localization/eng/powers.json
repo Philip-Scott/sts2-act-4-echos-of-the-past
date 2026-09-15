@@ -6,9 +6,9 @@
   "THEARCHITECT-ARCHITECT_INVINCIBLE_POWER.description": "Can lose at most [blue]{Amount}[/blue] HP each turn. [blue]{Remaining}[/blue] HP loss remaining. Resets at the start of this creature's turn.",
   "THEARCHITECT-ARCHITECT_INVINCIBLE_POWER.smartDescription": "Can lose at most [blue]{Amount}[/blue] HP each turn. [blue]{Remaining}[/blue] HP loss remaining. Resets at the start of this creature's turn.",
   "THEARCHITECT-WRATH_STANCE_POWER.title": "Wrath",
-  "THEARCHITECT-WRATH_STANCE_POWER.description": "Your Attacks deal [b]50%[/b] more damage. You take [b]50%[/b] more damage from enemies. Lasts until you enter another stance.",
-  "THEARCHITECT-WRATH_STANCE_POWER.smartDescription": "Your Attacks deal [b]50%[/b] more damage. You take [b]50%[/b] more damage from enemies. Lasts until you enter another stance.",
+  "THEARCHITECT-WRATH_STANCE_POWER.description": "Within this Stance, deal and receive 50% extra damage.",
+  "THEARCHITECT-WRATH_STANCE_POWER.smartDescription": "Within this Stance, deal and receive 50% extra damage.",
   "THEARCHITECT-CALM_STANCE_POWER.title": "Calm",
-  "THEARCHITECT-CALM_STANCE_POWER.description": "When you leave Calm for another stance, gain [b]1[/b] [gold]Energy[/gold]. Entering Calm again does not count as leaving it.",
-  "THEARCHITECT-CALM_STANCE_POWER.smartDescription": "When you leave Calm for another stance, gain [b]1[/b] [gold]Energy[/gold]. Entering Calm again does not count as leaving it."
+  "THEARCHITECT-CALM_STANCE_POWER.description": "Upon leaving this Stance, Gain {energyPrefix:energyIcons(1)}",
+  "THEARCHITECT-CALM_STANCE_POWER.smartDescription": "Upon leaving this Stance, Gain {energyPrefix:energyIcons(1)}"
 }

@@ -1,8 +1,8 @@
 {
   "THEARCHITECT-WRATH.title": "Wrath",
-  "THEARCHITECT-WRATH.description": "After playing this card, enter [gold]Wrath[/gold]: your Attacks deal [b]50%[/b] more damage and you take [b]50%[/b] more damage from enemies. Lasts until you enter another stance.",
+  "THEARCHITECT-WRATH.description": "Within this Stance, deal and receive 50% extra damage.",
   "THEARCHITECT-WRATH.extraCardText": "Enter [gold]Wrath[/gold].",
   "THEARCHITECT-CALM.title": "Calm",
-  "THEARCHITECT-CALM.description": "After playing this card, enter [gold]Calm[/gold]. When you leave Calm for another stance, gain [b]1[/b] [gold]Energy[/gold]. Entering Calm again does not count as leaving it.",
+  "THEARCHITECT-CALM.description": "Upon leaving this Stance, Gain {energyPrefix:energyIcons(1)}",
   "THEARCHITECT-CALM.extraCardText": "Enter [gold]Calm[/gold]."
 }

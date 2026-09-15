@@ -200,6 +200,10 @@ It uses disposable saves and the worktree's `artifacts/mods`, never the live mod
 installation. The `architect` command includes The Watcher; the direct
 boss bootstrap below intentionally remains a combat-only entry.
 
+The focused `--stance-tooltips` native scenario renders Wrath and Calm on cards
+and Violet Lotus, retaining Exhaust tips and the native Energy sprite. It uses
+disposable native models without playing through the Ancient or combat turns.
+
 The repository skill [`setup-act4`](.github/skills/setup-act4/SKILL.md) coordinates
 this setup from random victory histories: source Slot 1 to modded Slot 2 by
 default, with backups and naturally rolled Ancient offers. Explicit slot

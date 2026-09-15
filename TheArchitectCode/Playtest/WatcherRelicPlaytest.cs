@@ -39,6 +39,7 @@ internal static class WatcherRelicPlaytest
         await CreatureCmd.Heal(player.Creature, 10000);
         player.Creature.RemoveAllPowersInternalExcept();
 
+        await WatcherTooltipPlaytest.Run(player);
         await Egg(player);
         await Stances(player);
         await EnergyAfterReshuffle(player);

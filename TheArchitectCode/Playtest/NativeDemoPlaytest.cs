@@ -81,6 +81,11 @@ internal static class NativeDemoPlaytest
             game.AddChild(new NativeDemoObserver());
         }
         await Task.Delay(2000);
+        if (CommandLineHelper.HasArg("architect-native-stance-tooltips"))
+        {
+            await WatcherTooltipPlaytest.RunFocused(game);
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-native-downfall-party"))
         {
             await NativePartyPlaytest.Run(game, partySize: 4,
