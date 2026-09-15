@@ -1,7 +1,7 @@
 # Game integration and upgrade-risk inventory
 
 Snapshot: **2026-09-12**, working tree based on `b8bb892`, **including uncommitted and untracked C# changes**. This describes the source currently present, not necessarily the installed DLL or published release.
-Watcher content, enchantment and relic-hook rows updated **2026-09-15**; the patch census retains the original snapshot scope.
+Watcher content, enchantment, stance-visual and relic-hook rows updated **2026-09-15**; the patch census retains the original snapshot scope.
 
 Declared compatibility: Slay the Spire 2 **public-beta 0.111.0** (README: build `24724944`, game commit `41cef1ea`), **BaseLib 3.4.5**, .NET 9, Godot.NET SDK 4.5.1. See [project references](../TheArchitect.csproj), [mod manifest](../TheArchitect.json), and [README](../README.md). Game and Harmony assemblies come from the selected local game installation, not version-pinned NuGet packages. The manifest declares minimum versions, not a guarantee of compatibility with later versions.
 
@@ -33,7 +33,7 @@ This inventory includes loader entry, content callbacks, every declared Harmony 
 
 | Source | Entrypoint/API | Upgrade exposure |
 | --- | --- | --- |
-| [MainFile.cs](../TheArchitectCode/MainFile.cs), `Initialize` | Native `[ModInitializer]`; initialize demo safety, register save and run-start listener, `Harmony.PatchAll(assembly)`, then `NativeCombatCallSites.Install(harmony)` | **High** blast radius: initialization does not isolate a failed patch family and continue. A broken optional-playtest target can also block initialization. This is native loader + Harmony, not BaseLib initialization. |
+| [MainFile.cs](../TheArchitectCode/MainFile.cs), `Initialize` | Native `[ModInitializer]`; initialize demo safety, register save and run-start listener, `Harmony.PatchAll(assembly)`, register stance texture aliases, then `NativeCombatCallSites.Install(harmony)` | **High** blast radius: initialization does not isolate a failed patch family and continue. A broken optional-playtest target can also block initialization. This is native loader + Harmony, not BaseLib initialization. |
 | [Acts/ArchitectAct.cs](../TheArchitectCode/Acts/ArchitectAct.cs) | `CustomActModel(4, autoAdd: false)`; `ILocalizationProvider`, `ActLoc`; `CustomCreateMap`, background/map/rest asset overrides | BaseLib-backed content, but manual append, `_rooms` assignment, and fixed fourth-act assumptions remain **High** native coupling. |
 | [Ancients/TheUnwritten.cs](../TheArchitectCode/Ancients/TheUnwritten.cs) | `CustomAncientModel`; `MakeOptionPools`, `MakePool`, `IsValidForAct`, asset/icon overrides | **Lower/Medium**. Native Ancient layout, entry healing, choice synchronization and rewards are reused. The background is supplied through a separate Harmony patch. |
 | [Encounters/ArchitectEncounter.cs](../TheArchitectCode/Encounters/ArchitectEncounter.cs) | `CustomEncounterModel(RoomType.Boss, autoAdd: false)`; `GenerateMonsters`, `AllPossibleMonsters`, validity/reward/scene/slot/icon overrides | **Medium**. Needs a separate prefix to obtain run context before generation; empty slots require custom spawn positioning. |
@@ -69,6 +69,7 @@ This inventory includes loader entry, content callbacks, every declared Harmony 
 | `NurembergEgg` | `ModifyCardPlayResultLocation`, `ModifyCardPlayCount`, `BeforeCardPlayed`, `TryModifyKeywordsInCombat` | Native result-pile resolution precedes replay-count hooks. Count original play series, add two replays without replacing other bonuses, and keep Exhaust combat-only. |
 | `DevaForm` | `ModifyShuffleOrder`, `AfterEnergyReset` | Initial shuffle must be excluded; the first mid-combat reshuffle enables a nonstacking bonus on subsequent owner turns, including extra turns. |
 | `Wrath`, `Calm`, `WatcherStances`, stance powers | Enchantment `OnPlay`, native power application/removal and `ModifyDamageMultiplicative` | Enchantments enter stances after their card effect. Same-stance entry must not stack or pay Calm Energy; damage ownership must also work for Corrupted Players. |
+| `CalmStancePower`, `WrathStancePower`, `WatcherStanceVfx` | `AfterApplied`, `AfterCombatEnd`, power `Removed`; cached creature/power state and Godot `_ExitTree` | Stance visuals attach only to the exact owner, including remote and Corrupted Players. Model-only `TestMode` skips visuals; stale removal callbacks must not detach a replacement stance. |
 
 ## 3. Fourth-act lifecycle and presentation patches
 
@@ -152,6 +153,8 @@ Current error policies are not uniform: missing/invalid solo lineage can log and
 | --- | --- | --- |
 | `ArchitectAct`, `ArchitectBoss` | Native Architect workshop background path, native Architect monster assets, `idle_loop`/`hurt`/`attack` animation names; Glory map/rest assets | **Medium/High**. Resource renames or animation/skeleton changes need not produce compiler errors. |
 | `TheUnwritten`, `UnwrittenPresentation` | `res://scenes/events/ancient_event_layout.tscn`, native title/offer geometry | **Medium**. Layout changes can overlap or hide content even when event logic works. |
+| `WatcherStanceVfx`, `WatcherStanceShader` | `NCreature._Ready` postfix; exact owner `Visuals/%Bounds`; two cached procedural shader quads | **Medium/High** scene coupling. Restore pre-view powers without duplicate effects; preserve character materials/hierarchy, Bound Echo and unrelated pets. Geometry updates only when cached bounds change. |
+| `WatcherStanceIcons` | `Resource.TakeOverPath`, strongly retained `AtlasTexture` aliases for the two `power_atlas.sprites/thearchitect-*_stance_power.tres` paths | **Medium** native path contract. Both native fallback and BaseLib custom paths must resolve the same original pixels, even when nonvirtual native getters are inlined. No vanilla resource aliases are replaced. |
 | `ArchitectRoomBackgrounds` | Rest `BgContainer` child 0; `RestSiteBG`, foreground/dither/lighting paths; shop `SceneContainer`, `BgContainer`, lights and `stars` | **High** scene-tree coupling. `GetNode` assumes these paths; native fire, logs, lighting, merchant and character containers must remain functional. |
 | `ArchitectMapIcons`, map layout patches | `%Icon`, private map containers/tweens and layout constants | **High**. Scene and IL assumptions coexist. |
 | `CorruptedPlayer.CreateCustomVisuals` | Every restored native character's visual scene, `%Visuals`, animator/SFX | **Medium/High**. One character can break while others still render. Additional UI/pet dependencies are catalogued with their integration hooks below. |
