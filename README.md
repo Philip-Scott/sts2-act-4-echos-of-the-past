@@ -284,6 +284,18 @@ The ending scenario needs no snapshot input:
 It covers the direct Act 3 handoff, both outcomes, and full-party binding using
 all five base characters. Its simulated multiplayer party is not a live network test.
 
+Calm surrounds its owner with animated pale-blue wind; Wrath adds a pulsing red aura
+and rising sparks. These independent overlays preserve native character materials
+and Corrupted Players' Bound Echo effects. They follow only the stance owner and
+are removed with the power, owner death, combat end, or scene teardown.
+The private-display visual regression needs no user snapshot:
+`bash scripts/native-demo.sh run "/path/to/Slay the Spire 2" --stance-vfx --record --render-threads 2`.
+Build to `artifacts/mods` first. This opt-in probe captures animation at multiple
+timestamps and exercises local/remote party identities, restored enemy enchantments,
+reentry, switching, removal, lifecycle cleanup, and native material/pet isolation.
+It uses simulated multiplayer, not a live network session; recordings and assertions
+remain in the run's `artifacts/native-demo/` directory.
+
 To reproduce an existing Corrupted Player fight without touching its profile,
 set `ARCHITECT_RUN_INPUT` to the saved `current_run.save` and run
 `scripts/native-demo.sh run "/path/to/Slay the Spire 2" --saved-run`.

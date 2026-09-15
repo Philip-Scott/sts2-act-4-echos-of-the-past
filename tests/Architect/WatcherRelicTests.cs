@@ -21,6 +21,7 @@ using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Runs.History;
+using MegaCrit.Sts2.Core.TestSupport;
 using MegaCrit.Sts2.Core.ValueProps;
 using TheArchitect.TheArchitectCode.Enchantments;
 using TheArchitect.TheArchitectCode.Powers;
@@ -421,6 +422,34 @@ internal static class WatcherRelicTests
                 owner.Creature.RemoveAllPowersInternalExcept().ToArray();
                 Check(owner.Creature.GetPower<WrathStancePower>() == null);
             });
+        });
+
+        test("Watcher stance visuals: model-only lifecycle needs no Godot view and changes no gameplay state", () =>
+        {
+            var owner = Player();
+            var other = Player();
+            PowerModel[] powers = [ModelDb.Power<CalmStancePower>().ToMutable(),
+                ModelDb.Power<WrathStancePower>().ToMutable()];
+            var previousMode = TestMode.IsOn;
+            var mode = AccessTools.Property(typeof(TestMode), nameof(TestMode.IsOn));
+            mode.SetValue(null, true);
+            try
+            {
+                foreach (var power in powers)
+                {
+                    power.ApplyInternal(owner.Creature, 1);
+                    power.AfterApplied(null, null).GetAwaiter().GetResult();
+                    power.AfterApplied(null, null).GetAwaiter().GetResult();
+                    power.AfterCombatEnd(null!).GetAwaiter().GetResult();
+                    power.RemoveInternal();
+                }
+                Check(owner.Creature.CurrentHp == 100 && owner.PlayerCombatState!.Energy == 0);
+                Check(owner.Creature.Powers.Count == 0 && other.Creature.Powers.Count == 0);
+            }
+            finally
+            {
+                mode.SetValue(null, previousMode);
+            }
         });
 
         test("Watcher enchantments: play hook changes only card owner's stance, never outside combat", () =>

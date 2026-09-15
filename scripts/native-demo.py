@@ -186,8 +186,8 @@ def sandbox_command(game, run, xvfb, render_threads=4, shared_display=None, rend
 
 
 def launch(args):
-    if args.scenario == "enchantment-art" and args.shared_visible:
-        raise ValueError("--enchantment-art requires a private display; omit --shared-visible.")
+    if args.scenario in ("enchantment-art", "stance-vfx") and args.shared_visible:
+        raise ValueError(f"--{args.scenario} requires a private display; omit --shared-visible.")
     if args.manual and (not args.shared_visible or args.scenario not in MANUAL_PARTIES):
         raise ValueError("--manual requires --shared-visible and --party-1/2/3/4 or --downfall-party.")
     if args.scenario == "downfall-party" and not args.manual:
@@ -204,7 +204,7 @@ def launch(args):
         tool("ffmpeg")
         tool("ffprobe")
     game = required_file(Path(args.game) / "SlayTheSpire2").parent
-    requires_snapshot = args.scenario not in DOWNFALL_SCENARIOS + ("downfall-party", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption")
+    requires_snapshot = args.scenario not in DOWNFALL_SCENARIOS + ("downfall-party", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx")
     if requires_snapshot and not os.environ.get("ARCHITECT_SNAPSHOT_INPUT"):
         raise ValueError("Set ARCHITECT_SNAPSHOT_INPUT to the captured snapshot to copy (never modified).")
     snapshot = required_file(os.environ["ARCHITECT_SNAPSHOT_INPUT"]) if (
@@ -572,7 +572,7 @@ def main():
     cache.add_argument("--cache-from", help="Copy shader caches from this completed run ID.")
     cache.add_argument("--cold", action="store_true", help="Do not seed shader caches from a completed run.")
     scenarios = run.add_mutually_exclusive_group()
-    for scenario in DOWNFALL_SCENARIOS + ("downfall-party", "loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "previews", "media", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption"):
+    for scenario in DOWNFALL_SCENARIOS + ("downfall-party", "loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "previews", "media", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx"):
         scenarios.add_argument("--" + scenario, dest="scenario", action="store_const", const=scenario)
     run.set_defaults(scenario="default")
     for action in ("status", "capture", "stop", "pointer", "click", "key", "_serve"):
