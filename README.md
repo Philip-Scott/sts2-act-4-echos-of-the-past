@@ -7,7 +7,7 @@
 Previously named **The Architect**. The internal mod ID and save paths remain
 `TheArchitect`; the boss and in-game act still retain that name.
 
-Meet **The Unwritten**, choose an Ancient gift, and confront the Architect.
+Meet **The Watcher**, choose an Ancient gift, and confront the Architect.
 On later visits, first fight a **Corrupted Player** wielding your previous deck.
 Play solo or bring a 2-4 player party: the same host and group face their entire
 last saved party before the Architect enters the same combat.
@@ -61,30 +61,51 @@ supplied tower-approach illustration; the boss fight retains the
 native Architect workshop interior. Native campfire, merchant, and room
 interactions remain intact.
 
-**The Unwritten**, the Architect's rival and patron of imperfection, offers one
-mandatory choice from three personal relic offers: a build gift, a recovery gift,
-and a bargain-slot gift. Native Ancient entry healing, choices, reward screens,
+**The Watcher**, keeper of forgotten lessons, offers one mandatory choice from
+three personal relic offers: **Preparation**, **Discipline**, and **Transcendence**.
+Each category contains four candidates. Native Ancient entry healing, choices, reward screens,
 and save behavior are retained; there is no decline or reroll. Ancient choices
 use the native multiplayer synchronization. Candidates have equal weights within each category.
 
 | Category | Relic | Effect |
 | --- | --- | --- |
-| Build | Loose Thread | Draw +1 on your first three turns. |
-| Build | Crooked Needle | Start combat with 1 Strength and 1 Dexterity. |
-| Build | Orange Pearl | Start combat with 1 Artifact. |
-| Build | Diamond Hand | After the opening draw, apply combat-only Glam to a random eligible unenchanted card in hand. |
-| Recovery | Unspent Possibility | Gain 150 Gold. |
-| Recovery | Last Meal | Gain 20 maximum HP and receive two potion rewards and one rare-card reward. |
-| Bargain | Borrowed Tomorrow | Gain +1 Energy on your first three turns; start combat with 2 ordinary Vulnerable. |
-| Bargain | Handheld Mirror | Acquire a copy of 3 random relics. |
+| Preparation | The Last Wish | Gain 99 Gold. Start combat with 4 Plating and 1 Strength. |
+| Preparation | Golden Eye | Scry 8 at the start of combat. |
+| Preparation | Orange Pearl | Start combat with 1 Artifact. |
+| Preparation | Medieval Meal | Gain 20 maximum HP and receive two potion rewards and one rare-card reward. |
+| Discipline | Loose Thread | Draw +1 on your first three turns. |
+| Discipline | Diamond Hand | After the opening draw, apply combat-only Glam to a random eligible unenchanted card in hand. |
+| Discipline | Deus Ex Machina | Upon pickup, enchant 3 random eligible deck cards with Sown. |
+| Discipline | Violet Lotus | Upon pickup, enchant 2 random deck cards with Wrath and 2 other cards with Calm. |
+| Transcendence | Nuremberg Egg | The 12th card played each combat is replayed twice, then the original Exhausts. Once per combat. |
+| Transcendence | Ritual Dagger | Start combat with 1 Ritual and 3 Vulnerable. |
+| Transcendence | Deva Form | After the first mid-combat reshuffle, gain 1 additional Energy at the start of each subsequent turn. Does not stack. |
+| Transcendence | Handheld Mirror | Acquire a copy of 3 random relics. |
+
+Scry lets you inspect the top cards of your draw pile and discard any of them.
+Playing a Wrath-enchanted card enters Wrath: your Attacks deal 50% more damage,
+and enemy damage against you is increased by 50%. Playing a Calm-enchanted
+card enters Calm; leaving Calm grants 1 Energy. Entering the same stance again
+does not count as leaving it. Stances last until changed and reset after combat.
+Deus Ex Machina and Violet Lotus are offered only when at least three or four
+eligible unenchanted cards remain, respectively. If another pickup effect changes
+the deck before a copied relic resolves, it enchants the remaining eligible cards
+without replacing existing enchantments and logs the shortfall.
+
+The retired **Unspent Possibility**, **Crooked Needle**, and **Borrowed Tomorrow**
+are excluded only from new Ancient offers. Their model IDs, effects, localization,
+and artwork remain available to existing saves and run history. Medieval Meal
+retains the original `LAST_MEAL` identity; The Watcher retains the original
+`THE_UNWRITTEN` event identity. No saved relic is replaced or removed.
 
 First and Repeat Visits use the same pool. Turn counts include extra turns, and
 the Corrupted Player-to-Architect transition does not restart bonuses or copied
 relic counters. Only permanent deck and maximum-HP changes enter the existing
 terminal snapshot; relics, Gold, potions, and combat-only Glam do not.
-The Unwritten has custom Ancient artwork and eight original, individually
-illustrated relic icons, with matching inventory, selection-outline, and large
-inspection textures. Editable SVG sources accompany the PNG assets.
+The Watcher uses the supplied full-scene Ancient artwork and a matching map icon.
+Seven new relic icons were illustrated in parallel, isolated GPT-6 Astra contexts,
+alongside the retained icons, with matching inventory, selection-outline, and
+large inspection textures. Editable SVG sources accompany the relic PNG assets.
 Mirror can copy owned relic types, including modded relics, by default.
 Its blocklist excludes Mirror itself, Touch of Orobas, Pael's Eye, Golden Compass,
 Fur Coat, Lord's Parasol, Archaic Tooth, Paper Krane, Paper Phrog, Lava Rock,
@@ -159,7 +180,7 @@ outcome, terminal HP, and saved successor builds remain unchanged.
 
 For fast feedback, start a disposable modded single-player run, open the
 developer console with the **backtick (`)** key, and enter `architect`. This skips to the Act 4
-map using your current build; The Unwritten's native entry healing still applies,
+map using your current build; The Watcher's native entry healing still applies,
 but the command does not grant a late-game deck or extra Gold.
 Normal completion of this run can replace your profile's Corrupted Player.
 Use `architect`, not `act 4`: the vanilla `act` command can only visit acts
@@ -168,7 +189,7 @@ already appended to the current run.
 The isolated native arrival scenario needs no snapshot input:
 `bash scripts/native-demo.sh run "/path/to/Slay the Spire 2" --ancient`.
 It uses disposable saves and the worktree's `artifacts/mods`, never the live mod
-installation. The `architect` command includes The Unwritten; the direct
+installation. The `architect` command includes The Watcher; the direct
 boss bootstrap below intentionally remains a combat-only entry.
 
 The repository skill [`setup-act4`](.github/skills/setup-act4/SKILL.md) coordinates
@@ -177,7 +198,7 @@ default, with backups and naturally rolled Ancient offers. Explicit slot
 overrides are supported.
 
 `--architect-history-setup /absolute/path/to/config.json` prepares a live selected-slot
-run from two single-player victory histories and opens The Unwritten with Mirror
+run from two single-player victory histories and opens The Watcher with Mirror
 offered by the selected native seed unless disabled below. Select the target and
 back it up first; the launcher refuses a mismatched slot or an active run.
 The configuration supplies `ProfileId` (1, 2 or 3),

@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="gold" x1="17%" y1="20%" x2="79%" y2="92%">
+      <stop stop-color="#e3be78"/>
+      <stop offset=".52" stop-color="#c99b55"/>
+      <stop offset="1" stop-color="#a46b39"/>
+    </linearGradient>
+    <linearGradient id="well" x1="28%" y1="0%" x2="68%" y2="100%">
+      <stop stop-color="#8b543a"/>
+      <stop offset=".5" stop-color="#713e2e"/>
+      <stop offset="1" stop-color="#593227"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="10%" y1="0%" x2="72%" y2="100%">
+      <stop stop-color="#edd097"/>
+      <stop offset=".5" stop-color="#d7b16a"/>
+      <stop offset="1" stop-color="#bb8648"/>
+    </linearGradient>
+  </defs>
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <!-- A low, heavy gold body, seen from above rather than a flat eye badge. -->
+    <path d="M43 86 Q57 63 88 53 Q123 38 158 47 Q194 47 217 79 L224 101 Q234 118 232 139 Q232 167 212 187 Q181 218 134 221 Q90 226 56 205 Q27 187 25 157 Q22 132 33 110 Z"
+      fill="url(#gold)" stroke="#61402e" stroke-width="4.5"/>
+    <path d="M31 125 Q26 155 41 176 Q57 199 91 208 Q67 199 59 181 Q47 165 44 143 L41 110 Z"
+      fill="#e0b974"/>
+    <path d="M224 104 Q233 129 226 151 Q220 162 210 164 Q215 184 185 198 Q161 212 126 213 Q97 218 69 207 Q96 224 134 219 Q186 214 211 187 Q235 164 232 137 Z"
+      fill="#aa713e"/>
+    <path d="M220 112 Q226 122 223 140 L218 153 L212 155 L217 135 Z"
+      fill="#ebc785"/>
+    <path d="M57 196 Q84 214 119 213 Q164 214 195 194 L203 185 Q175 202 145 205 L113 207 Q84 205 57 196 Z"
+      fill="#dbb36c"/>
+    <path d="M51 133 Q82 157 129 158 Q181 158 218 128 L215 142 Q187 169 139 176 Q86 183 51 153 Z"
+      fill="#cda15b"/>
+
+    <!-- The dark inset carries a raised, irregular eye and its narrow gold pupil. -->
+    <path d="M44 84 Q64 57 100 47 Q132 37 164 48 Q193 50 207 66 L215 67 Q225 82 223 100 Q220 127 191 142 Q161 158 120 155 Q77 153 49 135 Q38 119 37 102 Z"
+      fill="url(#rim)" stroke="#704832" stroke-width="3.6"/>
+    <path d="M50 88 Q68 63 103 53 Q132 45 158 53 Q189 56 204 70 L212 72 Q221 88 214 104 Q205 127 178 138 Q147 149 117 146 Q77 144 55 130 Q48 115 46 102 Z"
+      fill="url(#well)" stroke="#a67546" stroke-width="2.5"/>
+    <path d="M51 87 Q78 58 113 51 Q141 43 165 55 Q130 53 112 61 Q80 67 60 95 L54 113 L48 103 Z"
+      fill="#9e6746"/>
+    <path d="M57 124 Q88 143 127 141 Q178 144 205 117 Q197 134 174 140 Q143 152 114 146 Q78 144 55 130 Z"
+      fill="#542f27"/>
+    <path d="M44 91 L45 107 Q50 119 55 128 Q79 145 117 148 Q173 155 207 123 Q215 115 219 104 Q216 127 188 141 Q154 157 116 153 Q77 151 51 134 L43 117 L39 104 Z"
+      fill="#f0cf8b"/>
+    <path d="M53 137 Q92 160 139 156 Q181 153 204 136 Q178 159 141 163 Q92 164 60 147 Z"
+      fill="#a36d3e"/>
+    <path d="M49 83 Q70 57 106 48 L120 47 M163 49 Q181 52 194 59"
+      fill="none" stroke="#f4dba6" stroke-width="3.6"/>
+    <path d="M58 132 Q79 145 104 147 M145 152 Q173 150 189 142"
+      fill="none" stroke="#fae1a5" stroke-width="2.8"/>
+
+    <path d="M58 83 Q77 65 101 60 L124 58 Q151 53 175 64 L195 71 L203 65 L213 75 L202 86 L181 81 Q154 68 127 71 L104 72 Q82 77 68 93 Z"
+      fill="#593429" opacity=".62"/>
+    <path d="M56 80 Q77 60 105 56 L125 53 Q149 48 176 60 L194 66 L203 61 L213 71 L201 80 L181 75 Q154 63 127 66 L106 67 Q84 71 67 87 Z"
+      fill="#bf8e50" stroke="#795035" stroke-width="2.6"/>
+    <path d="M58 80 Q79 62 104 59 L126 56 Q151 51 176 63 L194 69 L203 65 L208 70 L199 74 L178 69 Q150 59 127 61 L103 63 Q81 68 63 83 Z"
+      fill="#e8c58a"/>
+    <path d="M80 65 L91 62 L106 61 M152 58 Q168 60 180 66 L193 71"
+      fill="none" stroke="#f6db9f" stroke-width="3"/>
+    <path d="M95 61 L92 68 M178 69 L184 75" fill="none" stroke="#a77745" stroke-width="2"/>
+
+    <path d="M53 96 Q67 111 81 111 Q94 111 104 105 Q119 96 129 100 L142 106 L149 99 Q164 110 181 124 L190 119 L187 110 Q169 100 154 89 Q140 79 127 82 Q111 78 98 88 Q85 97 74 96 L62 90 Z"
+      fill="#482d26" opacity=".6"/>
+    <path d="M51 88 Q62 99 76 99 Q85 99 99 90 Q113 80 127 84 L139 88 L147 84 Q163 95 184 109 L187 117 L177 121 Q159 106 145 97 L138 102 L127 96 Q114 90 104 98 Q87 110 74 109 Q59 108 50 100 Z"
+      fill="#bc884c" stroke="#805337" stroke-width="2.7"/>
+    <path d="M52 89 Q63 102 77 102 Q88 101 100 93 Q113 84 126 87 L139 92 L146 88 Q164 100 181 111 L178 115 Q158 101 146 94 L138 98 L127 92 Q113 87 101 96 Q87 107 74 105 Q60 104 52 97 Z"
+      fill="#e0b778"/>
+    <path d="M55 91 Q66 102 79 101 Q90 98 100 92 Q115 83 127 88 M149 91 L166 102 L181 112"
+      fill="none" stroke="#f1d499" stroke-width="3"/>
+    <path d="M177 116 L185 113 L186 117 L178 121 Z" fill="#9b693e"/>
+
+    <path d="M129 46 L143 47 L151 70 L145 94 L138 104 L126 99 L119 80 L120 63 Z"
+      fill="#64412e" opacity=".65"/>
+    <path d="M128 44 L140 46 L150 68 L145 90 L135 99 L125 93 L118 73 L121 57 Z"
+      fill="#dab371" stroke="#9a713f" stroke-width="2.6"/>
+    <path d="M128 44 L140 46 L147 67 L118 73 L122 55 Z" fill="#f3d9a0"/>
+    <path d="M118 73 L147 67 L145 89 L135 99 L125 93 Z" fill="#d5ac66"/>
+    <path d="M140 46 L150 68 L145 90 L135 99 L140 78 L147 67 Z" fill="#b7894b"/>
+    <path d="M125 49 L130 46 L137 47" fill="none" stroke="#f9e5b4" stroke-width="2.6"/>
+
+    <!-- A single curling recess gives the thick front its recognizable profile. -->
+    <path d="M70 184 Q93 190 121 187 Q153 185 170 174 Q179 169 178 159 Q178 145 190 141 Q204 136 212 148 Q218 159 205 175 Q187 196 154 202 Q108 212 78 199 L64 191 Z"
+      fill="#a87443"/>
+    <path d="M78 188 Q105 194 139 188 Q166 184 181 173 Q190 165 187 157 Q185 149 192 146 Q200 141 205 148 Q211 157 201 170 Q180 192 149 198 Q110 205 83 196 L72 191 Z"
+      fill="#71402c"/>
+    <path d="M86 195 Q124 205 162 193 Q188 185 200 169 Q194 187 165 196 Q126 209 96 201 Z"
+      fill="#bc8348"/>
+    <path d="M65 180 Q90 187 125 182 Q153 180 168 170 Q176 165 175 157 Q174 143 187 138 Q203 132 211 145 L207 149 Q201 139 192 144 Q182 147 182 158 Q184 169 171 176 Q151 189 123 191 Q89 194 69 187 Z"
+      fill="#e9c580"/>
+    <path d="M72 181 Q97 187 125 183 Q154 180 169 172 Q178 167 178 157 Q176 145 188 141 Q199 137 204 143"
+      fill="none" stroke="#f2d496" stroke-width="3.2"/>
+    <path d="M62 152 Q74 157 91 157 L95 160 Q74 163 61 158 Z M61 165 Q76 169 94 168 L96 172 Q75 176 60 170 Z"
+      fill="#eaca87"/>
+    <path d="M66 150 Q77 153 84 153 M62 166 L73 168 M108 207 Q125 209 139 206"
+      fill="none" stroke="#f2d396" stroke-width="2.4"/>
+    <path d="M212 122 L215 116 M48 158 L50 165" fill="none" stroke="#a97643" stroke-width="2.4"/>
+  </g>
+</svg>

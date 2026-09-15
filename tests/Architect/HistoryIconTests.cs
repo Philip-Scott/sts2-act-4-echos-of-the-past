@@ -12,9 +12,9 @@ internal static class HistoryIconTests
         test("history icons: serialized model IDs resolve without ModelDb lookups", () =>
         {
             Check(ArchitectHistoryIcons.Resolve(new ModelId("EVENT", "THEARCHITECT-THE_UNWRITTEN"), false),
-                "res://TheArchitect/images/map/the_unwritten.png");
+                "res://TheArchitect/images/map/the_watcher.png");
             Check(ArchitectHistoryIcons.Resolve(new ModelId("EVENT", "THEARCHITECT-THE_UNWRITTEN"), true),
-                "res://TheArchitect/images/map/the_unwritten_outline.png");
+                "res://TheArchitect/images/map/the_watcher_outline.png");
             Check(ArchitectHistoryIcons.Resolve(new ModelId("ENCOUNTER", "THEARCHITECT-ARCHITECT_ENCOUNTER"), false),
                 "res://TheArchitect/images/map/architect_boss.png");
             Check(ArchitectHistoryIcons.Resolve(new ModelId("ENCOUNTER", "THEARCHITECT-ARCHITECT_ENCOUNTER"), true),
@@ -39,9 +39,9 @@ internal static class HistoryIconTests
                 var ancient = new ModelId("EVENT", "THEARCHITECT-THE_UNWRITTEN");
                 var boss = new ModelId("ENCOUNTER", "THEARCHITECT-ARCHITECT_ENCOUNTER");
                 Check(ImageHelper.GetRoomIconPath(MapPointType.Ancient, RoomType.Event, ancient),
-                    "res://TheArchitect/images/map/the_unwritten.png");
+                    "res://TheArchitect/images/map/the_watcher.png");
                 Check(ImageHelper.GetRoomIconOutlinePath(MapPointType.Ancient, RoomType.Event, ancient),
-                    "res://TheArchitect/images/map/the_unwritten_outline.png");
+                    "res://TheArchitect/images/map/the_watcher_outline.png");
                 Check(ImageHelper.GetRoomIconPath(MapPointType.Boss, RoomType.Boss, boss),
                     "res://TheArchitect/images/map/architect_boss.png");
                 Check(ImageHelper.GetRoomIconOutlinePath(MapPointType.Boss, RoomType.Boss, boss),

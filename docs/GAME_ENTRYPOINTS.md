@@ -1,6 +1,7 @@
 # Game integration and upgrade-risk inventory
 
 Snapshot: **2026-09-12**, working tree based on `b8bb892`, **including uncommitted and untracked C# changes**. This describes the source currently present, not necessarily the installed DLL or published release.
+Watcher content, enchantment and relic-hook rows updated **2026-09-15**; the patch census retains the original snapshot scope.
 
 Declared compatibility: Slay the Spire 2 **public-beta 0.111.0** (README: build `24724944`, game commit `41cef1ea`), **BaseLib 3.4.5**, .NET 9, Godot.NET SDK 4.5.1. See [project references](../TheArchitect.csproj), [mod manifest](../TheArchitect.json), and [README](../README.md). Game and Harmony assemblies come from the selected local game installation, not version-pinned NuGet packages. The manifest declares minimum versions, not a guarantee of compatibility with later versions.
 
@@ -10,8 +11,8 @@ Declared compatibility: Slay the Spire 2 **public-beta 0.111.0** (README: build 
 
 | Measurable surface | Current inventory | Interpretation |
 | --- | --- | --- |
-| Concrete BaseLib-backed content models | **15**: 1 act, 1 Ancient, 1 encounter, 2 monsters, 2 powers, 8 relics | All current custom content uses BaseLib model bases. The abstract card template adds no playable custom card. |
-| BaseLib pool/localization/offer integration | 8 `[Pool]` attributes; 1 `ILocalizationProvider`; 1 `AddCustomAncientSpawnCondition` call | Content registration and Ancient eligibility, not replacements for the lifecycle patches. |
+| Concrete BaseLib-backed content models | **26**: 1 act, 1 Ancient, 1 encounter, 2 monsters, 4 powers, 15 relics, 2 enchantments | Includes three retired relics retained for saved runs. All current custom content uses BaseLib model bases. The abstract card template adds no playable custom card. |
+| BaseLib pool/localization/offer integration | 15 `[Pool]` attributes; 1 `ILocalizationProvider`; 3 `AddCustomAncientSpawnCondition` calls | Content registration and Ancient eligibility, not replacements for the lifecycle patches. |
 | BaseLib extended-save registration | **1**, `TheArchitect.Run.v1` | Saves mod run state; external successor files and native card serialization remain separate dependencies. |
 | BaseLib custom-message implementations | **2**, `ArchitectPartyMessage` and `LobbyDeckPreviewMessage` | Custom protocol logic still belongs to this mod. |
 | Production Harmony patch declarations | **69** | Lifecycle 35; native combat 23; UI 9; encounter 1; monster 1. A declaration can select multiple runtime methods. |
@@ -38,8 +39,9 @@ This inventory includes loader entry, content callbacks, every declared Harmony 
 | [Encounters/ArchitectEncounter.cs](../TheArchitectCode/Encounters/ArchitectEncounter.cs) | `CustomEncounterModel(RoomType.Boss, autoAdd: false)`; `GenerateMonsters`, `AllPossibleMonsters`, validity/reward/scene/slot/icon overrides | **Medium**. Needs a separate prefix to obtain run context before generation; empty slots require custom spawn positioning. |
 | [Monsters/ArchitectBoss.cs](../TheArchitectCode/Monsters/ArchitectBoss.cs), [CorruptedPlayer.cs](../TheArchitectCode/Monsters/CorruptedPlayer.cs) | `CustomMonsterModel`; HP/SFX/assets; `CreateCustomVisuals`, `SetupCustomAnimationStates`; native room/death/move-state callbacks | **Medium**, becoming **High** for native Corrupted Player ownership and borrowed native visuals. |
 | [Powers/ArchitectInvinciblePower.cs](../TheArchitectCode/Powers/ArchitectInvinciblePower.cs), [ArchitectBeatOfDeathPower.cs](../TheArchitectCode/Powers/ArchitectBeatOfDeathPower.cs) | `CustomPowerModel`; icon/display metadata; native damage, turn, card-play and application callbacks | **Medium**. Damage-hook order and actual HP-change notifications are gameplay contracts, not shielded by custom icon support. |
-| [Relics/UnwrittenRelic.cs](../TheArchitectCode/Relics/UnwrittenRelic.cs) and its 8 concrete relics | `CustomRelicModel`; 8 `[Pool(typeof(SharedRelicPool))]`; Ancient rarity; icon overrides; `RemovePrefix()` | **Lower/Medium**. Relic effects use inherited native hooks and commands. |
+| [Relics/UnwrittenRelic.cs](../TheArchitectCode/Relics/UnwrittenRelic.cs) and its 15 concrete relics | `CustomRelicModel`; `[Pool(typeof(SharedRelicPool))]`; Ancient rarity; icon overrides; `RemovePrefix()` | **Medium**. Twelve Watcher offers and three retired, still-loadable relics. Relic effects use inherited native hooks and commands; saved IDs stay unchanged. |
 | [Relics/HandheldMirror.cs](../TheArchitectCode/Relics/HandheldMirror.cs) | BaseLib `AddCustomAncientSpawnCondition` | **Medium**. Requires Ancient owner to exist when eligibility is evaluated; duplication itself is native/mod-owned logic. |
+| `Relics/DeusExMachina.cs`, `Relics/VioletLotus.cs`, `Enchantments/Wrath.cs`, `Enchantments/Calm.cs` | BaseLib Ancient spawn conditions and `CustomEnchantmentModel`; native enchantment serialization | **Medium**. Offers require enough eligible unenchanted owner cards. Enchantment IDs must remain resolvable in saved decks and Corrupted Player snapshots. |
 | [Persistence/ArchitectRun.cs](../TheArchitectCode/Persistence/ArchitectRun.cs), `Register` | `ExtendedSaveTypes.RegisterSavedValue<IRunState, string>` with JSON and packet string readers/writers | **Medium/High**. Depends on BaseLib invoking save/load extensions at the right time, native player IDs being available, and the saved key/schema remaining compatible. |
 | [Multiplayer/ArchitectMultiplayer.cs](../TheArchitectCode/Multiplayer/ArchitectMultiplayer.cs), [LobbyDeckPreviewMessage.cs](../TheArchitectCode/Multiplayer/LobbyDeckPreviewMessage.cs) | BaseLib `ICustomMessage` (2 implementations), `CustomMessageWrapper` | **Medium/High**. Mod-owned serialization order, routing, host identity, membership and handshake semantics must match on every peer. |
 | [ArchitectModels.cs](../TheArchitectCode/ArchitectModels.cs), `TheUnwritten.Relic` | Native `ModelDb.GetById` with explicit `THEARCHITECT-...` IDs | **Medium/High** interaction with BaseLib ID prefix/registration. The code explicitly avoids generic custom-model lookups because normal-startup caches can bypass prefix handling. IDs are persisted contracts; renaming them is not a cosmetic change. |
@@ -62,6 +64,11 @@ This inventory includes loader entry, content callbacks, every declared Harmony 
 | `DiamondHand` | `AfterPlayerTurnStart` | Callback must occur after opening draw; native `Glam.CanEnchant`, `CardCmd.Enchant`, ownership and reward RNG contracts. |
 | `UnspentPossibility`, `LastMeal` | `AfterObtained` | Native Gold/max-HP/healing behavior and nested `RewardsSet`, `PotionReward`, `CardReward` flows. |
 | `HandheldMirror`, `MirrorDuplication` | `AfterObtained`; `RelicCmd.Obtain`, `ToMutable`; explicit `DustyTome.AncientCard`, `SeaGlass.CharacterId`, `Girya.TimesLifted` preservation | Native relic acquisition side effects, fields and duplicate-type semantics can change without any Harmony target breaking. Blocklist is tied to current relic behavior. |
+| `TheLastWish`, `RitualDagger` | `AfterObtained`, `BeforeCombatStart`; native Gold, Plating, Strength, Ritual and Vulnerable commands | Native power timing, Artifact prevention and ownership. |
+| `GoldenEye` | `BeforeHandDraw`, `CardSelectCmd.FromSimpleGrid`, `CardPileCmd.Add` | Scry must precede the opening draw, preserve top-to-bottom order and synchronize optional selection. Moving draw-pile cards must not trigger hand-discard effects. |
+| `NurembergEgg` | `ModifyCardPlayResultLocation`, `ModifyCardPlayCount`, `BeforeCardPlayed`, `TryModifyKeywordsInCombat` | Native result-pile resolution precedes replay-count hooks. Count original play series, add two replays without replacing other bonuses, and keep Exhaust combat-only. |
+| `DevaForm` | `ModifyShuffleOrder`, `AfterEnergyReset` | Initial shuffle must be excluded; the first mid-combat reshuffle enables a nonstacking bonus on subsequent owner turns, including extra turns. |
+| `Wrath`, `Calm`, `WatcherStances`, stance powers | Enchantment `OnPlay`, native power application/removal and `ModifyDamageMultiplicative` | Enchantments enter stances after their card effect. Same-stance entry must not stack or pay Calm Energy; damage ownership must also work for Corrupted Players. |
 
 ## 3. Fourth-act lifecycle and presentation patches
 
@@ -149,4 +156,3 @@ Current error policies are not uniform: missing/invalid solo lineage can log and
 | `ArchitectMapIcons`, map layout patches | `%Icon`, private map containers/tweens and layout constants | **High**. Scene and IL assumptions coexist. |
 | `CorruptedPlayer.CreateCustomVisuals` | Every restored native character's visual scene, `%Visuals`, animator/SFX | **Medium/High**. One character can break while others still render. Additional UI/pet dependencies are catalogued with their integration hooks below. |
 | Localized model IDs and asset packaging | `TheArchitect/localization/eng/*`, `res://TheArchitect/...`, `.pck` loader and custom IDs | **Medium**. BaseLib registration does not protect against missing packaged assets, changed localization keys, or native tooltip formatting changes. |
-

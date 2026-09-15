@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="upright" x1="0" y1="0" x2=".7" y2="1">
+      <stop stop-color="#d0a6d6"/>
+      <stop offset=".48" stop-color="#a77abc"/>
+      <stop offset="1" stop-color="#72437f"/>
+    </linearGradient>
+    <linearGradient id="leftPetal" x1="0" y1="0" x2=".85" y2="1">
+      <stop stop-color="#bd92ca"/>
+      <stop offset=".55" stop-color="#9765ab"/>
+      <stop offset="1" stop-color="#64406e"/>
+    </linearGradient>
+    <linearGradient id="rightPetal" x1="0" y1="0" x2=".5" y2="1">
+      <stop stop-color="#aa7dbd"/>
+      <stop offset=".6" stop-color="#865396"/>
+      <stop offset="1" stop-color="#59365f"/>
+    </linearGradient>
+    <linearGradient id="bowl" x1=".25" y1="0" x2=".7" y2="1">
+      <stop stop-color="#c199cf"/>
+      <stop offset=".48" stop-color="#a371b7"/>
+      <stop offset="1" stop-color="#72497f"/>
+    </linearGradient>
+  </defs>
+  <g stroke="#503640" stroke-width="3.8" stroke-linejoin="round" stroke-linecap="round">
+    <!-- The low, turned-back petals support the open flower without a stem. -->
+    <path d="M127 180 C103 171 74 180 56 202 C79 200 94 218 117 219 L129 229 C144 218 168 225 184 211 L203 197 C174 186 152 173 127 180Z" fill="#69446c"/>
+    <path d="M62 200 C80 199 98 204 116 215 L128 223 C105 216 96 209 86 209Z" fill="#947099" stroke="none"/>
+    <path d="M143 214 C160 211 180 208 197 199 C178 214 165 219 143 218Z" fill="#463440" stroke="none"/>
+
+    <!-- Upright petals form the pointed, broad lotus crown. -->
+    <path d="M127 149 C107 136 92 115 97 89 C99 62 121 42 130 24 C136 43 154 56 160 81 C168 112 151 138 127 149Z" fill="url(#upright)"/>
+    <path d="M130 29 C117 58 107 73 106 94 C102 114 113 129 126 141 C112 114 121 97 126 80 C132 59 136 46 130 29Z" fill="#d4b0dc" stroke="none"/>
+    <path d="M134 49 C149 67 154 87 150 105 C147 123 137 134 127 144 C150 133 163 109 157 85 C153 69 143 57 134 49Z" fill="#81538f" stroke="none"/>
+    <path d="M130 42 C121 58 116 67 113 77" fill="none" stroke="#e2c0e2" stroke-width="2.8"/>
+
+    <path d="M118 155 C81 145 57 123 54 93 C52 75 53 64 45 48 C72 52 100 66 115 90 C128 110 130 132 118 155Z" fill="url(#leftPetal)"/>
+    <path d="M50 53 C65 62 67 77 73 91 C80 108 98 118 117 144 C112 117 92 95 83 78 C72 65 61 57 50 53Z" fill="#c5a0d0" stroke="none"/>
+    <path d="M55 67 C55 90 61 112 78 126 C90 137 103 146 118 151 L114 138 C87 120 79 107 70 85Z" fill="#85548f" stroke="none"/>
+    <path d="M51 54 C66 58 78 66 86 74" fill="none" stroke="#dfb9dd" stroke-width="3"/>
+
+    <path d="M138 153 C127 128 132 104 145 85 C159 64 183 55 206 49 C199 64 200 85 194 104 C186 132 161 147 138 153Z" fill="url(#rightPetal)"/>
+    <path d="M200 55 C172 69 152 91 144 128 C163 106 173 101 180 85 C186 71 192 64 200 55Z" fill="#bd92ce" stroke="none"/>
+    <path d="M191 79 C190 106 171 130 143 146 C171 138 187 126 193 108 C197 96 198 82 199 69Z" fill="#724279" stroke="none"/>
+    <path d="M195 58 C176 65 162 77 155 87" fill="none" stroke="#cea6d6" stroke-width="2.7"/>
+
+    <!-- The outer pair unfurls horizontally, giving the blossom its shallow bowl. -->
+    <path d="M119 170 C87 177 55 162 39 142 C28 128 27 111 20 96 C50 94 75 103 94 119 C112 134 118 151 119 170Z" fill="url(#leftPetal)"/>
+    <path d="M25 100 C49 102 66 114 82 131 C95 144 104 151 112 157 C91 146 79 141 66 129 C49 113 37 107 25 100Z" fill="#cda7d4" stroke="none"/>
+    <path d="M34 122 C48 145 82 158 115 164 L117 169 C87 173 54 159 41 142Z" fill="#76427f" stroke="none"/>
+    <path d="M26 100 C40 99 56 104 68 110" fill="none" stroke="#e0bddd" stroke-width="2.6"/>
+
+    <path d="M137 170 C142 141 165 119 189 106 C205 98 222 96 237 93 C232 107 230 123 220 138 C201 164 168 175 137 170Z" fill="url(#rightPetal)"/>
+    <path d="M231 99 C209 105 192 117 180 130 C170 140 156 151 144 162 C170 153 184 140 201 127 C216 117 222 108 231 99Z" fill="#b58bc5" stroke="none"/>
+    <path d="M217 132 C200 151 172 162 143 167 C175 174 206 157 217 143 C224 134 227 126 230 115Z" fill="#63366c" stroke="none"/>
+    <path d="M232 98 C216 101 206 105 197 110" fill="none" stroke="#cda6d2" stroke-width="2.5"/>
+
+    <!-- Smaller interior petals embrace the warm seed cup. -->
+    <path d="M130 161 C108 162 91 149 84 131 C78 116 79 99 76 88 C100 95 121 114 130 137 C135 121 150 104 171 94 C168 108 173 122 166 137 C158 152 145 160 130 161Z" fill="#9160a7"/>
+    <path d="M81 94 C92 115 106 128 121 139 C113 118 97 103 81 94Z" fill="#c29acc" stroke="none"/>
+    <path d="M165 101 C148 114 140 129 138 140 C150 132 159 117 165 101Z" fill="#b28ac4" stroke="none"/>
+    <path d="M101 135 C114 131 141 130 158 137 C156 152 142 161 129 162 C116 157 107 149 101 135Z" fill="#604067" stroke="none"/>
+
+    <path d="M108 135 C107 126 115 119 128 118 C142 117 151 124 151 132 C151 142 141 148 129 148 C116 146 109 142 108 135Z" fill="#ae713b" stroke="#624442" stroke-width="3"/>
+    <path d="M110 131 C111 123 122 121 131 121 C141 121 147 125 148 130 C140 137 123 141 110 131Z" fill="#dfaa57" stroke="none"/>
+    <path d="M116 126 C121 123 130 123 134 125 C130 128 123 131 116 130Z" fill="#f1cc7c" stroke="none"/>
+    <path d="M120 121 L119 114 M130 121 L132 112 M140 125 L145 119" fill="none" stroke="#b98242" stroke-width="3.5"/>
+    <path d="M117 114 L121 113 M130 112 L134 113 M143 118 L147 120" fill="none" stroke="#edc16c" stroke-width="4"/>
+    <path d="M121 134 L123 133 M135 131 L137 130" fill="none" stroke="#956035" stroke-width="2.8"/>
+
+    <!-- Broad front petals overlap rather than radiating like a daisy. -->
+    <path d="M129 191 C97 210 66 196 48 182 C38 174 31 162 26 151 C47 155 69 149 87 152 C109 155 122 170 129 191Z" fill="url(#bowl)"/>
+    <path d="M32 155 C52 167 74 165 91 166 C105 167 115 176 124 187 C116 168 103 158 87 155 C68 153 51 158 32 155Z" fill="#c9a4d6" stroke="none"/>
+    <path d="M36 166 C57 188 93 201 121 191 C105 207 67 195 50 182Z" fill="#805089" stroke="none"/>
+    <path d="M35 157 C49 160 62 159 72 158" fill="none" stroke="#e0bbdf" stroke-width="3"/>
+
+    <path d="M127 192 C135 171 152 157 174 153 C195 151 212 151 229 146 C221 168 207 187 185 197 C165 206 144 200 127 192Z" fill="url(#rightPetal)"/>
+    <path d="M135 188 C150 173 166 171 183 168 C199 166 214 159 223 152 C204 158 189 156 174 158 C155 162 144 173 135 188Z" fill="#bd91cb" stroke="none"/>
+    <path d="M218 169 C200 185 175 198 141 192 C162 205 185 198 196 190 C208 182 213 175 218 169Z" fill="#684074" stroke="none"/>
+    <path d="M187 158 C200 158 212 155 219 152" fill="none" stroke="#cfa7d4" stroke-width="2.6"/>
+
+    <path d="M128 220 C105 210 89 191 89 174 C88 161 96 150 100 137 C111 140 121 146 128 157 C135 145 146 138 158 137 C158 150 166 160 165 174 C164 195 147 210 128 220Z" fill="url(#bowl)"/>
+    <path d="M101 143 C100 158 97 170 104 182 C109 193 119 205 129 214 C113 189 117 172 125 159 C118 151 110 146 101 143Z" fill="#c7a0d6" stroke="none"/>
+    <path d="M156 145 C145 151 137 159 131 169 C126 178 127 188 128 195 C133 177 144 169 156 164 C158 158 156 153 156 145Z" fill="#b489c5" stroke="none"/>
+    <path d="M162 170 C156 188 145 205 128 217 C149 210 164 191 163 177Z" fill="#6a4378" stroke="none"/>
+    <path d="M101 142 C111 146 120 152 126 160 M133 159 C139 150 147 144 154 142" fill="none" stroke="#dcb6df" stroke-width="3"/>
+    <path d="M99 166 C97 179 106 191 112 197" fill="none" stroke="#ddb4dd" stroke-width="2.7" opacity=".8"/>
+    <path d="M128 165 C123 176 123 189 129 201" fill="none" stroke="#8d619f" stroke-width="2.2"/>
+  </g>
+</svg>

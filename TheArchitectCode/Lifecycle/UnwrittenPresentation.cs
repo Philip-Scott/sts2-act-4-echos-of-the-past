@@ -1,6 +1,5 @@
 using Godot;
 using HarmonyLib;
-using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Models;
 using TheArchitect.TheArchitectCode.Ancients;
 
@@ -15,31 +14,17 @@ internal static class UnwrittenPresentation
             return true;
 
         // Runtime packing preserves the project's editor-free asset build and native Ancient layout.
-        var root = new Control { Name = "TheUnwritten", MouseFilter = Control.MouseFilterEnum.Ignore };
+        var root = new Control { Name = "TheWatcher", MouseFilter = Control.MouseFilterEnum.Ignore };
         try
         {
             root.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-            ArchitectRoomBackgrounds.AddBackdrop(root, ArchitectRoomBackgrounds.RestBackgroundPath);
+            ArchitectRoomBackgrounds.AddBackdrop(root, TheUnwritten.BackgroundTexturePath);
             var backdrop = root.GetNode<TextureRect>("ArchitectBackdrop");
             backdrop.Owner = root;
-            backdrop.Modulate = new Color(0.28f, 0.36f, 0.43f);
-            var character = new TextureRect
-            {
-                Name = "UnwrittenCharacter",
-                MouseFilter = Control.MouseFilterEnum.Ignore,
-                Texture = PreloadManager.Cache.GetTexture2D(TheUnwritten.CharacterTexturePath),
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                // Keep the Ancient artwork above the native relic offers.
-                Position = new Vector2(0f, 50f),
-                Size = new Vector2(600f, 700f)
-            };
-            root.AddChild(character);
-            character.Owner = root;
             __result = new PackedScene();
             var error = __result.Pack(root);
             if (error != Error.Ok)
-                throw new InvalidOperationException($"Cannot create The Unwritten's background: {error}.");
+                throw new InvalidOperationException($"Cannot create The Watcher's background: {error}.");
             return false;
         }
         finally

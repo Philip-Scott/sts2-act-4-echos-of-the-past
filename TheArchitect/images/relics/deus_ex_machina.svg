@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="brass" x1="0" y1="0" x2=".8" y2="1">
+      <stop stop-color="#e6bb70"/>
+      <stop offset=".5" stop-color="#cb9551"/>
+      <stop offset="1" stop-color="#a86b3c"/>
+    </linearGradient>
+    <linearGradient id="enamel" x1="0" y1="0" x2="1" y2=".75">
+      <stop stop-color="#83b7a5"/>
+      <stop offset=".6" stop-color="#65978a"/>
+      <stop offset="1" stop-color="#45756e"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2=".65">
+      <stop stop-color="#7294b4"/>
+      <stop offset=".65" stop-color="#536f98"/>
+      <stop offset="1" stop-color="#3e526f"/>
+    </linearGradient>
+  </defs>
+
+  <!-- A worn brass armillary wheel sits behind the machine, not around the icon. -->
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M116 46 L129 44 L130 78 L117 82 Z M179 71 L189 78 L168 105 L158 98 Z M199 121 L229 123 L228 136 L198 136 Z M173 168 L201 191 L192 202 L165 178 Z M120 188 L133 185 L135 226 L123 228 Z M64 168 L74 177 L55 198 L45 190 Z M24 121 L61 121 L61 136 L23 135 Z M65 54 L91 80 L81 92 L55 65 Z"
+      fill="url(#brass)" stroke="#694a35" stroke-width="3.6"/>
+    <path d="M118 48 L125 47 L126 62 L119 63 M25 124 L48 125 M59 64 L68 71 M206 126 L224 127 M125 214 L126 223"
+      fill="none" stroke="#f1ce88" stroke-width="3"/>
+    <path d="M126 55 C168 54 204 89 204 131 C205 177 171 210 126 211 C84 211 50 177 49 134 C48 91 82 57 126 55 Z M125 67 C90 69 60 97 61 134 C62 171 90 197 127 198 C164 197 192 167 191 131 C191 94 161 66 125 67 Z"
+      fill="url(#brass)" fill-rule="evenodd" stroke="#694a35" stroke-width="3.5"/>
+    <path d="M67 90 C79 70 103 59 125 60 M54 128 C52 145 58 161 64 171"
+      fill="none" stroke="#efc987" stroke-width="3.5"/>
+    <path d="M198 120 C207 162 174 205 133 206" fill="none" stroke="#96603a" stroke-width="4"/>
+    <path d="M84 87 C108 65 141 66 166 88 M74 110 C62 145 81 177 108 186 M146 186 C173 176 185 152 181 128"
+      fill="none" stroke="#755037" stroke-width="7"/>
+    <path d="M84 85 C108 63 141 65 165 86 M73 109 C63 143 81 176 108 184 M146 184 C172 174 183 151 180 128"
+      fill="none" stroke="#d3a366" stroke-width="4"/>
+    <path d="M37 142 L58 142 M41 149 L61 149 M192 108 L215 109 M195 100 L210 101"
+      fill="none" stroke="#785139" stroke-width="5"/>
+    <path d="M37 141 L58 141 M42 148 L60 148 M193 107 L215 108 M196 99 L209 100"
+      fill="none" stroke="#dcaf6f" stroke-width="2.4"/>
+    <path d="M160 177 L166 171 M175 160 L182 162 M57 115 L63 116 M89 71 L92 78"
+      fill="none" stroke="#855c3e" stroke-width="2.5"/>
+  </g>
+
+  <g transform="rotate(33 125 132)" stroke-linejoin="round" stroke-linecap="round">
+    <!-- The blue housing is a broad, chipped plane behind the outstretched hand. -->
+    <path d="M136 16 L163 22 L166 181 L150 200 L137 216 L116 202 L118 172 L108 160 L120 142 L122 105 L130 92 L128 38 Z"
+      fill="url(#blue)" stroke="#3d4551" stroke-width="4"/>
+    <path d="M136 16 L163 22 L153 33 L133 30 Z" fill="#93b0c4"/>
+    <path d="M153 33 L163 22 L166 181 L150 200 L137 216 L137 193 L155 175 Z"
+      fill="#414e6c"/>
+    <path d="M133 31 L151 36 L152 83 L144 91 L145 61 L133 58 Z" fill="#6f92b0"/>
+    <path d="M144 94 L153 84 L155 176 L137 193 L123 187 L131 174 L135 123 Z" fill="#5c7fa1"/>
+    <path d="M130 41 L131 87 M122 146 L114 159 L125 170" fill="none" stroke="#95b8c7" stroke-width="3"/>
+    <path d="M143 44 L151 46 L151 59 L143 57 Z M145 106 L154 108 L154 120 L145 118 Z"
+      fill="#3e5877"/>
+    <path d="M144 45 L150 47 M146 108 L152 109" fill="none" stroke="#aac4c8" stroke-width="1.6"/>
+
+    <!-- Four separate, articulated fingers retain their gaps at inventory size. -->
+    <g stroke="#3c5149" stroke-width="3.5">
+      <path d="M96 106 L96 73 L99 65 L109 65 L113 72 L114 102 L110 113 Z" fill="url(#enamel)"/>
+      <path d="M116 100 L116 50 L120 42 L129 43 L133 51 L133 100 L126 111 Z" fill="url(#enamel)"/>
+      <path d="M136 105 L136 63 L140 56 L149 57 L153 65 L153 107 L147 115 Z" fill="url(#enamel)"/>
+      <path d="M155 116 L155 83 L160 76 L167 79 L170 88 L168 121 L158 132 Z" fill="url(#enamel)"/>
+    </g>
+    <path d="M99 75 L100 69 L106 69 L107 98 L101 99 Z M119 54 L122 47 L126 47 L126 92 L119 95 Z M139 68 L142 61 L147 63 L146 102 L139 100 Z M158 88 L161 81 L165 84 L163 109 L158 111 Z"
+      fill="#a0c7b2"/>
+    <path d="M108 75 L112 77 L113 103 L107 108 Z M129 53 L132 54 L131 101 L125 106 L126 77 Z M149 70 L152 71 L151 106 L145 111 Z M166 91 L169 92 L167 120 L161 124 Z"
+      fill="#4d7c73"/>
+    <path d="M98 86 L111 86 M118 69 L131 69 M138 82 L151 83 M156 99 L168 101"
+      fill="none" stroke="#46665a" stroke-width="3"/>
+    <path d="M100 88 L108 88 M120 71 L128 71 M140 84 L147 85 M158 102 L165 103"
+      fill="none" stroke="#c0d6b6" stroke-width="1.8"/>
+    <path d="M118 56 L130 56 L130 61 L118 61 Z M138 91 L151 92 L151 97 L138 96 Z"
+      fill="#b6a76d"/>
+    <path d="M119 56 L128 56 M139 91 L149 92" fill="none" stroke="#e0c991" stroke-width="1.7"/>
+
+    <path d="M105 102 L127 98 L145 104 L158 119 L152 140 L140 155 L111 155 L94 140 L85 125 L76 104 L78 94 L87 92 L94 101 L99 115 Z"
+      fill="url(#enamel)" stroke="#3c5149" stroke-width="4"/>
+    <path d="M80 98 L86 96 L91 103 L96 119 L103 129 L100 137 L91 127 Z" fill="#a1c4a9"/>
+    <path d="M107 106 L126 102 L144 110 L149 123 L135 143 L115 146 L103 134 L101 124 Z"
+      fill="#80ae97"/>
+    <path d="M144 110 L157 120 L151 139 L138 154 L111 154 L106 145 L124 150 L139 135 L148 123 Z"
+      fill="#4e8276"/>
+    <path d="M106 109 L124 105 L137 110 M106 119 L107 127"
+      fill="none" stroke="#bed2ae" stroke-width="2.6"/>
+    <path d="M115 121 L127 115 L137 123 L135 133 L124 139 L115 133 Z"
+      fill="#62957f"/>
+    <path d="M116 123 L125 118 L134 123 M120 135 L125 136 L131 132"
+      fill="none" stroke="#8fbaa0" stroke-width="2"/>
+    <path d="M97 126 L103 135 M139 140 L145 133" fill="none" stroke="#3f6d60" stroke-width="2.5"/>
+
+    <!-- A tapered wrist and flared cuff keep the hand distinct from its housing. -->
+    <path d="M111 149 L139 150 L137 166 L135 197 L145 214 L139 232 L100 233 L94 219 L104 201 L107 169 Z"
+      fill="url(#enamel)" stroke="#3c5149" stroke-width="4"/>
+    <path d="M111 153 L137 154 L136 166 L108 166 Z" fill="#477567"/>
+    <path d="M113 155 L131 155 L131 160 L112 160 Z" fill="#b1b883"/>
+    <path d="M112 170 L122 169 L119 199 L111 214 L101 218 L108 201 Z" fill="#a0be9f"/>
+    <path d="M129 169 L136 168 L134 197 L143 214 L138 228 L127 227 L131 212 L125 199 Z" fill="#426e65"/>
+    <path d="M96 217 L108 213 L127 214 L144 211 L143 224 L139 232 L100 233 Z"
+      fill="#6e9d87" stroke="#3c5149" stroke-width="3.3"/>
+    <path d="M99 220 L109 217 L127 219 L139 216 L137 223 L102 226 Z" fill="#9ab99c"/>
+    <path d="M100 230 L138 229" fill="none" stroke="#507d6b" stroke-width="3"/>
+    <path d="M116 175 L115 189 M106 221 L116 221" fill="none" stroke="#c3d0aa" stroke-width="2"/>
+    <path d="M129 176 L129 186 M122 204 L125 211" fill="none" stroke="#365e54" stroke-width="2"/>
+  </g>
+</svg>

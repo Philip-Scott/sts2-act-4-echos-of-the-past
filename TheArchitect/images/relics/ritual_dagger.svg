@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2=".65">
+      <stop stop-color="#f6e2b4"/>
+      <stop offset=".52" stop-color="#d3b985"/>
+      <stop offset="1" stop-color="#a77d53"/>
+    </linearGradient>
+    <linearGradient id="blue" x1=".15" y1="0" x2=".85" y2="1">
+      <stop stop-color="#6591a7"/>
+      <stop offset=".5" stop-color="#507d99"/>
+      <stop offset="1" stop-color="#3f597b"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2=".4" y2="1">
+      <stop stop-color="#e4c48e"/>
+      <stop offset="1" stop-color="#a3754e"/>
+    </linearGradient>
+  </defs>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <!-- Folded violet neck feathers frame the small, upright blade. -->
+    <path d="M108 125 Q84 123 64 122 L28 119 L53 130 L66 144 L81 151 L88 169 L102 184 L123 157Z"
+      fill="#493c66" stroke="#39303f" stroke-width="4"/>
+    <path d="M33 121 L72 127 L101 131 L89 141 L66 134Z" fill="#5e4b7e"/>
+    <path d="M63 136 L92 145 L97 162 L80 151Z" fill="#594572"/>
+    <path d="M86 144 L93 132 L107 126 L116 148 L102 180 L91 166Z" fill="#352e4b"/>
+    <path d="M55 127 L70 129 M74 141 L83 144" fill="none" stroke="#77608c" stroke-width="2.4" opacity=".6"/>
+
+    <!-- A long ivory edge and dark central fuller remain visible above the head. -->
+    <path d="M122 58 L141 59 L130 136 L112 160 L115 121Z"
+      fill="url(#steel)" stroke="#554234" stroke-width="3.7"/>
+    <path d="M130 61 L135 61 L125 131 L115 151 L121 112Z" fill="#74694f"/>
+    <path d="M124 63 L127 63 L119 125 L114 146 L119 102Z" fill="#f6e7c5"/>
+    <path d="M136 62 L139 62 L129 134 L121 144 L130 119Z" fill="#be9c6c"/>
+    <path d="M125 67 L121 95" fill="none" stroke="#fff0d1" stroke-width="2.1"/>
+    <path d="M126 22 Q131 19 138 22 L135 51 L138 56 L124 57 L127 49Z"
+      fill="#414358" stroke="#39313b" stroke-width="3.5"/>
+    <path d="M128 24 L131 25 L129 49 L127 51Z" fill="#697088"/>
+    <path d="M127 28 L136 30 M127 35 L136 37 M127 43 L135 45" fill="none" stroke="#242b3d" stroke-width="3.8"/>
+    <path d="M128 27 L136 29 M128 34 L135 36 M128 42 L134 44" fill="none" stroke="#737992" stroke-width="2.1"/>
+    <path d="M125 20 L125 16 Q131 12 138 16 L139 21 L135 25 L128 24Z"
+      fill="#535c76" stroke="#39313b" stroke-width="3"/>
+    <path d="M128 17 L135 17 L134 20 L127 20Z" fill="#8790a8"/>
+    <path d="M126 49 L136 50 L138 55 L147 60 L154 66 L139 64 L131 60 L120 65 L107 69 L113 61 L123 55Z"
+      fill="url(#gold)" stroke="#5b4435" stroke-width="3.5"/>
+    <path d="M111 65 L123 57 L129 53 L135 54 L142 59 L131 57 L120 62Z" fill="#f0d6a2"/>
+    <path d="M132 60 L138 61 L148 64" fill="none" stroke="#8a6548" stroke-width="2"/>
+
+    <!-- The blue ritual effigy has a single pale, quartered eye. -->
+    <path d="M113 122 L119 111 L137 106 Q158 104 177 116 Q196 127 205 147 L213 169 L207 181 L202 190 L219 188 L217 206 L202 224 L188 233 L177 227 L164 236 L149 233 L137 241 L141 227 L122 232 L125 220 L108 221 L103 209 L93 207 L86 180 L91 159 L100 148 L98 135Z"
+      fill="url(#blue)" stroke="#3d3540" stroke-width="4.2"/>
+    <path d="M91 161 L103 151 L109 179 L124 201 L141 213 L148 224 L137 228 L126 222 L108 218 L105 205 L96 204 L89 181Z"
+      fill="#43566f"/>
+    <path d="M104 133 L115 123 L120 114 L138 109 Q162 108 180 122 L192 139 L170 128 L158 128 L147 118 L131 118 L120 134Z"
+      fill="#709ab0"/>
+    <path d="M140 109 Q164 108 182 124 Q199 137 207 159 L207 175 L196 165 L196 150 L184 135 L172 132 L165 122 L151 120Z"
+      fill="#5c86a2"/>
+    <path d="M150 112 L163 116 L176 126 L173 130 L161 122 L153 122 L143 115Z" fill="#8bb1bf"/>
+    <path d="M180 131 L190 139 L199 156 L198 164 L191 157 L188 146Z" fill="#77a1b4"/>
+    <path d="M109 147 L118 134 L125 145 L124 162 L114 172 L120 185 L128 190 L128 205 L118 198 L108 182 L104 168Z"
+      fill="#527f9b"/>
+    <path d="M127 134 Q137 129 146 135 Q152 141 151 154 L147 165 L139 169 L127 163 L123 152 L123 141Z"
+      fill="#3a5064"/>
+    <path d="M127 137 L136 135 L142 137 L145 145 L143 155 L146 161 L138 166 L129 162 L126 152Z"
+      fill="#667d83"/>
+    <path d="M128 138 L134 137 L136 145 L128 146Z" fill="#f0e4bf"/>
+    <path d="M138 138 L143 140 L145 147 L139 147Z" fill="#d1caa7"/>
+    <path d="M129 150 L136 150 L137 159 L131 158Z" fill="#d5d4b4"/>
+    <path d="M140 151 L145 151 L143 161 L139 159Z" fill="#efdfb1"/>
+    <path d="M130 139 L133 139" fill="none" stroke="#fff0ce" stroke-width="1.8"/>
+    <path d="M126 168 L135 173 L145 171" fill="none" stroke="#678ba0" stroke-width="2.5"/>
+
+    <path d="M166 144 L174 151 L177 165 L183 173 L181 181 L172 174 L170 163 L164 160Z" fill="#638ea5"/>
+    <path d="M161 158 L168 165 L170 176 L165 180 L157 168Z" fill="#80a8b7"/>
+    <path d="M158 164 L165 173" fill="none" stroke="#a1bec5" stroke-width="2.3" opacity=".75"/>
+    <path d="M132 179 L140 183 L148 195 L146 201 L137 194 L132 187Z" fill="#709bad"/>
+    <path d="M129 185 L133 193 L141 199 M139 181 L145 187" fill="none" stroke="#8bafbd" stroke-width="2.2" opacity=".7"/>
+    <path d="M198 165 L208 172 L204 182 L195 189 L187 185 L190 175Z" fill="#3b5576"/>
+    <path d="M198 171 L203 175 L199 182 L192 182Z" fill="#2d3d54"/>
+
+    <!-- Ragged overlapping planes suggest a dry, feathered jaw, without blood. -->
+    <path d="M143 213 L155 205 L169 199 L174 188 L182 194 L192 183 L198 191 L206 187 L202 201 L190 217 L176 223 L165 230 L149 228 L140 235Z"
+      fill="#35445f"/>
+    <path d="M143 210 L154 204 L154 212 L164 204 L165 212 L175 199 L176 207 L185 195 L186 202 L195 188 L196 198 L185 216 L172 222 L169 215 L158 225 L156 219 L145 226Z"
+      fill="#465474"/>
+    <path d="M200 194 L207 195 L218 190 L214 204 L201 219 L188 229 L179 224 L174 214 L179 208 L184 218 L190 220 L198 211 L204 201Z"
+      fill="#547e9a"/>
+    <path d="M205 198 L213 195 L210 204 L197 217 L191 218 L200 208Z" fill="#7098ac"/>
+    <path d="M177 216 L182 225 L188 230 L178 226 L168 233 L162 232 L171 223Z" fill="#536f8d"/>
+    <path d="M153 218 L158 225 M166 208 L168 214 M181 198 L181 204 M194 207 L189 213"
+      fill="none" stroke="#778ba3" stroke-width="2.4" opacity=".8"/>
+    <path d="M95 182 L99 195 M109 210 L117 213 M147 229 L151 229"
+      fill="none" stroke="#687e96" stroke-width="2.5" opacity=".65"/>
+  </g>
+</svg>

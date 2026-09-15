@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="278" height="278" viewBox="0 0 160 160">
+  <title>The Watcher - Ancient map ink</title>
+  <defs>
+    <mask id="ink">
+      <rect width="160" height="160" fill="white"/>
+      <g fill="none" stroke="black" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M64 27 Q63 15 76 14 Q91 15 89 26 M69 23 Q76 18 83 22" stroke-width="3"/>
+        <path d="M47 69 Q45 40 70 33 Q97 29 108 51 L107 77" stroke-width="3"/>
+        <path d="M57 62 Q67 58 72 44 L79 46 Q75 65 78 81 L84 86 M86 46 Q93 54 104 56" stroke-width="3"/>
+        <path d="M55 66 L67 70 L58 72 M88 70 L100 65 L98 73" stroke-width="4"/>
+        <path d="M52 78 Q68 90 80 96 Q96 87 104 77 M60 91 L77 103 L95 93 M71 92 L82 96" stroke-width="3"/>
+        <path d="M48 95 L31 115 L52 125 M107 94 L125 112 L110 129 M38 104 L44 117 M119 109 L115 120" stroke-width="3"/>
+        <path d="M53 130 L70 112 L67 97 Q69 92 73 96 L79 108 L87 114 L99 137 M69 101 L77 115 L60 134 M80 110 L86 102 Q89 96 93 100 L89 116 L102 130" stroke-width="3"/>
+        <path d="M27 123 L52 137 L70 116 M91 119 L108 140 L135 126 M31 134 L47 143 M114 145 L130 137" stroke-width="3"/>
+        <path d="M64 139 L60 150 M99 139 L103 150 M76 126 L81 143 L87 149" stroke-width="2"/>
+      </g>
+    </mask>
+  </defs>
+  <g fill="white" mask="url(#ink)">
+    <path d="M65 30 C54 19 61 7 77 8 C92 7 100 21 90 30 C114 37 121 56 111 85 L108 90 C128 95 136 115 146 134 L132 151 L104 153 L97 148 L62 150 L56 156 L30 152 L14 135 C23 113 32 97 48 90 L47 84 C36 71 36 46 53 35 Z"/>
+    <path d="M90 16 L99 4 L103 7 L95 26 Z M64 18 L58 3 L54 5 L59 27 Z"/>
+  </g>
+</svg>
