@@ -117,6 +117,11 @@ internal static class NativeDemoPlaytest
                 manual: CommandLineHelper.HasArg("architect-native-party-manual"));
             return;
         }
+        if (CommandLineHelper.HasArg("architect-native-enchantment-art"))
+        {
+            await EnchantmentArtPlaytest.Run(game);
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-native-relic-art"))
         {
             await UnwrittenPlaytest.RenderRelicArt(game);

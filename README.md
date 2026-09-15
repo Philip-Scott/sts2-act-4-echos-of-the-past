@@ -106,6 +106,14 @@ The Watcher uses the supplied full-scene Ancient artwork and a matching map icon
 Seven new relic icons were illustrated in parallel, isolated GPT-6 Astra contexts,
 alongside the retained icons, with matching inventory, selection-outline, and
 large inspection textures. Editable SVG sources accompany the relic PNG assets.
+Wrath and Calm have distinct original 64x64 enchantment icons with transparent
+padding and dark outlines, displayed in the native 35x35 card marker. Their
+editable sources are `TheArchitect/images/enchantments/{wrath,calm}.svg`; regenerate
+each PNG with `magick -background none -density 768 <source.svg> -resize 64x64 -strip PNG32:<output.png>`.
+Matching 256x256 inspection textures live in `images/enchantments/big`; rasterize the
+same sources at density 1536 and resize to 256x256 for those variants.
+The private `scripts/native-demo.sh run "/path/to/Slay the Spire 2" --enchantment-art --resolution 1920x1080`
+scenario verifies packed textures and restored-deck/hand card markers beside native enchantments.
 Mirror can copy owned relic types, including modded relics, by default.
 Its blocklist excludes Mirror itself, Touch of Orobas, Pael's Eye, Golden Compass,
 Fur Coat, Lord's Parasol, Archaic Tooth, Paper Krane, Paper Phrog, Lava Rock,

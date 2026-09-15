@@ -266,4 +266,6 @@ Test("history setup: invalid target slots, paths and resource values fail explic
     Check(valid.ForceMirror, "Legacy Mirror-specific configurations retain their default.");
 });
 
+EnchantmentIconTests.Run(Test);
+
 Console.WriteLine($"{passed} Architect tests passed.");

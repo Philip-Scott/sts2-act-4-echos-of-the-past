@@ -10,7 +10,7 @@ public sealed class Wrath : CustomEnchantmentModel
 {
     public override bool HasExtraCardText => true;
     public override bool ShowAmount => false;
-    protected override string CustomIconPath => "res://TheArchitect/images/relics/violet_lotus.png";
+    protected override string CustomIconPath => "res://TheArchitect/images/enchantments/wrath.png";
     protected override IEnumerable<IHoverTip> ExtraHoverTips => [HoverTipFactory.FromPower<WrathStancePower>()];
 
     public override Task OnPlay(PlayerChoiceContext choiceContext, CardPlay? cardPlay) =>
