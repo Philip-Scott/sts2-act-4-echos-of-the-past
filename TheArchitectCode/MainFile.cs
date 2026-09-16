@@ -28,6 +28,7 @@ public partial class MainFile : Node
         Harmony harmony = new(ModId);
 
         harmony.PatchAll(assembly);
+        Lifecycle.WatcherStanceIcons.Register();
         CorruptedPlayerCombat.NativeCombatCallSites.Install(harmony);
         Logger.Info($"Act 4: Echos of the Past {assembly.GetName().Version?.ToString(3)} initialized for Slay the Spire 2 public-beta 0.111.0.");
     }

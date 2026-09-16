@@ -17,7 +17,7 @@ implement a second save importer or manually fabricate `current_run.save`.
 | Histories | Two distinct, randomly selected single-player victories |
 | Player | Character, deck, relics and resources from one victory |
 | Corrupted Player | Character, deck and maximum HP from the other victory |
-| Arrival | The Unwritten, then Rest Site -> Shop -> Corrupted Player -> Architect |
+| Arrival | The Watcher, then Rest Site -> Shop -> Corrupted Player -> Architect |
 | Ancient offers | Normal randomness; explicitly set `ForceMirror: false` |
 | Final action | Launch the game and leave the Ancient choice to the user |
 
@@ -207,7 +207,7 @@ Verify that:
 - `ForceMirror` and `Seed` match the request; normal offers were not seed-searched.
 - The target's `saves/current_run.save` and
   `TheArchitect/corrupted_player_snapshot.json` exist.
-- The game window is visible at The Unwritten and has no setup failure.
+- The game window is visible at The Watcher and has no setup failure.
 - Source-slot files are unchanged.
 
 Leave the Ancient offer unselected. Do not play cards, spend Gold, or finish

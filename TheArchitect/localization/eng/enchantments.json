@@ -1,0 +1,8 @@
+{
+  "THEARCHITECT-WRATH.title": "Wrath",
+  "THEARCHITECT-WRATH.description": "Within this Stance, deal and receive 50% extra damage.",
+  "THEARCHITECT-WRATH.extraCardText": "Enter [gold]Wrath[/gold].",
+  "THEARCHITECT-CALM.title": "Calm",
+  "THEARCHITECT-CALM.description": "Upon leaving this Stance, Gain {energyPrefix:energyIcons(1)}",
+  "THEARCHITECT-CALM.extraCardText": "Enter [gold]Calm[/gold]."
+}

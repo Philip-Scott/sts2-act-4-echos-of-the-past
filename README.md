@@ -7,7 +7,7 @@
 Previously named **The Architect**. The internal mod ID and save paths remain
 `TheArchitect`; the boss and in-game act still retain that name.
 
-Meet **The Unwritten**, choose an Ancient gift, and confront the Architect.
+Meet **The Watcher**, choose an Ancient gift, and confront the Architect.
 On later visits, first fight a **Corrupted Player** wielding your previous deck.
 Play solo or bring a 2-4 player party: the same host and group face their entire
 last saved party before the Architect enters the same combat.
@@ -65,30 +65,86 @@ supplied tower-approach illustration; the boss fight retains the
 native Architect workshop interior. Native campfire, merchant, and room
 interactions remain intact.
 
-**The Unwritten**, the Architect's rival and patron of imperfection, offers one
-mandatory choice from three personal relic offers: a build gift, a recovery gift,
-and a bargain-slot gift. Native Ancient entry healing, choices, reward screens,
+**The Watcher**, keeper of forgotten lessons, offers one mandatory choice from
+three personal relic offers: **Preparation**, **Discipline**, and **Transcendence**.
+Each category contains four candidates. Native Ancient entry healing, choices, reward screens,
 and save behavior are retained; there is no decline or reroll. Ancient choices
 use the native multiplayer synchronization. Candidates have equal weights within each category.
 
 | Category | Relic | Effect |
 | --- | --- | --- |
-| Build | Loose Thread | Draw +1 on your first three turns. |
-| Build | Crooked Needle | Start combat with 1 Strength and 1 Dexterity. |
-| Build | Orange Pearl | Start combat with 1 Artifact. |
-| Build | Diamond Hand | After the opening draw, apply combat-only Glam to a random eligible unenchanted card in hand. |
-| Recovery | Unspent Possibility | Gain 150 Gold. |
-| Recovery | Last Meal | Gain 20 maximum HP and receive two potion rewards and one rare-card reward. |
-| Bargain | Borrowed Tomorrow | Gain +1 Energy on your first three turns; start combat with 2 ordinary Vulnerable. |
-| Bargain | Handheld Mirror | Acquire a copy of 3 random relics. |
+| Preparation | The Last Wish | Gain 99 Gold. Start combat with 4 Plating and 1 Strength. |
+| Preparation | Golden Eye | Scry 8 at the start of combat. |
+| Preparation | Orange Pearl | Start combat with 1 Artifact. |
+| Preparation | Medieval Meal | Gain 20 maximum HP and receive two potion rewards and one rare-card reward. |
+| Discipline | Loose Thread | Draw +1 on your first three turns. |
+| Discipline | Diamond Hand | After the opening draw, apply combat-only Glam to a random eligible unenchanted card in hand. |
+| Discipline | Deus Ex Machina | Upon pickup, enchant 3 random eligible deck cards with Sown. |
+| Discipline | Violet Lotus | Upon pickup, enchant 2 random deck cards with Wrath and 2 other cards with Calm. |
+| Transcendence | Nuremberg Egg | The 12th card played each combat is replayed twice, then the original Exhausts. Its counter hides after the replay sequence and returns next combat. |
+| Transcendence | Ritual Dagger | Start combat with 1 Ritual and 3 Vulnerable. |
+| Transcendence | Deva Form | After the first mid-combat reshuffle, gain 1 additional Energy at the start of each subsequent turn. Does not stack. |
+| Transcendence | Handheld Mirror | Acquire a copy of 3 random relics. |
+
+Scry lets you inspect the top cards of your draw pile and discard any of them.
+Playing a Wrath-enchanted card enters Wrath: your Attacks deal 50% more damage,
+and enemy damage against you is increased by 50%. Playing a Calm-enchanted
+card enters Calm; leaving Calm grants 1 Energy. Entering the same stance again
+does not count as leaving it. Stances last until changed and reset after combat.
+True stance changes play the matching Watcher entry sound for every character,
+including remote and Corrupted Players; same-stance reentry stays silent.
+Only **your own character** starts a Calm or Wrath background loop, after its
+entry sound finishes. That loop stops on leaving the stance, death, or combat
+teardown. Remote and Corrupted Players never keep your background loop alive.
+The Watcher's Ancient arrival plays Mantra with Divinity ambience, which continues
+through choosing a gift and viewing the map until entering the next floor.
+All six sounds use native SFX/master volume, background mute, and pause behavior;
+they do not replace the game's music or other ambience.
+Deus Ex Machina and Violet Lotus are offered only when at least three or four
+eligible unenchanted cards remain, respectively. If another pickup effect changes
+the deck before a copied relic resolves, it enchants the remaining eligible cards
+without replacing existing enchantments and logs the shortfall.
+
+The retired **Unspent Possibility**, **Crooked Needle**, and **Borrowed Tomorrow**
+are excluded only from new Ancient offers. Their model IDs, effects, localization,
+and artwork remain available to existing saves and run history. Medieval Meal
+retains the original `LAST_MEAL` identity; The Watcher retains the original
+`THE_UNWRITTEN` event identity. No saved relic is replaced or removed.
+
+The optional private audio regression scenario is
+`scripts/native-demo.py run "$STS2_PATH" --watcher-audio --render-threads 2`.
+It requires PipeWire, WirePlumber, and `pactl` in addition to the normal private
+display tools. It creates its own PulseAudio-compatible server and null sink
+inside the disposable namespace, never connects to desktop audio, and records
+`watcher-audio.wav` under that run's artifact directory. It exercises the six
+packaged Oggs, loop boundaries, local versus remote/Corrupted ownership, native
+SFX mute/unmute, pause, Ancient/map/floor lifetime, and combat/menu teardown.
+The supplied 44.1 kHz stereo Vorbis originals are unchanged under
+`TheArchitect/audio/watcher/`; loop files have no embedded loop tags, so playback
+explicitly loops their full approximately ten-second streams from offset zero.
 
 First and Repeat Visits use the same pool. Turn counts include extra turns, and
 the Corrupted Player-to-Architect transition does not restart bonuses or copied
 relic counters. Only permanent deck and maximum-HP changes enter the existing
 terminal snapshot; relics, Gold, potions, and combat-only Glam do not.
-The Unwritten has custom Ancient artwork and eight original, individually
-illustrated relic icons, with matching inventory, selection-outline, and large
-inspection textures. Editable SVG sources accompany the PNG assets.
+The Watcher uses the supplied full-scene Ancient artwork and a matching map icon.
+Its background fills the viewport with aspect-preserving cover sizing, without
+the inset portrait scale and offsets used by other Ancients.
+Seven new relic icons were illustrated in parallel, isolated GPT-6 Astra contexts,
+alongside the retained icons, with matching inventory, selection-outline, and
+large inspection textures. Editable SVG sources accompany the relic PNG assets.
+Wrath and Calm have distinct original 64x64 enchantment icons with transparent
+padding and dark outlines, displayed in the native 35x35 card marker. Their
+editable sources are `TheArchitect/images/enchantments/{wrath,calm}.svg`; regenerate
+each PNG with `magick -background none -density 768 <source.svg> -resize 64x64 -strip PNG32:<output.png>`.
+Matching 256x256 inspection textures live in `images/enchantments/big`; rasterize the
+same sources at density 1536 and resize to 256x256 for those variants.
+Stance powers share this artwork. Two retained Godot texture aliases cover their
+exact mod-owned native atlas paths when native getters bypass BaseLib's custom-path
+patches; vanilla power resources are unchanged. The `--stance-tooltips` scenario
+compares fallback and actual power-tip pixels against the original textures.
+The private `scripts/native-demo.sh run "/path/to/Slay the Spire 2" --enchantment-art --resolution 1920x1080`
+scenario verifies packed textures and restored-deck/hand card markers beside native enchantments.
 Mirror can copy owned relic types, including modded relics, by default.
 Its blocklist excludes Mirror itself, Touch of Orobas, Pael's Eye, Golden Compass,
 Fur Coat, Lord's Parasol, Archaic Tooth, Paper Krane, Paper Phrog, Lava Rock,
@@ -163,7 +219,7 @@ outcome, terminal HP, and saved successor builds remain unchanged.
 
 For fast feedback, start a disposable modded single-player run, open the
 developer console with the **backtick (`)** key, and enter `architect`. This skips to the Act 4
-map using your current build; The Unwritten's native entry healing still applies,
+map using your current build; The Watcher's native entry healing still applies,
 but the command does not grant a late-game deck or extra Gold.
 Normal completion of this run can replace your profile's Corrupted Player.
 Use `architect`, not `act 4`: the vanilla `act` command can only visit acts
@@ -172,8 +228,12 @@ already appended to the current run.
 The isolated native arrival scenario needs no snapshot input:
 `bash scripts/native-demo.sh run "/path/to/Slay the Spire 2" --ancient`.
 It uses disposable saves and the worktree's `artifacts/mods`, never the live mod
-installation. The `architect` command includes The Unwritten; the direct
+installation. The `architect` command includes The Watcher; the direct
 boss bootstrap below intentionally remains a combat-only entry.
+
+The focused `--stance-tooltips` native scenario renders Wrath and Calm on cards
+and Violet Lotus, retaining Exhaust tips and the native Energy sprite. It uses
+disposable native models without playing through the Ancient or combat turns.
 
 The repository skill [`setup-act4`](.github/skills/setup-act4/SKILL.md) coordinates
 this setup from random victory histories: source Slot 1 to modded Slot 2 by
@@ -181,7 +241,7 @@ default, with backups and naturally rolled Ancient offers. Explicit slot
 overrides are supported.
 
 `--architect-history-setup /absolute/path/to/config.json` prepares a live selected-slot
-run from two single-player victory histories and opens The Unwritten with Mirror
+run from two single-player victory histories and opens The Watcher with Mirror
 offered by the selected native seed unless disabled below. Select the target and
 back it up first; the launcher refuses a mismatched slot or an active run.
 The configuration supplies `ProfileId` (1, 2 or 3),
@@ -254,6 +314,19 @@ The ending scenario needs no snapshot input:
 `bash scripts/native-demo.sh run "/path/to/Slay the Spire 2" --ending`.
 It covers the direct Act 3 handoff, both outcomes, and full-party binding using
 all five base characters. Its simulated multiplayer party is not a live network test.
+
+Calm surrounds its owner with animated pale-blue wind; Wrath adds a pulsing red aura
+and rising sparks. Both stay close to the body and fade to transparent before the
+edges of their drawing area. These independent overlays preserve native character materials
+and Corrupted Players' Bound Echo effects. They follow only the stance owner and
+are removed with the power, owner death, combat end, or scene teardown.
+The private-display visual regression needs no user snapshot:
+`bash scripts/native-demo.sh run "/path/to/Slay the Spire 2" --stance-vfx --record --render-threads 2`.
+Build to `artifacts/mods` first. This opt-in probe captures animation at multiple
+timestamps and exercises local/remote party identities, restored enemy enchantments,
+reentry, switching, removal, lifecycle cleanup, and native material/pet isolation.
+It uses simulated multiplayer, not a live network session; recordings and assertions
+remain in the run's `artifacts/native-demo/` directory.
 
 To reproduce an existing Corrupted Player fight without touching its profile,
 set `ARCHITECT_RUN_INPUT` to the saved `current_run.save` and run

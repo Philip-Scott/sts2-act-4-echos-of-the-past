@@ -55,7 +55,7 @@ internal static class UnwrittenPlaytest
             var outline = PreloadManager.Cache.GetTexture2D(outlinePath);
             Check(icon.GetSize() == new Vector2(94, 94) && outline.GetSize() == new Vector2(94, 94) &&
                 big.GetSize() == new Vector2(256, 256), $"Packed relic art loads at native sizes: {relic.Id.Entry}");
-            var origin = new Vector2(80 + i % 4 * 440, 70 + i / 4 * 480);
+            var origin = new Vector2(55 + i % 6 * 300, 70 + i / 6 * 480);
             backdrop.AddChild(new TextureRect { Texture = big, Position = origin, Size = new Vector2(256, 256) });
             backdrop.AddChild(new Label { Text = relic.Title.GetFormattedText(), Position = origin + new Vector2(0, 270) });
             backdrop.AddChild(new TextureRect { Texture = icon, Position = origin + new Vector2(0, 320), Size = new Vector2(94, 94) });
@@ -66,7 +66,7 @@ internal static class UnwrittenPlaytest
             });
         }
         await NativeDemoPlaytest.Capture("relic-art");
-        MainFile.Logger.Info("RELIC ART SMOKE PASSED: eight inventory icons, outlines, and large textures loaded from the PCK.");
+        MainFile.Logger.Info($"RELIC ART SMOKE PASSED: {relics.Length} inventory icons, outlines, and large textures loaded from the PCK.");
         game.GetTree().Quit();
     }
 
@@ -79,10 +79,12 @@ internal static class UnwrittenPlaytest
         var ancient = CurrentAncient(run);
         Check(!ancient.IsShared && ancient.Owner == player, "Native personal Ancient owner");
         var entries = ancient.CurrentOptions.Select(option => option.Relic?.Id.Entry).ToArray();
-        Check(entries[0] is "THEARCHITECT-LOOSE_THREAD" or "THEARCHITECT-CROOKED_NEEDLE" or
-            "THEARCHITECT-ORANGE_PEARL" or "THEARCHITECT-DIAMOND_HAND", "Build slot");
-        Check(entries[1] is "THEARCHITECT-UNSPENT_POSSIBILITY" or "THEARCHITECT-LAST_MEAL", "Recovery slot");
-        Check(entries[2] is "THEARCHITECT-BORROWED_TOMORROW" or "THEARCHITECT-HANDHELD_MIRROR", "Bargain slot");
+        Check(entries[0] is "THEARCHITECT-THE_LAST_WISH" or "THEARCHITECT-GOLDEN_EYE" or
+            "THEARCHITECT-ORANGE_PEARL" or "THEARCHITECT-LAST_MEAL", "Preparation slot");
+        Check(entries[1] is "THEARCHITECT-LOOSE_THREAD" or "THEARCHITECT-DIAMOND_HAND" or
+            "THEARCHITECT-DEUS_EX_MACHINA" or "THEARCHITECT-VIOLET_LOTUS", "Discipline slot");
+        Check(entries[2] is "THEARCHITECT-NUREMBERG_EGG" or "THEARCHITECT-RITUAL_DAGGER" or
+            "THEARCHITECT-DEVA_FORM" or "THEARCHITECT-HANDHELD_MIRROR", "Transcendence slot");
         Check(ancient.CurrentOptions.All(option => !option.IsLocked && !option.IsProceed), "No decline or reroll");
         if (NativeDemoSafety.Enabled)
         {
@@ -91,6 +93,12 @@ internal static class UnwrittenPlaytest
         }
         var before = player.Relics.Count;
         RunManager.Instance.EventSynchronizer.ChooseLocalOption(0);
+        if (entries[0] == "THEARCHITECT-LAST_MEAL")
+        {
+            var rewards = await WaitForRewardsScreen();
+            RunManager.Instance.RewardsSetSynchronizer.SkipLocalRewardsSet();
+            NOverlayStack.Instance!.Remove(rewards);
+        }
         await RunManager.Instance.EventSynchronizer.AwaitPendingOptionTasks();
         Check(ancient.IsFinished && player.Relics.Count == before + 1 &&
             player.Relics.Any(relic => relic.Id.Entry == entries[0]), "Exactly one native relic acquisition");
@@ -110,7 +118,13 @@ internal static class UnwrittenPlaytest
         await result.task!;
         Check(run.Act is ArchitectAct && run.Map is ArchitectMap { HasAncient: true }, "Ancient Act 4 route");
         var pool = ArchitectModels.Ancient.OptionPools.AllOptions.ToArray();
-        Check(pool.Length == 8 && pool.All(option => option.Weight == 1), "Eight equally weighted category candidates");
+        Check(pool.Length == 12 && pool.All(option => option.Weight == 1), "Twelve equally weighted category candidates");
+        Check(pool.Select(option => option.ModelForOption.Id).Distinct().Count() == 12 &&
+            pool.All(option => option.ModelForOption is not (CrookedNeedle or UnspentPossibility or BorrowedTomorrow)),
+            "Retired relics remain loadable but cannot appear in new offers");
+        Check(new[] { "CROOKED_NEEDLE", "UNSPENT_POSSIBILITY", "BORROWED_TOMORROW" }
+            .All(entry => Bonus(entry).Id.Entry == $"THEARCHITECT-{entry}"),
+            "Retired relic model identities are preserved");
         foreach (var (point, room, id, icon, outline) in new[]
                  {
                      (MapPointType.Ancient, RoomType.Event, ArchitectModels.Ancient.Id,
@@ -159,6 +173,7 @@ internal static class UnwrittenPlaytest
         await NativeDemoPlaytest.Capture("unwritten-shop");
         await AcquisitionEffects(player);
         await CombatEffects(player);
+        await WatcherRelicPlaytest.Run(player);
         MainFile.Logger.Info("UNWRITTEN SMOKE PASSED: native arrival, pool, healing, choices, reload, map, rewards and combat.");
         game.GetTree().Quit();
     }
@@ -196,10 +211,7 @@ internal static class UnwrittenPlaytest
         var deckSize = player.Deck.Cards.Count;
         var potionSlots = player.MaxPotionCount;
         var mealTask = RelicCmd.Obtain(Bonus("LAST_MEAL"), player);
-        await WaitFor(() => NGame.Instance!.FindChildren("*", "", true, false)
-            .OfType<NRewardsScreen>().Any(screen => screen.IsVisibleInTree()));
-        var screen = NGame.Instance!.FindChildren("*", "", true, false).OfType<NRewardsScreen>()
-            .Single(screen => screen.IsVisibleInTree());
+        var screen = await WaitForRewardsScreen();
         var rewards = (RewardsSet)AccessTools.Field(typeof(NRewardsScreen), "_rewardsSet").GetValue(screen)!;
         Check(player.Creature.MaxHp == maxHp + 20 && player.Creature.CurrentHp == maxHp - 10,
             "Last Meal gains 20 maximum HP and heals exactly 20, not twice");
@@ -243,7 +255,8 @@ internal static class UnwrittenPlaytest
             await RelicCmd.Remove(relic);
         foreach (var entry in new[] { "LOOSE_THREAD", "CROOKED_NEEDLE", "ORANGE_PEARL", "DIAMOND_HAND", "BORROWED_TOMORROW" })
             await RelicCmd.Obtain(Bonus(entry), player);
-        await RunManager.Instance.EnterMapCoord(player.RunState.Map.BossMapPoint.coord);
+        await WatcherRelicPlaytest.OpeningScry(player,
+            () => RunManager.Instance.EnterMapCoord(player.RunState.Map.BossMapPoint.coord));
         for (var turn = 1; turn <= 5; turn++)
         {
             var expectedTurn = turn;
@@ -304,6 +317,14 @@ internal static class UnwrittenPlaytest
     private static TheUnwritten CurrentAncient(IRunState run) =>
         run.CurrentRoom is EventRoom { LocalMutableEvent: TheUnwritten ancient }
             ? ancient : throw new InvalidOperationException("Expected The Unwritten's native event room.");
+
+    private static async Task<NRewardsScreen> WaitForRewardsScreen()
+    {
+        await WaitFor(() => NGame.Instance!.FindChildren("*", "", true, false)
+            .OfType<NRewardsScreen>().Any(screen => screen.IsVisibleInTree()));
+        return NGame.Instance!.FindChildren("*", "", true, false).OfType<NRewardsScreen>()
+            .Single(screen => screen.IsVisibleInTree());
+    }
 
     private static async Task WaitFor(Func<bool> condition)
     {

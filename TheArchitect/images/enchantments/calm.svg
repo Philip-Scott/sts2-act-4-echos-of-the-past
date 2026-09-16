@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="water" x1=".1" y1="0" x2=".8" y2="1">
+      <stop stop-color="#9be9f3"/>
+      <stop offset=".52" stop-color="#42bce8"/>
+      <stop offset="1" stop-color="#3776ce"/>
+    </linearGradient>
+    <linearGradient id="spirit" x1="0" y1="0" x2=".8" y2="1">
+      <stop stop-color="#759de7"/>
+      <stop offset=".45" stop-color="#776cce"/>
+      <stop offset="1" stop-color="#b138bc"/>
+    </linearGradient>
+  </defs>
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <!-- A quiet left-facing profile; broad current ribbons replace fine hair strands. -->
+    <path d="M26 26 C41 10 57 13 74 20 C91 27 103 26 117 15
+             C116 38 102 51 83 55 C88 70 97 78 103 91
+             C108 102 98 116 89 121 C82 108 75 104 66 100
+             L52 105 L46 84 L33 82 L28 67 L19 64 L30 50Z"
+          fill="url(#spirit)" stroke="#182d52" stroke-width="6"/>
+    <path d="M34 67 L47 66 L55 79 L65 84 L56 99 L52 99 L46 81 L36 79Z" fill="#ac29a3"/>
+    <path d="M40 74 L48 71 L52 79 L47 84 L37 81Z" fill="#d65dc3"/>
+    <path d="M51 46 C57 53 56 62 52 65 L34 61 L24 63 L32 51 L32 39Z"
+          fill="#80b6e7" stroke="none"/>
+    <path d="M33 57 Q40 62 47 59" fill="none" stroke="#284d89" stroke-width="3.5"/>
+    <path d="M11 29 C20 15 35 11 53 15 C74 21 85 32 105 23 L118 17
+             C112 33 101 41 83 39 C63 38 44 25 31 29 C22 31 18 36 13 40Z"
+          fill="url(#water)" stroke="#182d52" stroke-width="5"/>
+    <path d="M18 28 C36 12 58 29 78 31 C91 34 102 30 110 25" fill="none" stroke="#b0f1f3" stroke-width="4"/>
+    <path d="M62 44 C78 49 87 57 102 54 L119 48
+             C114 64 105 72 90 70 C77 69 69 59 61 59Z"
+          fill="url(#water)" stroke="#182d52" stroke-width="5"/>
+    <path d="M69 51 C89 66 103 61 111 57" fill="none" stroke="#93e7f2" stroke-width="4"/>
+    <path d="M66 89 C79 80 90 83 97 89 L112 98 L106 105
+             C93 100 86 94 76 99 L65 106 L59 99Z"
+          fill="url(#water)" stroke="#182d52" stroke-width="5"/>
+    <path d="M68 94 C79 85 88 89 97 95" fill="none" stroke="#a0ebf4" stroke-width="3.5"/>
+    <path d="M88 108 C100 108 106 112 111 118 C99 121 83 120 77 115Z"
+          fill="#69cde9" stroke="#182d52" stroke-width="4"/>
+  </g>
+</svg>

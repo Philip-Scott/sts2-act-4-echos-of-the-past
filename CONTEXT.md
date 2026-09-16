@@ -8,17 +8,25 @@ This context defines the recurring final-act challenge and the lineage it carrie
 The mandatory fourth act presented to the player as **Act 4 — The Architect**, containing a fixed Ancient, Rest Site, Shop, and Architect encounter.
 _Avoid_: Bonus act, secret act
 
-**The Unwritten**:
-The Act 4 Ancient, a rival of the Architect and patron of imperfection who equips challengers with one chosen Ancient Bonus.
-_Avoid_: Architect ally, replacement merchant
+**The Watcher**:
+The Act 4 Ancient, a keeper of forgotten lessons who equips challengers with one chosen Ancient Bonus drawn from relics of a previous climb.
+_Avoid_: The Unwritten, replacement merchant
 
 **Ancient Bonus**:
-A custom relic offered by The Unwritten as a build gift, recovery gift, or Bargain Slot offer.
+A custom relic offered by The Watcher as a Preparation, Discipline, or Transcendence gift.
 _Avoid_: Permanent inheritance, extra reward entitlement
 
-**Bargain Slot**:
-The Unwritten's third offer category, which may contain a risky benefit or a gift without an additional drawback.
-_Avoid_: Guaranteed cost, rare bargain
+**Preparation**:
+The Watcher's offer category for resources, foresight, and protection.
+_Avoid_: Recovery slot
+
+**Discipline**:
+The Watcher's offer category for drawing and enchanting cards.
+_Avoid_: Build slot
+
+**Transcendence**:
+The Watcher's offer category for repetition, scaling, and relic duplication.
+_Avoid_: Bargain slot, guaranteed drawback
 
 **First Visit**:
 An Architect Act entered when no compatible Corrupted Player Snapshot exists for the active profile or host-owned Successor Lineage, so the Corrupted Player is skipped.

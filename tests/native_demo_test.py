@@ -17,6 +17,29 @@ SPEC.loader.exec_module(demo)
 
 
 class NativeDemoTests(unittest.TestCase):
+    def test_watcher_probes_reject_shared_desktop_before_accessing_files(self):
+        for scenario in ("enchantment-art", "stance-tooltips", "stance-vfx", "watcher-audio", "watcher-background"):
+            with self.subTest(scenario=scenario), patch.object(demo, "required_file") as required:
+                with self.assertRaisesRegex(ValueError, "private display"):
+                    demo.launch(SimpleNamespace(scenario=scenario, shared_visible=True))
+                required.assert_not_called()
+
+    def test_watcher_audio_server_has_only_a_private_socket_and_null_sink(self):
+        with patch.object(demo, "tool", side_effect=lambda name: "/usr/bin/" + name):
+            command = demo.private_audio_command()
+        self.assertEqual(command, ["/usr/bin/pipewire", "-c", str(demo.ROOT / "scripts/native-demo-audio.conf")])
+        config = (demo.ROOT / "scripts/native-demo-audio.conf").read_text()
+        self.assertIn("support.null-audio-sink", config)
+        self.assertIn("unix:/tmp/watcher-audio.sock", config)
+        self.assertNotIn("api.alsa", config)
+        self.assertNotIn("udev", config)
+
+    def test_watcher_audio_rejects_shared_desktop_before_accessing_files(self):
+        with patch.object(demo, "required_file") as required:
+            with self.assertRaisesRegex(ValueError, "private display"):
+                demo.launch(SimpleNamespace(scenario="watcher-audio", shared_visible=True))
+            required.assert_not_called()
+
     def test_recording_rejects_shared_desktop_before_accessing_files(self):
         with patch.object(demo, "required_file") as required:
             with self.assertRaisesRegex(ValueError, "private display"):
@@ -175,6 +198,12 @@ class NativeDemoTests(unittest.TestCase):
                                                                  resolution="1280x720", manual=False, layout_only=False,
                                                                  cache_from=None, cold=True, render_threads=4,
                                                                  shared_visible=False, render_device="/dev/dri/renderD128"))
+                    self.assertEqual(demo.launch(SimpleNamespace(game=str(game), label="enchantment-art",
+                        scenario="enchantment-art", resolution="1920x1080", manual=False, layout_only=False,
+                        cache_from=None, cold=True, render_threads=2,
+                        shared_visible=False, render_device="/dev/dri/renderD128")), 0)
+                    art_run = next((root / "runs").glob("run-*-enchantment-art-*"))
+                    self.assertFalse((art_run / "snapshot-input.json").exists())
                     party_result = demo.launch(SimpleNamespace(game=str(game), label="party", scenario="party",
                                                                resolution="1280x720", manual=False, layout_only=False,
                                                                cache_from=None, cold=True, render_threads=4,

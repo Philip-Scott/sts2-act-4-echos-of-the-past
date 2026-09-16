@@ -12,8 +12,13 @@
     <Reference Include="sts2" HintPath="$(Sts2DataDir)/sts2.dll" />
     <Reference Include="GodotSharp" HintPath="$(Sts2DataDir)/GodotSharp.dll" />
     <Reference Include="0Harmony" HintPath="$(Sts2DataDir)/0Harmony.dll" />
+    <Compile Include="../../TheArchitectCode/ArchitectModels.Watcher.cs" />
     <Compile Include="../../TheArchitectCode/Powers/ArchitectInvinciblePower.cs" Link="ArchitectInvinciblePower.cs" />
     <Compile Include="../../TheArchitectCode/Powers/ArchitectBeatOfDeathPower.cs" Link="ArchitectBeatOfDeathPower.cs" />
+    <Compile Include="../../TheArchitectCode/Powers/*Stance*.cs" />
+    <Compile Include="../../TheArchitectCode/Audio/WatcherAudio.cs" />
+    <Compile Include="../../TheArchitectCode/Audio/WatcherStanceAudio.cs" />
+    <Compile Include="../../TheArchitectCode/Enchantments/*.cs" />
     <Compile Include="../../TheArchitectCode/Acts/ArchitectMap.cs" Link="ArchitectMap.cs" />
     <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/CorruptedPartyPhase.cs" Link="CorruptedPartyPhase.cs" />
     <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/CorruptedPlayerHealth.cs" Link="CorruptedPlayerHealth.cs" />
@@ -23,6 +28,7 @@
     <Compile Include="../../TheArchitectCode/Lifecycle/ArchitectHistoryIcons.cs" Link="ArchitectHistoryIcons.cs" />
     <Compile Include="../../TheArchitectCode/Lifecycle/ArchitectMusic.cs" Link="ArchitectMusic.cs" />
     <Compile Include="../../TheArchitectCode/UI/CorruptedPartyLayoutGeometry.cs" Link="CorruptedPartyLayoutGeometry.cs" />
+    <Compile Include="../../TheArchitectCode/UI/WatcherStance*.cs" />
     <Compile Include="../../TheArchitectCode/Relics/*.cs" Exclude="../../TheArchitectCode/Relics/TheArchitectRelic.cs" />
   </ItemGroup>
 </Project>

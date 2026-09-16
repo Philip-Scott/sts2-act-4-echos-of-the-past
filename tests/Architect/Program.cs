@@ -177,6 +177,8 @@ foreach (var hasAncient in new[] { true, false })
 }
 
 UnwrittenBonusTests.Run(Test);
+WatcherRelicTests.Run(Test);
+WatcherAudioTests.Run(Test);
 HistoryIconTests.Run(Test);
 ArchitectMusicTests.Run(Test);
 HandheldMirrorTests.Run(Test, Check);
@@ -186,22 +188,29 @@ CorruptedPartyTests.Run(Test, Check);
 CorruptedEnemyUiTests.Run(Test, Check);
 InvincibleCounterTests.Run(Test, Check);
 
-Test("Unwritten: all eight relics declare the pool required by native descriptions", () =>
+Test("Watcher: all fifteen current and legacy relics declare the native description pool", () =>
 {
     Type[] relics = [typeof(LooseThread), typeof(CrookedNeedle), typeof(OrangePearl), typeof(DiamondHand),
-        typeof(UnspentPossibility), typeof(LastMeal), typeof(BorrowedTomorrow), typeof(HandheldMirror)];
+        typeof(UnspentPossibility), typeof(LastMeal), typeof(BorrowedTomorrow), typeof(HandheldMirror),
+        typeof(TheLastWish), typeof(GoldenEye), typeof(DeusExMachina), typeof(NurembergEgg),
+        typeof(TheArchitect.TheArchitectCode.Relics.RitualDagger), typeof(VioletLotus),
+        typeof(TheArchitect.TheArchitectCode.Relics.DevaForm)];
     foreach (var relic in relics)
         Check(relic.GetCustomAttribute<PoolAttribute>()?.PoolType == typeof(SharedRelicPool), relic.Name);
 });
 
-Test("Unwritten: each relic uses its own small, outline and large icon", () =>
+Test("Watcher: each current and legacy relic uses its own small, outline and large icon", () =>
 {
     (Type Type, string Slug)[] icons =
     [
         (typeof(LooseThread), "loose_thread"), (typeof(CrookedNeedle), "crooked_needle"),
         (typeof(OrangePearl), "orange_pearl"), (typeof(DiamondHand), "diamond_hand"),
         (typeof(UnspentPossibility), "unspent_possibility"), (typeof(LastMeal), "last_meal"),
-        (typeof(BorrowedTomorrow), "borrowed_tomorrow"), (typeof(HandheldMirror), "handheld_mirror")
+        (typeof(BorrowedTomorrow), "borrowed_tomorrow"), (typeof(HandheldMirror), "handheld_mirror"),
+        (typeof(TheLastWish), "the_last_wish"), (typeof(GoldenEye), "golden_eye"),
+        (typeof(DeusExMachina), "deus_ex_machina"), (typeof(NurembergEgg), "nuremberg_egg"),
+        (typeof(TheArchitect.TheArchitectCode.Relics.RitualDagger), "ritual_dagger"),
+        (typeof(VioletLotus), "violet_lotus"), (typeof(TheArchitect.TheArchitectCode.Relics.DevaForm), "deva_form")
     ];
     var outline = typeof(UnwrittenRelic).GetProperty("PackedIconOutlinePath",
         BindingFlags.Instance | BindingFlags.NonPublic)!;
@@ -218,7 +227,7 @@ Test("Unwritten: each relic uses its own small, outline and large icon", () =>
         Check((string?)big.GetValue(relic) == $"res://TheArchitect/images/relics/big/{slug}.png", slug);
         Check(paths.Add(relic.PackedIconPath), slug);
     }
-    Check(paths.Count == 8);
+    Check(paths.Count == 15);
 });
 
 Test("history setup: all native target slots accept a natural-offer configuration", () =>
@@ -258,5 +267,7 @@ Test("history setup: invalid target slots, paths and resource values fail explic
     }
     Check(valid.ForceMirror, "Legacy Mirror-specific configurations retain their default.");
 });
+
+EnchantmentIconTests.Run(Test);
 
 Console.WriteLine($"{passed} Architect tests passed.");

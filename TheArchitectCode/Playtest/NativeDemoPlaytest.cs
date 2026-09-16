@@ -81,6 +81,21 @@ internal static class NativeDemoPlaytest
             game.AddChild(new NativeDemoObserver());
         }
         await Task.Delay(2000);
+        if (CommandLineHelper.HasArg("architect-native-watcher-background"))
+        {
+            await WatcherBackgroundPlaytest.Run(game);
+            return;
+        }
+        if (CommandLineHelper.HasArg("architect-native-stance-tooltips"))
+        {
+            await WatcherTooltipPlaytest.RunFocused(game);
+            return;
+        }
+        if (CommandLineHelper.HasArg("architect-native-watcher-audio"))
+        {
+            await NativePartyPlaytest.Run(game, partySize: 2, audioOnly: true);
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-native-downfall-party"))
         {
             await NativePartyPlaytest.Run(game, partySize: 4,
@@ -104,6 +119,12 @@ internal static class NativeDemoPlaytest
         }
         var partySize = Enumerable.Range(1, 4).FirstOrDefault(count =>
             CommandLineHelper.HasArg($"architect-native-party-{count}"));
+        if (CommandLineHelper.HasArg("architect-native-stance-vfx"))
+        {
+            await WatcherStanceVisualPlaytest.CheckShaderBounds(game);
+            await NativePartyPlaytest.Run(game, partySize: 3, stanceVfxOnly: true);
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-native-party-layout-prototype"))
         {
             await NativePartyPlaytest.Run(game, prototypeOnly: true);
@@ -115,6 +136,11 @@ internal static class NativeDemoPlaytest
             await NativePartyPlaytest.Run(game, CommandLineHelper.HasArg("architect-native-party-layout"),
                 partySize == 0 ? null : partySize,
                 manual: CommandLineHelper.HasArg("architect-native-party-manual"));
+            return;
+        }
+        if (CommandLineHelper.HasArg("architect-native-enchantment-art"))
+        {
+            await EnchantmentArtPlaytest.Run(game);
             return;
         }
         if (CommandLineHelper.HasArg("architect-native-relic-art"))

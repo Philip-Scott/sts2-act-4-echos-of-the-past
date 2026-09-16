@@ -181,9 +181,10 @@ internal static class ArchitectHistoryPlaytest
         {
             var seed = $"{prefix}-{attempt}";
             var rng = new Rng(new RunRngSet(seed).Seed, ancientEntry);
+            // Each category consumes one roll, even when Discipline's eligibility changes its bound.
             rng.NextInt(4);
-            rng.NextInt(2);
-            if (rng.NextInt(2) == 1)
+            rng.NextInt(4);
+            if (rng.NextInt(4) == 3)
                 return seed;
         }
         throw new InvalidOperationException("Could not find a native seed offering Mirror.");

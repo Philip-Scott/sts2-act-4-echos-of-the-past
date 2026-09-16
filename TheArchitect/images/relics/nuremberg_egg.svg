@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="jade" x1="0" y1=".2" x2="1" y2=".8">
+      <stop stop-color="#c4d7a6"/>
+      <stop offset=".52" stop-color="#a2c294"/>
+      <stop offset="1" stop-color="#638d76"/>
+    </linearGradient>
+    <linearGradient id="lining" x1="0" y1="0" x2=".8" y2="1">
+      <stop stop-color="#cf8ba9"/>
+      <stop offset=".56" stop-color="#ac668e"/>
+      <stop offset="1" stop-color="#774b73"/>
+    </linearGradient>
+    <linearGradient id="casing" x1=".12" y1=".1" x2=".8" y2="1">
+      <stop stop-color="#d39fbb"/>
+      <stop offset=".48" stop-color="#ba81a4"/>
+      <stop offset="1" stop-color="#925c83"/>
+    </linearGradient>
+  </defs>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <!-- The raised far lip stays behind the green curl. -->
+    <path d="M69 172 C109 169 150 130 184 106 Q199 95 210 91 C217 99 205 123 203 139 L201 161 Q167 191 112 194 L65 186Z"
+      fill="url(#lining)" stroke="#62434d" stroke-width="4.5"/>
+    <path d="M113 175 Q152 140 204 103 Q194 127 185 138 Q155 169 119 183Z"
+      fill="#805074"/>
+    <path d="M172 122 Q195 103 210 96 Q208 103 203 110 Q183 120 169 133Z"
+      fill="#db9fbd"/>
+
+    <!-- A fluted egg-shaped body rises into a hollow, turned-over tip. -->
+    <path d="M65 180 C53 166 58 140 70 112 C81 85 100 65 121 60 C136 51 150 56 156 69 C162 84 152 95 146 104 C148 122 163 136 182 148 Q157 175 117 185 Q86 193 65 180Z"
+      fill="url(#jade)" stroke="#495547" stroke-width="4.5"/>
+    <path d="M123 63 C109 70 96 92 88 114 Q77 140 79 171 L66 178 Q59 160 68 138 C73 114 88 89 101 77 Q111 68 123 63Z"
+      fill="#d1deb0"/>
+    <path d="M130 70 C114 94 117 125 135 145 Q147 157 159 158 L174 149 C157 138 144 119 143 104 Q148 95 152 84 Q155 70 143 63Z"
+      fill="#719b7e"/>
+    <path d="M141 70 C149 65 152 72 151 81 Q150 92 141 98 C133 99 135 87 138 81 Q138 75 141 70Z"
+      fill="#354f49" stroke="#567b63" stroke-width="2.5"/>
+    <path d="M143 72 Q149 68 148 79 L145 84 Q147 75 143 76Z" fill="#91b88f"/>
+    <path d="M125 67 C135 58 144 60 148 65 M124 74 Q119 82 117 91"
+      fill="none" stroke="#dce4bb" stroke-width="3"/>
+    <path d="M68 175 Q85 181 108 172 Q143 166 163 149 L174 151 Q151 177 117 183 Q88 192 68 181Z"
+      fill="#729a78"/>
+    <path d="M84 113 C77 132 77 152 83 167 Q85 170 88 168 C83 149 84 133 89 119Z" fill="#83a37c"/>
+    <path d="M96 105 C87 127 90 151 98 163 L103 162 C97 147 95 129 100 110Z" fill="#799d78"/>
+    <path d="M109 102 C103 127 109 146 119 157 L125 154 C113 141 111 122 114 109Z" fill="#6d9575"/>
+    <path d="M125 114 Q125 138 140 148 L145 145 Q131 131 129 116Z" fill="#587f69"/>
+    <path d="M83 122 Q78 144 84 158 M95 119 Q91 139 97 151 M109 116 Q108 134 115 144"
+      fill="none" stroke="#c9dbaa" stroke-width="2.8"/>
+    <path d="M91 91 L97 84 M104 79 L108 77" fill="none" stroke="#e0e5bd" stroke-width="2.5"/>
+
+    <!-- Uneven little coils are part of the egg, not a separate halo. -->
+    <path d="M117 61 C116 47 129 40 139 45 C145 48 146 54 147 59"
+      fill="none" stroke="#4c594b" stroke-width="8"/>
+    <path d="M117 60 C116 47 129 41 138 46 Q143 48 145 55"
+      fill="none" stroke="#aaca9b" stroke-width="4.5"/>
+    <path d="M127 44 C127 34 118 30 109 33 C101 35 93 42 87 39 L87 34"
+      fill="none" stroke="#485448" stroke-width="7"/>
+    <path d="M126 43 C126 35 118 33 110 35 C100 38 94 43 87 39 L87 35"
+      fill="none" stroke="#a3c399" stroke-width="3.8"/>
+    <path d="M144 53 C151 38 160 37 167 48 Q173 60 181 56"
+      fill="none" stroke="#465448" stroke-width="7"/>
+    <path d="M145 52 C151 40 160 40 165 48 Q173 62 181 56"
+      fill="none" stroke="#9cbd92" stroke-width="3.8"/>
+    <path d="M99 60 Q107 57 113 58 M95 53 L101 51"
+      fill="none" stroke="#82a886" stroke-width="4"/>
+
+    <!-- Three broad, broken folds form the plum-coloured lower casing. -->
+    <path d="M59 176 Q93 186 138 168 Q181 149 202 134 Q196 151 207 161 L197 176 Q187 192 188 214 L186 231 Q151 233 116 227 L54 214 L61 200 L52 189Z"
+      fill="url(#casing)" stroke="#674550" stroke-width="4.5"/>
+    <path d="M66 183 Q106 189 150 170 L197 147 L200 157 Q169 181 124 194 Q89 201 57 195 L53 188Z"
+      fill="#d9a2be"/>
+    <path d="M56 197 Q100 205 145 189 Q180 177 203 160 L197 177 Q170 194 131 203 Q88 213 60 205Z"
+      fill="#986287"/>
+    <path d="M61 201 Q94 207 131 197 Q171 186 206 163 L201 173 Q167 197 127 205 Q85 214 56 207Z"
+      fill="#d6a0bb"/>
+    <path d="M65 214 Q118 225 161 215 L167 202 L188 189 Q184 210 186 230 Q130 233 78 220Z"
+      fill="#bb82a6"/>
+    <path d="M150 218 L162 199 L178 192 L169 211 L183 213 L184 226 Q167 227 146 225Z"
+      fill="#8c577f"/>
+    <path d="M70 181 Q105 187 139 172 Q158 165 174 156"
+      fill="none" stroke="#edc0d1" stroke-width="3"/>
+    <path d="M64 216 Q98 225 130 226 M76 210 Q94 212 113 209"
+      fill="none" stroke="#e6b6cc" stroke-width="2.7"/>
+    <path d="M125 193 L136 188 L146 184 M157 179 L166 175"
+      fill="none" stroke="#f0bed0" stroke-width="2.5"/>
+    <path d="M115 216 L123 214 M134 212 L143 209" fill="none" stroke="#956384" stroke-width="2.3"/>
+    <path d="M180 177 L192 170 L188 180Z" fill="#80506f"/>
+    <path d="M180 178 L189 173" fill="none" stroke="#e1a9c2" stroke-width="2"/>
+  </g>
+</svg>

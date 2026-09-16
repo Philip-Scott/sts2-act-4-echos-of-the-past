@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="gold" x1="74" y1="82" x2="119" y2="171" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e2c780"/>
+      <stop offset=".52" stop-color="#c2a05a"/>
+      <stop offset="1" stop-color="#98723e"/>
+    </linearGradient>
+    <linearGradient id="star" x1="152" y1="48" x2="192" y2="104" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e4b66d"/>
+      <stop offset=".56" stop-color="#bd7e43"/>
+      <stop offset="1" stop-color="#925332"/>
+    </linearGradient>
+  </defs>
+
+  <!-- A solid sweep of worn gold, with a hooked, tapering end. -->
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M172 39 C144 36 117 49 96 68 C73 88 56 116 48 145 C39 178 45 207 72 224 C57 207 58 187 67 166 C82 131 110 111 140 105 C150 103 162 102 171 93 L180 62 Z"
+      fill="url(#gold)" stroke="#77583a" stroke-width="3.7"/>
+    <path d="M166 43 C138 43 113 59 95 78 C74 100 59 129 53 154 C47 177 49 196 60 208 C50 188 58 161 66 143 C77 119 94 101 110 87 C128 71 148 61 168 58 Z"
+      fill="#e9cf88"/>
+    <path d="M170 53 C142 58 113 76 92 101 C80 116 74 128 69 141 C91 113 113 100 139 97 L162 96 L177 77 Z"
+      fill="#af8b4b"/>
+    <path d="M162 48 C145 47 126 56 109 69 L126 65 L119 73 C136 61 149 57 164 56 Z"
+      fill="#f4df9f"/>
+    <path d="M135 68 C116 70 98 84 85 101 L103 91 L97 101 C119 85 136 81 155 82 L168 70 C154 74 145 71 135 68 Z"
+      fill="#e8cc82"/>
+    <path d="M112 79 C101 86 94 95 87 106 L101 96 L98 104 C111 93 126 87 140 85 C128 83 121 84 112 86 Z"
+      fill="#f3dda0"/>
+    <path d="M146 87 C124 91 108 100 94 113 L109 105 L101 115 C114 108 129 103 143 102 L157 97 Z"
+      fill="#d8b66b"/>
+    <path d="M86 112 C70 130 57 153 53 177 C49 192 57 212 69 221 C57 204 58 186 66 166 C73 149 80 138 92 126 L78 135 Z"
+      fill="#f0d793"/>
+    <path d="M71 137 C62 151 56 168 54 182 L55 163 L60 145 L74 123 Z"
+      fill="#f7e6ac"/>
+    <path d="M61 204 C58 192 62 175 69 160 C85 128 111 110 140 105 L156 100 L144 97 C114 101 88 120 74 143 C63 161 55 185 61 204 Z"
+      fill="#a28345"/>
+    <path d="M69 160 C84 130 104 113 124 106 C99 112 78 131 65 158 C58 173 55 190 59 202 C58 187 62 175 69 160 Z"
+      fill="#dfc17b"/>
+    <path d="M57 137 C66 114 79 94 93 82 M106 68 C119 57 133 50 146 47"
+      fill="none" stroke="#f5e3aa" stroke-width="3.2"/>
+    <path d="M89 100 L81 112 M105 91 L113 86 M130 96 L139 94"
+      fill="none" stroke="#b89653" stroke-width="2.2"/>
+
+    <!-- The four-point star is a single battered, copper-backed gold fitting. -->
+    <path d="M172 29 C177 53 190 69 220 76 C196 79 181 96 179 123 C174 98 161 84 138 80 C160 72 170 55 172 29 Z"
+      fill="url(#star)" stroke="#79503a" stroke-width="3.8"/>
+    <path d="M172 29 L176 77 L156 70 C166 58 169 45 172 29 Z"
+      fill="#f1d492"/>
+    <path d="M172 29 C177 53 190 69 220 76 L176 77 Z"
+      fill="#c69252"/>
+    <path d="M178 45 C185 61 195 68 209 73 L184 68 Z"
+      fill="#dfb372"/>
+    <path d="M220 76 C196 79 181 96 179 123 L176 77 Z"
+      fill="#925235"/>
+    <path d="M209 80 C194 85 185 98 181 111 L183 85 Z"
+      fill="#ad7040"/>
+    <path d="M179 123 C174 98 161 84 138 80 L176 77 Z"
+      fill="#c99050"/>
+    <path d="M138 80 C148 76 155 71 160 65 L176 77 Z"
+      fill="#e7bf7a"/>
+    <path d="M147 81 C159 85 169 94 175 107 L171 83 Z"
+      fill="#e1b26b"/>
+    <path d="M172 36 L176 77 L179 115 M145 80 L176 77 L211 76"
+      fill="none" stroke="#8f5d37" stroke-width="2.4"/>
+    <path d="M173 45 L174 69 M153 78 L170 76"
+      fill="none" stroke="#f9e2a2" stroke-width="2.6"/>
+    <path d="M177 85 L178 97 M184 77 L197 76"
+      fill="none" stroke="#edbf78" stroke-width="1.8"/>
+    <path d="M172 29 C177 53 190 69 220 76 C196 79 181 96 179 123 C174 98 161 84 138 80 C160 72 170 55 172 29 Z"
+      fill="none" stroke="#79503a" stroke-width="3.8"/>
+    <path d="M170 39 C168 53 162 65 157 70"
+      fill="none" stroke="#f2d89c" stroke-width="2.6"/>
+  </g>
+</svg>

@@ -10,7 +10,7 @@ internal static class ArchitectHistoryIcons
     {
         var icon = modelId switch
         {
-            { Category: "EVENT", Entry: "THEARCHITECT-THE_UNWRITTEN" } => "the_unwritten",
+            { Category: "EVENT", Entry: "THEARCHITECT-THE_UNWRITTEN" } => "the_watcher",
             { Category: "ENCOUNTER", Entry: "THEARCHITECT-ARCHITECT_ENCOUNTER" } => "architect_boss",
             _ => null
         };
