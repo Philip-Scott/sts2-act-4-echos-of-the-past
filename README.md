@@ -124,6 +124,8 @@ the Corrupted Player-to-Architect transition does not restart bonuses or copied
 relic counters. Only permanent deck and maximum-HP changes enter the existing
 terminal snapshot; relics, Gold, potions, and combat-only Glam do not.
 The Watcher uses the supplied full-scene Ancient artwork and a matching map icon.
+Its background fills the viewport with aspect-preserving cover sizing, without
+the inset portrait scale and offsets used by other Ancients.
 Seven new relic icons were illustrated in parallel, isolated GPT-6 Astra contexts,
 alongside the retained icons, with matching inventory, selection-outline, and
 large inspection textures. Editable SVG sources accompany the relic PNG assets.

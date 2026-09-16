@@ -81,6 +81,11 @@ internal static class NativeDemoPlaytest
             game.AddChild(new NativeDemoObserver());
         }
         await Task.Delay(2000);
+        if (CommandLineHelper.HasArg("architect-native-watcher-background"))
+        {
+            await WatcherBackgroundPlaytest.Run(game);
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-native-stance-tooltips"))
         {
             await WatcherTooltipPlaytest.RunFocused(game);

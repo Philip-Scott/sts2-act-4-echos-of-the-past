@@ -18,7 +18,7 @@ SPEC.loader.exec_module(demo)
 
 class NativeDemoTests(unittest.TestCase):
     def test_watcher_probes_reject_shared_desktop_before_accessing_files(self):
-        for scenario in ("enchantment-art", "stance-tooltips", "stance-vfx", "watcher-audio"):
+        for scenario in ("enchantment-art", "stance-tooltips", "stance-vfx", "watcher-audio", "watcher-background"):
             with self.subTest(scenario=scenario), patch.object(demo, "required_file") as required:
                 with self.assertRaisesRegex(ValueError, "private display"):
                     demo.launch(SimpleNamespace(scenario=scenario, shared_visible=True))
