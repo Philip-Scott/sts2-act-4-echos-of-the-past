@@ -178,6 +178,7 @@ foreach (var hasAncient in new[] { true, false })
 
 UnwrittenBonusTests.Run(Test);
 HistoryIconTests.Run(Test);
+ArchitectMusicTests.Run(Test);
 HandheldMirrorTests.Run(Test, Check);
 NativeCardSupportTests.Run(Test, Check);
 NativeDownfallApiTests.Run(Test, Check);

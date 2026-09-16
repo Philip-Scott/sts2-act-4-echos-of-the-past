@@ -22,6 +22,7 @@ public sealed class ArchitectEncounter : CustomEncounterModel
     public override bool IsValidForAct(ActModel act) => act is ArchitectAct;
     public override bool ShouldGiveRewards => false;
     public override bool HasScene => false;
+    public override string CustomBgm => ArchitectMusic.TrackPath;
     public override string BossNodePath => "res://TheArchitect/images/map/architect_boss";
     public override IReadOnlyList<string> Slots => [];
     public override string? CustomRunHistoryIconPath => BossNodePath + ".png";

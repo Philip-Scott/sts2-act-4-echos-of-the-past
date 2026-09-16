@@ -1,0 +1,27 @@
+THE HOLLOW PULSE
+
+64-second, 6/8 gothic/doom arrangement in B minor.
+Plays throughout the Architect boss encounter, including the Corrupted Player
+phase, using a whole-file, gapless Ogg Vorbis decoder loop.
+
+This arrangement develops short melodic contours traced from the user-supplied
+"SLAY THE SPIRE - THE HEART - SYMPHONIC METAL COVER" recording, whose artist
+metadata identifies JakeWoodwardMusic:
+https://www.youtube.com/watch?v=ESQN5YV1--E
+The source recording itself is not sampled or included.
+Source-music rights remain with their respective creators; inclusion here does
+not establish permission to distribute the underlying composition publicly.
+
+Virtual instruments: GeneralUser GS v2.0.3 by S. Christian Collins.
+https://www.schristiancollins.com/generaluser
+See GeneralUser-GS-LICENSE.txt for the complete license and sample-provenance
+disclosure. The instrument bank is not bundled.
+
+Rendered with TinySoundFont (MIT), NumPy, and FFmpeg. The arrangement uses
+cello, piano, tubular bells, distorted guitars, bass, strings, and percussion.
+It is a sample-based render, not a live band recording.
+
+Format: stereo Ogg Vorbis, 44,100 Hz.
+Loop start: sample 0. Loop end: sample 2,822,400 (exclusive), 64 seconds.
+Instrument releases and ambience were wrapped during rendering, not faded out
+or appended as silence. Keep the entire file when replacing/re-encoding it.

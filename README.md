@@ -44,6 +44,10 @@ visits first fight a corrupted version of the previous completed character.
 In multiplayer, repeat visits fight the **entire last saved party** for the same
 host and group membership. All Corrupted Players enter together, and the Architect
 appears only after every member is defeated, without restarting combat.
+**The Hollow Pulse** plays throughout this boss encounter, continuing across the
+Corrupted Player-to-Architect transition as a seamless 64-second loop. It follows
+the game's music volume setting and stops when the encounter ends or is exited.
+See the [music credits](TheArchitect/audio/CREDITS.txt) for source-material and instrument attribution.
 Each multiplayer enemy is named **Corrupted &lt;Player Name&gt;** and directs
 explicitly targeted cards at its matching human, falling back to another living
 player if that counterpart cannot be hit. AOE attacks still hit the whole party,

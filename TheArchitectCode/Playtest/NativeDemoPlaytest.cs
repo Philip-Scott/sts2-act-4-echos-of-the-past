@@ -187,6 +187,7 @@ internal static class NativeDemoPlaytest
         await Capture("shop");
         await RunManager.Instance.EnterMapCoord(run.Map.BossMapPoint.coord);
         await PlayerTurn(human, 1);
+        var music = ArchitectMusicPlaytest.AssertPlaying(checkDecoder: true);
         var combat = human.Creature.CombatState!;
         var monster = (CorruptedPlayer)combat.Enemies.Single().Monster!;
         var actor = monster.Native ?? throw new InvalidOperationException("Native actor not bound.");
@@ -266,12 +267,14 @@ internal static class NativeDemoPlaytest
         var saved = SaveManager.Instance.LoadRunSave().SaveData ?? throw new InvalidOperationException("Disposable room save missing.");
         var oldActor = actor;
         await game.ReturnToMainMenu();
+        ArchitectMusicPlaytest.AssertStopped(music);
         Require(oldActor.Cleaned, "actor cleaned on save-and-quit");
         run = RunState.FromSerializable(saved);
         await RunManager.Instance.SetUpSavedSingleplayer(run, saved);
         await game.LoadRun(run, saved.PreFinishedRoom);
         human = run.Players.Single();
         await PlayerTurn(human, 1);
+        music = ArchitectMusicPlaytest.AssertPlaying();
         combat = human.Creature.CombatState!;
         actor = ((CorruptedPlayer)combat.Enemies.Single(c => c.Monster is CorruptedPlayer).Monster!).Native!;
         actor.TurnStarting += () => rngBefore = AllRng(human);
@@ -326,9 +329,11 @@ internal static class NativeDemoPlaytest
             "orb cleanup survived handoff without enrolling the actor in the party");
         Require(actor.Cleaned, "dead actor unsubscribed and cleared native piles");
         var boss = combat.Enemies.Single(c => c.Monster is ArchitectBoss);
+        ArchitectMusicPlaytest.AssertSame(music);
         await Capture("architect");
         await CreatureCmd.Kill(boss, true);
         await CombatManager.Instance.CheckWinCondition();
+        ArchitectMusicPlaytest.AssertStopped(music);
         await Finish(game, run, actor, expected.Revision, "ArchitectWin");
     }
 

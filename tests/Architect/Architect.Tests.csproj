@@ -21,6 +21,7 @@
     <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/NativeDownfallApi.cs" Link="NativeDownfallApi.cs" />
     <Compile Include="../../TheArchitectCode/Playtest/ArchitectHistorySetup.cs" Link="ArchitectHistorySetup.cs" />
     <Compile Include="../../TheArchitectCode/Lifecycle/ArchitectHistoryIcons.cs" Link="ArchitectHistoryIcons.cs" />
+    <Compile Include="../../TheArchitectCode/Lifecycle/ArchitectMusic.cs" Link="ArchitectMusic.cs" />
     <Compile Include="../../TheArchitectCode/UI/CorruptedPartyLayoutGeometry.cs" Link="CorruptedPartyLayoutGeometry.cs" />
     <Compile Include="../../TheArchitectCode/Relics/*.cs" Exclude="../../TheArchitectCode/Relics/TheArchitectRelic.cs" />
   </ItemGroup>
