@@ -124,6 +124,12 @@ An empty hand stays empty in the preview; neither the draw pile nor the discard
 pile is presented as playable cards. Native cards enlarge on hover or keyboard/
 controller focus and dismiss when the pointer or focus leaves. Clicking does not
 pin a preview, so there is no Clear button.
+Hand strips use the native combat HUD's non-relative canvas ordering, not a
+positive Z override. Enlarged cards and their keyword/generated-card tips stay
+inside `NCombatUi`, below run-level and game-level screens. Native
+`ActiveScreenContext` changes dismiss previews and disable mouse/controller
+inspection on every party member while pause, deck, pile or other screens are
+active; closing the screen restores combat inspection.
 Supported hand cards and their hover previews use native combat values, including
 the Corrupted Player's Strength/Weak and its current target's Vulnerable.
 All-enemy and random-enemy attacks use native multi-target preview rules.

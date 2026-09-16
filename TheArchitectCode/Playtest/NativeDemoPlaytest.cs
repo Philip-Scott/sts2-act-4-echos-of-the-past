@@ -119,6 +119,11 @@ internal static class NativeDemoPlaytest
         }
         var partySize = Enumerable.Range(1, 4).FirstOrDefault(count =>
             CommandLineHelper.HasArg($"architect-native-party-{count}"));
+        if (CommandLineHelper.HasArg("architect-native-card-layering"))
+        {
+            await NativePartyPlaytest.Run(game, partySize: partySize == 0 ? 4 : partySize, layeringOnly: true);
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-native-stance-vfx"))
         {
             await WatcherStanceVisualPlaytest.CheckShaderBounds(game);
@@ -401,8 +406,7 @@ internal static class NativeDemoPlaytest
                 miniature.Scale.IsEqualApprox(Vector2.One * 0.36f) &&
                 miniature.GetCurrentSize().X <= face.Size.X && miniature.GetCurrentSize().Y <= face.Size.Y,
                 "larger hand cards fit their clickable faces");
-            var hoverContainer = game.HoverTipsContainer
-                ?? throw new InvalidOperationException("Native hover container missing.");
+            var hoverContainer = MegaCrit.Sts2.Core.Nodes.Rooms.NCombatRoom.Instance!.Ui;
             bool HasPreview() => hoverContainer.GetChildren().OfType<Control>()
                 .Any(control => control.Name == "CorruptedPlayerCardPreview" && control.Visible);
             game.GetViewport().GuiReleaseFocus();
@@ -423,6 +427,8 @@ internal static class NativeDemoPlaytest
             game.GetViewport().GuiReleaseFocus();
             await game.AwaitProcessFrame();
             Require(!HasPreview(), "leaving keyboard or controller focus dismisses the preview");
+            await NativeEnemyResourcePlaytest.VerifyScreenLayering(game, actor.Body.CombatState!.Players.ToArray(),
+                [telegraph]);
         }
         var hand = actor.State.Hand.Cards.ToArray();
         var rng = AllRng(actor.Player);

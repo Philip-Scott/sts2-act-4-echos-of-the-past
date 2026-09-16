@@ -1,5 +1,5 @@
 {
   "title": "Act 4: Echos of the Past",
-  "changeNote": "1.0.1: Renamed the mod to Act 4: Echos of the Past and updated its mod-browser image and promotional artwork. Existing saves, internal mod ID, dependencies and gameplay are unchanged.",
+  "changeNote": "## 1.2.0 Changes\n\n- The Watcher replaces The Unwritten as the Act 4 Ancient!\n- Expanded Ancient gifts to 12 relics across 3 different categories: Preparation, Discipline, and\n  Transcendence.\n- Added Scry and Wrath/Calm enchantments and stances. Wrath increases Attack damage\n  dealt and enemy damage received by 50%; leaving Calm grants 1 Energy.\n- Added \"The Hollow Pulse\" boss music.\n",
   "dependencies": [3737335127]
 }

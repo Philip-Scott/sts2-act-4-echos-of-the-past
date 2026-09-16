@@ -12,10 +12,11 @@ On later visits, first fight a **Corrupted Player** wielding your previous deck.
 Play solo or bring a 2-4 player party: the same host and group face their entire
 last saved party before the Architect enters the same combat.
 
-**1.0.1 release preparation:** an update to the existing
-[Steam Workshop listing](https://steamcommunity.com/sharedfiles/filedetails/?id=3799307965)
-and a matching GitHub download. The Steam-edited description is preserved.
-Nothing is published by the release scripts. See the [release notes](release/RELEASE_NOTES.md),
+Version 1.2.0 is prepared for release; it has not been published.
+Version 1.1.0 was released September 14, 2026 at 10:00 a.m. PDT on
+[Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3799307965).
+The update leaves the Steam-edited description and images unchanged.
+A GitHub Release has not been published. See the [changelog](CHANGELOG.md), [release notes](release/RELEASE_NOTES.md),
 [installation guide](release/INSTALL.md), [screenshots](docs/media/README.md), and
 [publishing checklist](docs/RELEASING.md).
 
@@ -32,7 +33,7 @@ which separates BaseLib APIs, native callbacks, custom patches, and private/scen
 
 ## Gameplay and compatibility
 
-Version 1.0.1 targets Steam's **public-beta**, game **v0.111.0**
+Version 1.2.0 targets Steam's **public-beta**, game **v0.111.0**
 (Steam build `24724944`, game commit `41cef1ea`), with **BaseLib 3.4.5**.
 It supports single-player and multiplayer runs. All participants must use matching
 game, mod and content versions. Disable other fourth-act mods, including Act4Heart,
@@ -141,8 +142,10 @@ Matching 256x256 inspection textures live in `images/enchantments/big`; rasteriz
 same sources at density 1536 and resize to 256x256 for those variants.
 Stance powers share this artwork. Two retained Godot texture aliases cover their
 exact mod-owned native atlas paths when native getters bypass BaseLib's custom-path
-patches; vanilla power resources are unchanged. The `--stance-tooltips` scenario
-compares fallback and actual power-tip pixels against the original textures.
+patches. Two retained compressed-texture aliases also cover native enchantment
+paths, so card and Violet Lotus tooltips do not show the missing-icon placeholder.
+Vanilla resources are unchanged. The `--stance-tooltips` scenario compares fallback,
+card, relic, and power-tip pixels against the original textures.
 The private `scripts/native-demo.sh run "/path/to/Slay the Spire 2" --enchantment-art --resolution 1920x1080`
 scenario verifies packed textures and restored-deck/hand card markers beside native enchantments.
 Mirror can copy owned relic types, including modded relics, by default.

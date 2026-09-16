@@ -4,6 +4,13 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Nodes.HoverTips;
+using MegaCrit.Sts2.Core.Nodes.Rooms;
+using MegaCrit.Sts2.Core.Nodes.Screens;
+using MegaCrit.Sts2.Core.Nodes.Screens.Capstones;
+using MegaCrit.Sts2.Core.Nodes.Screens.PauseMenu;
+using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
 using MegaCrit.Sts2.addons.mega_text;
 using TheArchitect.TheArchitectCode.UI;
 
@@ -11,6 +18,87 @@ namespace TheArchitect.TheArchitectCode.Playtest;
 
 internal static class NativeEnemyResourcePlaytest
 {
+    internal static async Task VerifyScreenLayering(NGame game, IReadOnlyList<Player> humans,
+        IReadOnlyList<CorruptedPlayerTelegraph> panels)
+    {
+        if (!NativeDemoSafety.Enabled)
+            throw new InvalidOperationException("Screen layering probes require isolated native playtests.");
+        var room = NCombatRoom.Instance!;
+        var ui = NRun.Instance!.GlobalUi;
+        var viewport = game.GetViewport();
+        var disabled = viewport.GuiDisableInput;
+        var focus = viewport.GuiGetFocusOwner();
+        bool HasPreview() => room.Ui.GetChildren().OfType<Control>()
+            .Any(node => node.Name == "CorruptedPlayerCardPreview" && node.IsVisibleInTree());
+        try
+        {
+            viewport.GuiDisableInput = false;
+            foreach (var panel in panels)
+            {
+                if (panel.ZAsRelative || panel.ZIndex != room.Ui.ZIndex ||
+                    !ui.IsGreaterThan(panel))
+                    throw new InvalidOperationException("Enemy hands must use native combat HUD ordering below GlobalUi.");
+                var face = panel.FindChildren("CorruptedPlayerCard", recursive: true, owned: false)
+                    .OfType<Button>().First();
+                Action[] openScreens =
+                [
+                    () => ((NPauseMenu)ui.SubmenuStack.ShowScreen(CapstoneSubmenuType.PauseMenu))
+                        .Initialize(humans[0].RunState),
+                    () => NDeckViewScreen.ShowScreen(humans[0]),
+                    () => NCardPileScreen.ShowScreen(humans[0].PlayerCombatState!.DiscardPile, []),
+                    () => NDeckViewScreen.ShowScreen(humans[^1]),
+                    () => panel.FindChildren("DiscardPile", recursive: true, owned: false)
+                        .OfType<Button>().Single().EmitSignal(Button.SignalName.Pressed)
+                ];
+                foreach (var open in openScreens)
+                {
+                    viewport.GuiReleaseFocus();
+                    face.EmitSignal(Control.SignalName.MouseEntered);
+                    await game.AwaitProcessFrame();
+                    if (!HasPreview())
+                        throw new InvalidOperationException("Combat hover must create an enlarged card.");
+                    var preview = room.Ui.GetChildren().OfType<Control>()
+                        .Single(node => node.Name == "CorruptedPlayerCardPreview" && node.IsVisibleInTree());
+                    if (preview.ZIndex != 0 || preview.GetChildren().OfType<NHoverTipSet>()
+                        .Any(tips => tips.ZIndex != 0))
+                        throw new InvalidOperationException("Expanded cards and tips must not override combat ordering.");
+                    open();
+                    if (ActiveScreenContext.Instance.IsCurrent(room) || HasPreview())
+                        throw new InvalidOperationException("Opening a native screen must immediately dismiss combat previews.");
+                    foreach (var blocked in panels)
+                        if (blocked.MouseBehaviorRecursive != Control.MouseBehaviorRecursiveEnum.Disabled ||
+                            blocked.FocusBehaviorRecursive != Control.FocusBehaviorRecursiveEnum.Disabled)
+                            throw new InvalidOperationException("Native screens must block every party hand's mouse and focus.");
+                    face.EmitSignal(Control.SignalName.MouseEntered);
+                    face.EmitSignal(Control.SignalName.FocusEntered);
+                    await game.AwaitProcessFrame();
+                    if (HasPreview())
+                        throw new InvalidOperationException("Stale hover/focus signals must not create previews over a screen.");
+                    NCapstoneContainer.Instance!.Close();
+                    await game.AwaitProcessFrame();
+                    await game.AwaitProcessFrame();
+                    viewport.GuiReleaseFocus();
+                    face.GrabFocus();
+                    await game.AwaitProcessFrame();
+                    if (!face.HasFocus() || !HasPreview() ||
+                        panel.MouseBehaviorRecursive != Control.MouseBehaviorRecursiveEnum.Inherited)
+                        throw new InvalidOperationException("Closing a native screen must restore combat card inspection.");
+                    face.ReleaseFocus();
+                    face.EmitSignal(Control.SignalName.MouseExited);
+                    await game.AwaitProcessFrame();
+                }
+            }
+        }
+        finally
+        {
+            if (NCapstoneContainer.Instance?.InUse == true)
+                NCapstoneContainer.Instance.Close();
+            viewport.GuiDisableInput = disabled;
+            if (GodotObject.IsInstanceValid(focus))
+                focus!.GrabFocus();
+        }
+    }
+
     internal static async Task Verify(NGame game, IReadOnlyList<Player> actors,
         IReadOnlyList<CorruptedPlayerTelegraph> panels)
     {
@@ -84,7 +172,7 @@ internal static class NativeEnemyResourcePlaytest
             face.GrabFocus();
             await game.ToSignal(game.GetTree(), SceneTree.SignalName.ProcessFrame);
             await game.ToSignal(game.GetTree(), SceneTree.SignalName.ProcessFrame);
-            var preview = game.HoverTipsContainer.GetChildren().OfType<Control>()
+            var preview = NCombatRoom.Instance!.Ui.GetChildren().OfType<Control>()
                 .Single(node => node.Name == "CorruptedPlayerCardPreview" && node.IsVisibleInTree());
             if (!game.GetViewport().GetVisibleRect().Encloses(preview.GetGlobalRect()))
                 throw new InvalidOperationException("Full-size enemy cards must remain inspectable with a full relic bar.");

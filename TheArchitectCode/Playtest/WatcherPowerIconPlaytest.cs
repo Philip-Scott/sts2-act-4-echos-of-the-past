@@ -28,6 +28,13 @@ internal static class WatcherPowerIconPlaytest
                 $"{stance}: alias survives collection and repeat registration");
             CheckPixels(PreloadManager.Cache.GetTexture2D(path), stance, "retained native fallback");
         }
+        foreach (var stance in new[] { "wrath", "calm" })
+        {
+            var path = $"res://images/enchantments/thearchitect-{stance}.png";
+            Check(ResourceLoader.Exists(path), $"{stance}: native enchantment fallback exists");
+            CheckPixels(PreloadManager.Cache.GetCompressedTexture2D(path), stance,
+                "retained compressed enchantment fallback");
+        }
         Check(PreloadManager.Cache.GetTexture2D(unrelated) == native, "Vanilla Strength resource is unchanged");
     }
 

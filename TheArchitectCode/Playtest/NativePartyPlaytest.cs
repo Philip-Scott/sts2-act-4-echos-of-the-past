@@ -36,7 +36,7 @@ internal static class NativePartyPlaytest
 {
     internal static async Task Run(NGame game, bool layoutOnly = false, int? partySize = null,
         bool prototypeOnly = false, bool manual = false, bool downfall = false, bool stanceVfxOnly = false,
-        bool audioOnly = false)
+        bool audioOnly = false, bool layeringOnly = false)
     {
         Require(NativeDemoSafety.Enabled, "party probes require disposable storage and Steam disabled");
         Require(!audioOnly || !NativeDemoSafety.SharedVisible && !manual && partySize == 2,
@@ -54,7 +54,13 @@ internal static class NativePartyPlaytest
             layoutOnly ? [(4, 8)] : [(2, 0), (3, 8), (4, 8)];
         foreach (var (count, ascension) in cases)
             await Exercise(game, count, ascension, layoutOnly, prototypeOnly,
-                stanceVfxOnly: stanceVfxOnly, audioOnly: audioOnly);
+                stanceVfxOnly: stanceVfxOnly, audioOnly: audioOnly, layeringOnly: layeringOnly);
+        if (layeringOnly)
+        {
+            MainFile.Logger.Info($"NATIVE CARD LAYERING PASSED: {partySize} corrupted hands yield to native screens.");
+            game.GetTree().Quit();
+            return;
+        }
         if (audioOnly)
             MainFile.Logger.Info("WATCHER AUDIO SMOKE PASSED: native SFX PCM, local-only loops, all-owner cues, Ancient/map/floor and combat/run cleanup.");
         if (stanceVfxOnly || audioOnly)
@@ -74,7 +80,8 @@ internal static class NativePartyPlaytest
     }
 
     private static async Task Exercise(NGame game, int count, int ascension, bool layoutOnly, bool prototypeOnly,
-        bool manual = false, bool downfall = false, bool stanceVfxOnly = false, bool audioOnly = false)
+        bool manual = false, bool downfall = false, bool stanceVfxOnly = false, bool audioOnly = false,
+        bool layeringOnly = false)
     {
         CharacterModel[] characters = [ModelDb.Character<Ironclad>(), ModelDb.Character<Defect>(),
             ModelDb.Character<Necrobinder>(), ModelDb.Character<Silent>()];
@@ -143,6 +150,14 @@ internal static class NativePartyPlaytest
             $"{count}: native boss HP initialization supports Act 4");
         var enemies = combat.Enemies.Where(creature => creature.Monster is CorruptedPlayer).ToArray();
         var actors = enemies.Select(creature => ((CorruptedPlayer)creature.Monster!).Native!).ToArray();
+        if (layeringOnly)
+        {
+            await NativeEnemyResourcePlaytest.VerifyScreenLayering(game, players,
+                enemies.Select(enemy => enemy.GetCreatureNode()!
+                    .GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph")).ToArray());
+            await game.ReturnToMainMenu();
+            return;
+        }
         if (stanceVfxOnly)
         {
             await WatcherStanceVisualPlaytest.Run(game, players, actors);
@@ -283,6 +298,7 @@ internal static class NativePartyPlaytest
             Require(bounds.Skip(index + 1).All(other => !bounds[index].Intersects(other)),
                 $"{count}: member {index} preview does not overlap another member");
         await VerifyHandHover(game, panels);
+        await NativeEnemyResourcePlaytest.VerifyScreenLayering(game, players, panels);
         await NativeEnemyResourcePlaytest.Verify(game, actors.Select(actor => actor.Player).ToArray(), panels);
         await NativeEnemyResourcePlaytest.VerifyFullRelicBar(game, players[0], panels);
         if (layoutOnly)
@@ -379,7 +395,7 @@ internal static class NativePartyPlaytest
     private static async Task VerifyHandHover(NGame game, CorruptedPlayerTelegraph[] panels)
     {
         var viewport = game.GetViewport();
-        var previews = game.HoverTipsContainer ??
+        var previews = MegaCrit.Sts2.Core.Nodes.Rooms.NCombatRoom.Instance?.Ui ??
         throw new InvalidOperationException("The party hover probe requires the native preview container.");
         var disabled = viewport.GuiDisableInput;
         try

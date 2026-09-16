@@ -11,8 +11,9 @@ using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.HoverTips;
+using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Nodes.Screens;
-using MegaCrit.Sts2.Core.Nodes.Screens.Capstones;
+using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
 using MegaCrit.Sts2.addons.mega_text;
 using TheArchitect.TheArchitectCode.Monsters;
 
@@ -79,7 +80,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         {
             Name = "CorruptedPlayerTelegraph",
             MouseFilter = MouseFilterEnum.Stop,
-            ZIndex = 30,
+            // Like CombatUi, escape the combat scene's negative Z without overtaking GlobalUi.
+            ZAsRelative = false,
             _anchor = anchor,
             _creature = creature,
             _partyDisplay = creature.CombatState?.Enemies.Count(enemy => enemy.Monster is CorruptedPlayer) > 1,
@@ -148,6 +150,20 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         _stateTracker.CombatStateChanged += OnCombatStateChanged;
         if (_partyDisplay)
             _partyLayout = CorruptedPartyTelegraphLayout.Acquire(_creature.CombatState!);
+        ActiveScreenContext.Instance.Updated += OnActiveScreenUpdated;
+        OnActiveScreenUpdated();
+    }
+
+    private bool CanInspect => !_stopped && !_creature.IsDead &&
+        NCombatRoom.Instance is { } room && ActiveScreenContext.Instance.IsCurrent(room);
+
+    private void OnActiveScreenUpdated()
+    {
+        bool active = CanInspect;
+        MouseBehaviorRecursive = active ? MouseBehaviorRecursiveEnum.Inherited : MouseBehaviorRecursiveEnum.Disabled;
+        FocusBehaviorRecursive = active ? FocusBehaviorRecursiveEnum.Inherited : FocusBehaviorRecursiveEnum.Disabled;
+        if (!active)
+            ClearPreview();
     }
 
     private void OnCombatStateChanged(CombatState state)
@@ -255,6 +271,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         button.FocusExited += UpdateHighlight;
         button.Pressed += () =>
         {
+            if (!CanInspect)
+                return;
             ClearPreview();
             NCardPileScreen.ShowScreen(getPile(), []);
         };
@@ -330,6 +348,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         if (_stopped)
             return;
         _stopped = true;
+        ActiveScreenContext.Instance.Updated -= OnActiveScreenUpdated;
         UnsubscribeState();
         UnsubscribeStars();
         ReleaseLayout();
@@ -478,17 +497,16 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
 
     private void Inspect(CardCell cell)
     {
-        if (_inspected == cell || cell.Entry.Card == null ||
-            NCapstoneContainer.Instance?.InUse == true || NHoverTipSet.shouldBlockHoverTips ||
-            NGame.Instance?.HoverTipsContainer is not { } hoverContainer)
+        if (_inspected == cell || cell.Entry.Card == null || !CanInspect ||
+            NHoverTipSet.shouldBlockHoverTips || NCombatRoom.Instance?.Ui is not { } combatUi)
             return;
         ClearPreview();
         _enlarged = NCard.Create(cell.Entry.Card);
         if (_enlarged == null)
             return;
         _inspected = cell;
-        _preview = new Control { Name = "CorruptedPlayerCardPreview", MouseFilter = MouseFilterEnum.Ignore, ZIndex = 1000 };
-        hoverContainer.AddChild(_preview);
+        _preview = new Control { Name = "CorruptedPlayerCardPreview", MouseFilter = MouseFilterEnum.Ignore };
+        combatUi.AddChild(_preview);
         _enlarged.SetForceUnpoweredPreview(true);
         _preview.AddChild(_enlarged);
         IgnoreMouse(_enlarged);
@@ -497,6 +515,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         // Only the detached preview owns tips, including native keyword/generated-card tips.
         NHoverTipSet.Remove(_preview);
         _tips = NHoverTipSet.CreateAndShow(_preview, cell.Entry.Card.HoverTips, TipAlignment());
+        // Generated-card and keyword tips belong to combat too, not the game-wide hover surface.
+        _tips?.Reparent(_preview);
     }
 
     private void DismissHover(Control owner)
@@ -564,7 +584,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             return;
         }
         UpdateLayout();
-        if (!IsVisibleInTree() || NCapstoneContainer.Instance?.InUse == true || NHoverTipSet.shouldBlockHoverTips)
+        if (!IsVisibleInTree() || !CanInspect || NHoverTipSet.shouldBlockHoverTips)
             ClearPreview();
         else
             PositionPreview();
@@ -632,6 +652,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
 
     public override void _ExitTree()
     {
+        ActiveScreenContext.Instance.Updated -= OnActiveScreenUpdated;
         UnsubscribeState();
         UnsubscribeStars();
         ReleaseLayout();

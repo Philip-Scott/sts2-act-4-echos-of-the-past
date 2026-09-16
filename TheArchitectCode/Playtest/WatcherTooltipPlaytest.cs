@@ -74,6 +74,9 @@ internal static class WatcherTooltipPlaytest
                 $"{title} card retains its unrelated Exhaust hover tip.");
             Require(tips.OfType<HoverTip>().Single(tip => tip.Title == title).Description == expected,
                 $"{title} card has the exact requested tooltip wording.");
+            WatcherPowerIconPlaytest.CheckPixels(
+                tips.OfType<HoverTip>().Single(tip => tip.Title == title).Icon,
+                enchantment is Wrath ? "wrath" : "calm", "native enchantment hover-tip icon");
             await Render(tips, $"watcher-tooltip-{title.ToLowerInvariant()}", card, calmText);
             player.Creature.CombatState.RemoveCard(card);
         }
@@ -82,6 +85,9 @@ internal static class WatcherTooltipPlaytest
         Require(lotus.Length == 2 && lotus.OfType<HoverTip>().Count(tip => tip.Title == "Wrath") == 1 &&
             lotus.OfType<HoverTip>().Count(tip => tip.Title == "Calm") == 1,
             "Violet Lotus emits exactly one explanation for each stance.");
+        foreach (var title in new[] { "Wrath", "Calm" })
+            WatcherPowerIconPlaytest.CheckPixels(lotus.OfType<HoverTip>().Single(tip => tip.Title == title).Icon,
+                title.ToLowerInvariant(), "Violet Lotus hover-tip icon");
         var lotusEnergyPrefix = RunManager.Instance.GetLocalCharacterEnergyIconPrefix() ??
             EnergyIconHelper.GetPrefix(ArchitectModels.CalmEnchantment);
         var lotusCalmText = CalmPrefix + $"[img]res://images/packed/sprite_fonts/{lotusEnergyPrefix}_energy_icon.png[/img]";

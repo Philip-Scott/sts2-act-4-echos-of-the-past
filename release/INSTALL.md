@@ -1,4 +1,4 @@
-# Act 4: Echos of the Past 1.0.1
+# Act 4: Echos of the Past 1.2.0
 
 Previously named The Architect. This is the same mod and Workshop item:
 the internal ID, `TheArchitect` installation folder and saved lineages are unchanged.
@@ -9,6 +9,11 @@ Slay the Spire 2 **public-beta v0.111.0** and **BaseLib 3.4.5**.
 Later game or BaseLib releases are not automatically guaranteed compatible.
 For co-op, every participant must use matching game, mod and content versions.
 Disable other fourth-act mods, including Act4Heart.
+
+Downfall **0.1.16** is optional and is not bundled or required. When it is loaded,
+Corrupted Players use a version-checked adapter for its character mechanics.
+Other Downfall versions are not automatically supported; this is not a guarantee
+that every Downfall card or multiplayer combination works.
 
 ## Steam Workshop
 

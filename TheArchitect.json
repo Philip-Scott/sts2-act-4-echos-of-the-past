@@ -3,7 +3,7 @@
   "name": "Act 4: Echos of the Past",
   "author": "Philip-Scott",
   "description": "Adds an Act 4 to Slay the Spire 2, in which you fight against a bound version of your past self.",
-  "version": "v1.0.1",
+  "version": "v1.2.0",
   "min_game_version": "0.111.0",
   "has_pck": true,
   "has_dll": true,
