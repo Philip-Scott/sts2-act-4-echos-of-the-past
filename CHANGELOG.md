@@ -2,7 +2,7 @@
 
 ## 1.2.0 Changes
 
-Release candidate; not yet published.
+Released September 16, 2026 at 2:23 p.m. PDT.
 
 Changes since 1.1.0, released September 14, 2026 at 10:00 a.m. PDT.
 
