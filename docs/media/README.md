@@ -1,6 +1,6 @@
 # Release media
 
-Branding: **Act 4: Echos of the Past** (1.0.1). The gameplay screenshots were
+Branding: **Act 4: Echoes of the Past** (1.0.1). The gameplay screenshots were
 captured for 1.0.0; gameplay, the Ancient and the Architect encounter are unchanged.
 The thumbnail, banner and in-game mod image have been updated to the new title.
 
