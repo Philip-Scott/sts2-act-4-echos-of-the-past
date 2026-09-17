@@ -1,6 +1,6 @@
-# Act 4: Echos of the Past
+# Act 4: Echoes of the Past
 
-![Act 4: Echos of the Past - Your past is the final boss](docs/media/release-banner.jpg)
+![Act 4: Echoes of the Past - Your past is the final boss](docs/media/release-banner.jpg)
 
 Meet The Watcher and choose an Ancient gift before fighting the Architect.
 On later visits, you first fight a Corrupted Player that uses your previous deck.
