@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Fixed a multiplayer resume black screen caused by deck-preview cleanup accessing
+  an already-freed lobby screen. The same cleanup error when starting a new
+  multiplayer run is also fixed.
+
 ## 1.2.0 Changes
 
 Released September 16, 2026 at 2:23 p.m. PDT.

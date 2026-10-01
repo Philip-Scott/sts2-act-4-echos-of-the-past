@@ -37,6 +37,7 @@ internal static class DeckPreviewPlaytest
         var menu = game.MainMenu ?? throw new InvalidOperationException("The native main menu is unavailable.");
         await Task.Delay(5000);
         CheckMessageRoundtrip();
+        CheckDisposedScreenCleanup();
         var stack = menu.SubmenuStack;
         var screen = stack.GetSubmenuType<NCharacterSelectScreen>();
         screen.InitializeSingleplayer();
@@ -122,10 +123,14 @@ internal static class DeckPreviewPlaytest
         stack.Pop();
         await Task.Delay(400);
         Check(!host.IsConnected, "Closing the multiplayer submenu still disconnects its lobby.");
+        CharacterSelectDeckPreview.Detach(screen);
+        CharacterSelectDeckPreview.Detach(screen);
+        Check(screen.GetNodeOrNull<CharacterSelectDeckPreview>("ArchitectDeckPreview") == null,
+            "Repeated cleanup of a live character-select screen leaves no preview.");
         Check(JsonSerializer.Serialize(CorruptedPlayerStore.Load()) == before,
             "Multiplayer preview does not replace the single-player snapshot.");
         await CheckContinuePreview(menu);
-        MainFile.Logger.Info("DECK PREVIEW SMOKE PASSED: character select and native solo/multiplayer continue screens, frozen selections, first visits, upgrades, inspection, party tabs, focus, and cleanup.");
+        MainFile.Logger.Info("DECK PREVIEW SMOKE PASSED: character select and native solo/multiplayer continue screens, frozen selections, first visits, upgrades, inspection, party tabs, focus, and live/disposed screen cleanup.");
         game.GetTree().Quit();
     }
 
@@ -255,6 +260,27 @@ internal static class DeckPreviewPlaytest
         Check(!host.IsConnected && NModalContainer.Instance?.OpenModal == null &&
             load.GetNodeOrNull<ContinueRunDeckPreview>("ArchitectContinueDeckPreview") == null,
             "Closing the native multiplayer resume lobby closes its preview and cleans up the button.");
+        ContinueRunDeckPreview.Detach(load);
+        ContinueRunDeckPreview.Detach(load);
+        Check(load.GetNodeOrNull<ContinueRunDeckPreview>("ArchitectContinueDeckPreview") == null,
+            "Repeated cleanup of a live multiplayer resume screen leaves no preview.");
+    }
+
+    private static void CheckDisposedScreenCleanup()
+    {
+        var characterSelect = new NCharacterSelectScreen();
+        characterSelect.Free();
+        Check(!GodotObject.IsInstanceValid(characterSelect), "Character-select cleanup probe uses a freed native screen.");
+        CharacterSelectDeckPreview.Detach(characterSelect);
+        CharacterSelectDeckPreview.Detach(characterSelect);
+        Check(true, "Character-select cleanup after disposal is safe and repeatable.");
+
+        var load = new NMultiplayerLoadGameScreen();
+        load.Free();
+        Check(!GodotObject.IsInstanceValid(load), "Multiplayer resume cleanup probe uses a freed native screen.");
+        ContinueRunDeckPreview.Detach(load);
+        ContinueRunDeckPreview.Detach(load);
+        Check(true, "Multiplayer resume cleanup after disposal is safe and repeatable.");
     }
 
     private static SerializableRun ResumeSave(ulong[] players)

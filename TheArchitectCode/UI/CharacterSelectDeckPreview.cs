@@ -34,6 +34,9 @@ internal partial class CharacterSelectDeckPreview : Control
 
     internal static void Detach(NCharacterSelectScreen screen)
     {
+        // Run startup can free the screen before CleanUpLobby resumes; _ExitTree already stopped the preview.
+        if (!GodotObject.IsInstanceValid(screen))
+            return;
         if (screen.GetNodeOrNull<CharacterSelectDeckPreview>("ArchitectDeckPreview") is not { } existing)
             return;
         existing.Stop();

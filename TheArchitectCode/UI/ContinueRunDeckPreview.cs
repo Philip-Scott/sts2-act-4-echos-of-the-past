@@ -32,6 +32,9 @@ internal partial class ContinueRunDeckPreview : Control
 
     internal static void Detach(Control screen)
     {
+        // Run loading can free the screen before CleanUpLobby resumes; _ExitTree already stopped the preview.
+        if (!GodotObject.IsInstanceValid(screen))
+            return;
         if (screen.GetNodeOrNull<ContinueRunDeckPreview>(NodeName) is not { } existing)
             return;
         existing.Stop();
