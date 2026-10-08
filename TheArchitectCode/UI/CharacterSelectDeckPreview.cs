@@ -52,7 +52,11 @@ internal partial class CharacterSelectDeckPreview : Control
         button = new CorruptedDeckButton
         {
             Name = "ViewDeck",
-            Text = CorruptedDeckButton.Localize(multiplayer ? "BUTTON_PARTY" : "BUTTON")
+            Text = CorruptedDeckButton.Localize(multiplayer ? "BUTTON_PARTY" : "BUTTON"),
+            CanReset = () => !stopped && IsVisibleInTree() && NModalContainer.Instance?.OpenModal == null &&
+                !lobby.Players.Any(player => player.id == lobby.NetService.NetId && player.isReady) &&
+                (!multiplayer || synchronizer?.CanReset == true),
+            ResetDeck = ResetDeck
         };
         AddChild(button);
         button.SetAnchorsAndOffsetsPreset(LayoutPreset.BottomRight);
@@ -120,7 +124,24 @@ internal partial class CharacterSelectDeckPreview : Control
             synchronizer!.Receive(deck.Packet, sender);
     }
 
-    private void MembershipChanged(StartRunLobbyPlayer _) => RefreshMembership();
+    private void MembershipChanged(StartRunLobbyPlayer _)
+    {
+        button.ResetGesture();
+        RefreshMembership();
+    }
+
+    private Task<bool> ResetDeck() => CorruptedDeckReset.TryReset(() =>
+    {
+        if (synchronizer == null)
+        {
+            CorruptedPlayerStore.Delete();
+            LoadSingleplayer();
+        }
+        else
+            synchronizer.ResetLineage((host, profiles) =>
+                CorruptedPartyStore.Delete(CorruptedPlayerStore.ProfileDirectory, host, profiles));
+        return Task.CompletedTask;
+    });
 
     private void RefreshMembership() => synchronizer!.Refresh(lobby.Players.Select(player => player.id).ToArray());
 

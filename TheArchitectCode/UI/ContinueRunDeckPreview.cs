@@ -1,8 +1,13 @@
+using System.IO;
 using System.Text.Json;
+using BaseLib.Abstracts;
 using BaseLib.Patches.Saves;
 using Godot;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Multiplayer;
+using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
+using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
@@ -10,6 +15,8 @@ using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
+using TheArchitect.TheArchitectCode.Multiplayer;
+using TheArchitect.TheArchitectCode.Persistence;
 
 namespace TheArchitect.TheArchitectCode.UI;
 
@@ -22,12 +29,25 @@ internal partial class ContinueRunDeckPreview : Control
     private NButton? neighbor;
     private NodePath? previousNeighbor;
     private bool stopped;
+    private bool resetting;
+    private LoadRunLobby? lobby;
+    private int profileId;
+    private ContinueRunPreviewSelection? selection;
+    private LobbyPreviewSynchronizer? synchronizer;
+    private string? loadError;
+    private string? lastSyncError;
 
-    internal static void Attach(Control screen, SerializableRun? save)
+    internal static void Attach(Control screen, SerializableRun? save, LoadRunLobby? lobby = null)
     {
+        if (save != null && screen.GetNodeOrNull<ContinueRunDeckPreview>(NodeName) is { resetting: true } existing &&
+            existing.profileId == SaveManager.Instance.CurrentProfileId)
+            return;
         Detach(screen);
         if (save != null)
-            screen.AddChild(new ContinueRunDeckPreview { Name = NodeName, save = save });
+            screen.AddChild(new ContinueRunDeckPreview
+            {
+                Name = NodeName, save = save, lobby = lobby, profileId = SaveManager.Instance.CurrentProfileId
+            });
     }
 
     internal static void Detach(Control screen)
@@ -49,7 +69,14 @@ internal partial class ContinueRunDeckPreview : Control
         button = new CorruptedDeckButton
         {
             Name = "ViewDeck",
-            Text = CorruptedDeckButton.Localize(save.Players.Count > 1 ? "BUTTON_PARTY" : "BUTTON")
+            Text = CorruptedDeckButton.Localize(save.Players.Count > 1 ? "BUTTON_PARTY" : "BUTTON"),
+            CanReset = () => !stopped && !resetting && IsVisibleInTree() &&
+                profileId == SaveManager.Instance.CurrentProfileId &&
+                NModalContainer.Instance?.OpenModal == null &&
+                (lobby == null || lobby.NetService.Type == NetGameType.Host &&
+                    !lobby.IsPlayerReady(lobby.NetService.NetId)),
+            ResetDeck = ResetDeck,
+            ResetCompleted = ResetCompleted
         };
         AddChild(button);
         button.SetAnchorsAndOffsetsPreset(LayoutPreset.BottomRight);
@@ -67,13 +94,25 @@ internal partial class ContinueRunDeckPreview : Control
         button.FocusNeighborBottom = neighbor.GetPath();
         VisibilityChanged += OnVisibilityChanged;
         UpdateVisibility();
+        LoadSelection();
     }
 
     private void Open()
     {
-        if (stopped || !IsVisibleInTree() || NModalContainer.Instance is not { OpenModal: null } modals)
+        if (stopped || resetting || !IsVisibleInTree() || NModalContainer.Instance is not { OpenModal: null } modals)
             return;
         preview = new CorruptedDeckPreview { Name = "CorruptedDeckPreview" };
+        if (synchronizer == null)
+            LoadSelection();
+        else if (synchronizer?.Error != null)
+            RefreshSavedParty();
+        UpdatePreview();
+        preview.TreeExited += RestoreFocus;
+        modals.Add(preview, showBackstop: false);
+    }
+
+    private void LoadSelection()
+    {
         try
         {
             // Read the serialized extension directly: restoring a RunState executes save setters and model setup.
@@ -82,18 +121,110 @@ internal partial class ContinueRunDeckPreview : Control
             if (data.Dictionaries.TryGetValue(typeof(string), out var strings) &&
                 strings is IDictionary<string, string> values)
                 values.TryGetValue(ContinueRunPreviewSelection.SaveKey, out json);
-            var selection = ContinueRunPreviewSelection.Read(json, save.Players.Select(player => player.NetId).ToArray());
-            preview.SetPreview(selection.Snapshots,
-                selection.StatusKey is { } key ? CorruptedDeckButton.Localize(key) : null);
+            selection = ContinueRunPreviewSelection.Read(json, save.Players.Select(player => player.NetId).ToArray());
+            loadError = null;
+            if (selection.UnselectedParty == null || lobby == null)
+                return;
+            var net = lobby.NetService;
+            ulong host = net.Type == NetGameType.Host ? net.NetId :
+                net is NetClientGameService client ? client.HostNetId :
+                throw new InvalidOperationException("The preview requires the lobby's host/client service.");
+            synchronizer = new LobbyPreviewSynchronizer(new LobbyPreviewEnvironment(
+                net.NetId, host, CorruptedPlayerStore.GetProfileUuid,
+                (profile, members) => CorruptedPartyStore.Load(CorruptedPlayerStore.ProfileDirectory, profile, members),
+                (packet, target) =>
+                {
+                    // The saved group includes absent peers. Only connected peers can receive replies.
+                    if (target is { } peer && lobby.PlayerIds.Contains(peer))
+                        net.SendMessage(new CustomMessageWrapper
+                        {
+                            Message = new LobbyDeckPreviewMessage { Packet = packet }
+                        }, peer);
+                },
+                UpdatePreview));
+            net.RegisterMessageHandler<CustomMessageWrapper>(Receive);
+            RefreshSavedParty();
         }
         catch (Exception error) when (error is JsonException or InvalidOperationException or ArgumentException or
-            NotSupportedException)
+            NotSupportedException or IOException or UnauthorizedAccessException)
         {
             MainFile.Logger.Error($"Cannot load saved Corrupted Player deck preview: {error}");
-            preview.SetPreview([], CorruptedDeckButton.Localize("ERROR") + "\n" + error.Message);
+            loadError = error.Message;
         }
-        preview.TreeExited += RestoreFocus;
-        modals.Add(preview, showBackstop: false);
+    }
+
+    private void RefreshSavedParty() =>
+        synchronizer!.Refresh(save.Players.Select(player => player.NetId).ToArray(), selection!.UnselectedParty);
+
+    private void Receive(CustomMessageWrapper message, ulong sender)
+    {
+        if (!stopped && !resetting && message.Message is LobbyDeckPreviewMessage deck)
+            synchronizer!.Receive(deck.Packet, sender);
+    }
+
+    private void UpdatePreview()
+    {
+        if (synchronizer?.Error is { } syncError && syncError != lastSyncError)
+            MainFile.Logger.Error("Cannot synchronize saved Corrupted Party preview: " + syncError);
+        lastSyncError = synchronizer?.Error;
+        if (!GodotObject.IsInstanceValid(preview))
+            return;
+        if ((loadError ?? lastSyncError) is { } error)
+            preview!.SetPreview([], CorruptedDeckButton.Localize("ERROR") + "\n" + error);
+        else if (synchronizer is { } sync)
+        {
+            var decks = sync.Party?.Lineage?.Members.Select(member => member.Snapshot).ToArray() ?? [];
+            preview!.SetPreview(decks, sync.Party == null ? CorruptedDeckButton.Localize("LOADING") :
+                decks.Length == 0 ? CorruptedDeckButton.Localize("FIRST_VISIT_PARTY") : null);
+        }
+        else if (selection is { } saved)
+            preview!.SetPreview(saved.Snapshots,
+                saved.StatusKey is { } key ? CorruptedDeckButton.Localize(key) : null);
+    }
+
+    private async Task<bool> ResetDeck()
+    {
+        resetting = true;
+        neighbor!.Disable();
+        var success = false;
+        try
+        {
+            success = await CorruptedDeckReset.TryReset(() =>
+                CorruptedDeckReset.ResetSavedRun(save, lobby?.NetService.NetId));
+            return success;
+        }
+        finally
+        {
+            if (!success)
+            {
+                resetting = false;
+                if (!stopped && GodotObject.IsInstanceValid(neighbor))
+                    neighbor.Enable();
+            }
+        }
+    }
+
+    private void ResetCompleted()
+    {
+        if (stopped)
+            return;
+        if (lobby != null)
+        {
+            // Connected clients already received the old save. Rejoining distributes the corrected copy.
+            var stack = NGame.Instance!.MainMenu!.SubmenuStack;
+            if (stack.Peek() == GetParent())
+                stack.Pop();
+            return;
+        }
+        resetting = false;
+        if (GodotObject.IsInstanceValid(neighbor))
+        {
+            neighbor!.Enable();
+            if (previousNeighbor != null)
+                neighbor.FocusNeighborRight = previousNeighbor;
+            if (IsVisibleInTree() && NModalContainer.Instance?.OpenModal == null)
+                neighbor.GrabFocus();
+        }
     }
 
     private void RestoreFocus()
@@ -114,13 +245,26 @@ internal partial class ContinueRunDeckPreview : Control
             preview!.Close();
     }
 
-    public override void _Process(double delta) => UpdateVisibility();
+    public override void _Process(double delta)
+    {
+        UpdateVisibility();
+        if (!stopped && !resetting && synchronizer != null)
+        {
+            synchronizer.Tick(delta);
+            if (synchronizer.Error != lastSyncError)
+                UpdatePreview();
+        }
+    }
 
     private void Stop()
     {
         if (stopped)
             return;
         stopped = true;
+        if (synchronizer != null)
+            lobby!.NetService.UnregisterMessageHandler<CustomMessageWrapper>(Receive);
+        if (resetting && GodotObject.IsInstanceValid(neighbor))
+            neighbor!.Enable();
         if (GodotObject.IsInstanceValid(neighbor) && previousNeighbor != null)
             neighbor!.FocusNeighborRight = previousNeighbor;
         if (GodotObject.IsInstanceValid(preview))
@@ -128,6 +272,9 @@ internal partial class ContinueRunDeckPreview : Control
     }
 
     public override void _ExitTree() => Stop();
+
+    internal static bool IsResetting(Control screen) =>
+        screen.GetNodeOrNull<ContinueRunDeckPreview>(NodeName)?.resetting == true;
 }
 
 [HarmonyPatch(typeof(NMainMenu), nameof(NMainMenu.RefreshButtons))]
@@ -141,7 +288,19 @@ internal static class ContinueRunSoloDeckPreviewPatch
 internal static class ContinueRunPartyDeckPreviewPatch
 {
     private static void Postfix(NMultiplayerLoadGameScreen __instance, LoadRunLobby ____runLobby) =>
-        ContinueRunDeckPreview.Attach(__instance, ____runLobby.Run);
+        ContinueRunDeckPreview.Attach(__instance, ____runLobby.Run, ____runLobby);
+}
+
+[HarmonyPatch(typeof(NMultiplayerLoadGameScreen), nameof(NMultiplayerLoadGameScreen.ShouldAllowRunToBegin))]
+internal static class ContinueRunPartyDeckResetGuardPatch
+{
+    private static bool Prefix(NMultiplayerLoadGameScreen __instance, ref Task<bool> __result)
+    {
+        if (!ContinueRunDeckPreview.IsResetting(__instance))
+            return true;
+        __result = Task.FromResult(false);
+        return false;
+    }
 }
 
 [HarmonyPatch(typeof(NMultiplayerLoadGameScreen), "CleanUpLobby")]

@@ -15,5 +15,7 @@
     <Compile Include="../../TheArchitectCode/Multiplayer/PartySynchronizer.cs" Link="Multiplayer/PartySynchronizer.cs" />
     <Compile Include="../../TheArchitectCode/Multiplayer/LobbyPreviewSynchronizer.cs" Link="Multiplayer/LobbyPreviewSynchronizer.cs" />
     <Compile Include="../../TheArchitectCode/UI/ContinueRunPreviewSelection.cs" Link="UI/ContinueRunPreviewSelection.cs" />
+    <Compile Include="../../TheArchitectCode/UI/CorruptedDeckResetSelection.cs" Link="UI/CorruptedDeckResetSelection.cs" />
+    <Compile Include="../../TheArchitectCode/UI/CorruptedDeckResetGesture.cs" Link="UI/CorruptedDeckResetGesture.cs" />
   </ItemGroup>
 </Project>

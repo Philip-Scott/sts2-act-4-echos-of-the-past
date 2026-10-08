@@ -42,6 +42,13 @@ public static class CorruptedPartyStore
     private static string FilePath(string directory, Guid host, IEnumerable<Guid> participants) =>
         Path.Combine(directory, "multiplayer", host.ToString("N"), SuccessorGroup.Key(participants) + ".json");
 
+    public static void Delete(string directory, Guid host, Guid[] participants)
+    {
+        if (host == Guid.Empty || !participants.Contains(host))
+            throw new InvalidOperationException("The host must belong to the party being reset.");
+        AtomicSnapshotFile.Delete(FilePath(directory, host, participants));
+    }
+
     public static CorruptedPartyEnvelope? Load(string directory, Guid host, Guid[] participants)
     {
         var path = FilePath(directory, host, participants);
@@ -95,6 +102,13 @@ public static class CorruptedPartyStore
 
 internal static class AtomicSnapshotFile
 {
+    internal static void Delete(string path)
+    {
+        // Remove recovery files first so a failed deletion cannot resurrect an older opponent.
+        foreach (var suffix in new[] { ".backup", ".backup.pending", ".backup.tmp", ".pending", ".tmp", ".invalid", "" })
+            File.Delete(path + suffix);
+    }
+
     internal static void Write(string path, string json, string? validatedBackup)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);

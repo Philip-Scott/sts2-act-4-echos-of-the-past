@@ -45,6 +45,13 @@ public static class CorruptedPlayerStore
 
     public static CorruptedPlayerEnvelope? Load(bool forWrite = false) => Load(FilePath, forWrite);
 
+    public static void Delete()
+    {
+        // Older solo saves may be the only copy of the persistent co-op profile identity.
+        _ = GetProfileUuid();
+        AtomicSnapshotFile.Delete(FilePath);
+    }
+
     internal static CorruptedPlayerEnvelope? Load(string path, bool forWrite = false)
     {
         if (!File.Exists(path) && !File.Exists(path + ".backup"))

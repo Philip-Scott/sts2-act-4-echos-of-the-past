@@ -3,7 +3,8 @@ using TheArchitect.TheArchitectCode.Persistence;
 
 namespace TheArchitect.TheArchitectCode.UI;
 
-internal sealed record ContinueRunPreviewSelection(CorruptedPlayerSnapshot[] Snapshots, string? StatusKey)
+internal sealed record ContinueRunPreviewSelection(CorruptedPlayerSnapshot[] Snapshots, string? StatusKey,
+    FrozenCorruptedParty? UnselectedParty = null)
 {
     internal const string SaveKey = "TheArchitect.Run.v1";
 
@@ -20,7 +21,15 @@ internal sealed record ContinueRunPreviewSelection(CorruptedPlayerSnapshot[] Sna
             {
                 if (state.Entered)
                     throw new JsonException("The saved multiplayer run is missing its frozen Corrupted Party.");
-                return new([], "NOT_SELECTED");
+                if (state.Origin is not { } savedOrigin)
+                    return new([], "NOT_SELECTED");
+                savedOrigin.Validate(players, state.StartingHostNetId ??
+                    throw new JsonException("The saved multiplayer run is missing its starting host."));
+                if (state.Id != savedOrigin.RunId || savedOrigin.Lineage != null ||
+                    state.OriginalNetworkIds is not { } originalPlayers ||
+                    !originalPlayers.Order().SequenceEqual(players.Order()))
+                    throw new JsonException("The saved party identities do not match the run.");
+                return new([], "NOT_SELECTED", savedOrigin);
             }
             party.Validate(players, state.StartingHostNetId ??
                 throw new JsonException("The saved multiplayer run is missing its starting host."));

@@ -213,12 +213,14 @@ internal static class DeckPreviewPlaytest
         Check(menu.GetNodeOrNull<ContinueRunDeckPreview>("ArchitectContinueDeckPreview") == null &&
             NModalContainer.Instance?.OpenModal == null && nativeContinue.FocusNeighborRight == originalNeighbor,
             "Native save removal closes the preview, detaches its button, and restores navigation.");
+        await CheckUnselectedPartyPreview(menu, runSaves, snapshot, other);
 
         var host = new NetHostGameService(default);
         Check(host.StartENetHost(0, 3) == null, "Isolated resumed multiplayer host starts.");
         save = ResumeSave([host.NetId, host.NetId + 1]);
         var participants = save.Players.Select((player, index) =>
-            new SuccessorParticipant(player.NetId, new Guid(index + 1, 0, 0, new byte[8]))).ToArray();
+            new SuccessorParticipant(player.NetId, index == 0 ? CorruptedPlayerStore.GetProfileUuid() :
+                new Guid(index + 1, 0, 0, new byte[8]))).ToArray();
         var origin = new FrozenCorruptedParty
         {
             RunId = "continue-party", HostNetId = host.NetId, HostProfileUuid = participants[0].ProfileUuid,
@@ -255,7 +257,28 @@ internal static class DeckPreviewPlaytest
         await NativeDemoPlaytest.Capture("deck-continue-party-frozen");
         Check(SavedRunJson(save) == partyBefore && JsonSerializer.Serialize(CorruptedPlayerStore.Load()) == lineageBefore,
             "Resumed party preview is read-only and does not reselect a local lineage.");
-        menu.SubmenuStack.Pop();
+        preview.Close();
+        await Task.Delay(100);
+        var profiles = participants.Select(player => player.ProfileUuid).ToArray();
+        foreach (var id in new[] { "reset-party-1", "reset-party-2" })
+            CorruptedPartyStore.Commit(CorruptedPlayerStore.ProfileDirectory, origin.HostProfileUuid,
+                origin with { RunId = id }, "ArchitectWin", state.EntryParty!.Lineage!.Members);
+        for (int click = 1; click <= 9; click++)
+        {
+            RightClick(button);
+            await Task.Delay(80);
+            Check(SavedRunJson(save) == partyBefore &&
+                CorruptedPartyStore.Load(CorruptedPlayerStore.ProfileDirectory, origin.HostProfileUuid, profiles) != null,
+                $"Party right click {click} does not reset early.");
+        }
+        await NativeDemoPlaytest.Capture("deck-reset-party-before-tenth");
+        RightClick(button);
+        await Task.Delay(2500);
+        Check(CorruptedPartyStore.Load(CorruptedPlayerStore.ProfileDirectory, origin.HostProfileUuid, profiles) == null,
+            "Tenth host click deletes only this party's primary and backup.");
+        Check(JsonSerializer.Serialize(CorruptedPlayerStore.Load()) == lineageBefore,
+            "Party reset preserves the solo lineage.");
+        CheckResetSave(runSaves.LoadMultiplayerRunSave().SaveData!, save.Players.Select(player => player.NetId).ToArray());
         await Task.Delay(200);
         Check(!host.IsConnected && NModalContainer.Instance?.OpenModal == null &&
             load.GetNodeOrNull<ContinueRunDeckPreview>("ArchitectContinueDeckPreview") == null,
@@ -264,6 +287,147 @@ internal static class DeckPreviewPlaytest
         ContinueRunDeckPreview.Detach(load);
         Check(load.GetNodeOrNull<ContinueRunDeckPreview>("ArchitectContinueDeckPreview") == null,
             "Repeated cleanup of a live multiplayer resume screen leaves no preview.");
+        await CheckSoloReset(menu, runSaves, snapshot);
+    }
+
+    private static async Task CheckUnselectedPartyPreview(NMainMenu menu, RunSaveManager runSaves,
+        CorruptedPlayerSnapshot first, CorruptedPlayerSnapshot second)
+    {
+        var hostProfile = CorruptedPlayerStore.GetProfileUuid();
+        var otherProfile = Guid.NewGuid();
+        var profiles = new[] { hostProfile, otherProfile };
+        foreach (bool hasHistory in new[] { true, false })
+        {
+            var host = new NetHostGameService(default);
+            Check(host.StartENetHost(0, 3) == null, "Isolated pre-Act-4 resume host starts.");
+            var save = ResumeSave([host.NetId, host.NetId + 1]);
+            var origin = new FrozenCorruptedParty
+            {
+                RunId = "continue-before-act4", HostNetId = host.NetId, HostProfileUuid = hostProfile,
+                GroupKey = SuccessorGroup.Key(profiles),
+                Participants = [new(host.NetId, hostProfile), new(host.NetId + 1, otherProfile)]
+            };
+            var state = new ArchitectRun();
+            state.BindOrigin(origin);
+            SetResumeSelection(save, state);
+            if (hasHistory)
+                CorruptedPartyStore.Commit(CorruptedPlayerStore.ProfileDirectory, hostProfile,
+                    origin with { RunId = "previous-party-victory" }, "ArchitectWin",
+                    [new(hostProfile, first), new(otherProfile, second)]);
+            else
+                CorruptedPartyStore.Delete(CorruptedPlayerStore.ProfileDirectory, hostProfile, profiles);
+            await runSaves.SaveRun(save, isMultiplayer: true);
+            save = runSaves.LoadMultiplayerRunSave().SaveData!;
+            var before = SavedRunJson(save);
+            var lineageBefore = JsonSerializer.Serialize(
+                CorruptedPartyStore.Load(CorruptedPlayerStore.ProfileDirectory, hostProfile, profiles));
+            var screen = menu.SubmenuStack.GetSubmenuType<NMultiplayerLoadGameScreen>();
+            screen.InitializeAsHost(host, save);
+            menu.SubmenuStack.Push(screen);
+            await Task.Delay(500);
+            var lobby = (MegaCrit.Sts2.Core.Multiplayer.Game.Lobby.LoadRunLobby)
+                AccessTools.Field(typeof(NMultiplayerLoadGameScreen), "_runLobby").GetValue(screen)!;
+            Check(lobby.PlayerCount == 1 && save.Players.Count == 2,
+                "Only the host is connected but the saved party contains two players.");
+            var button = screen.GetNode<CorruptedDeckButton>("ArchitectContinueDeckPreview/ViewDeck");
+            Press(button);
+            await Task.Delay(200);
+            var preview = OpenPreview();
+            if (hasHistory)
+            {
+                var tabs = preview.GetChildren().OfType<HBoxContainer>().Single();
+                Check(tabs.GetChildCount() == 2, "Pre-Act-4 Continue shows both saved opponents before the other player joins.");
+                // Party files sort by profile UUID rather than network/lobby order.
+                var saved = CorruptedPartyStore.Load(CorruptedPlayerStore.ProfileDirectory, hostProfile, profiles)!;
+                for (int index = 0; index < saved.Members.Length; index++)
+                {
+                    Press(tabs.GetChild<CorruptedDeckButton>(index));
+                    CheckPreviewCards(preview, saved.Members[index].Snapshot.Deck.Length);
+                }
+            }
+            else
+                CheckPreviewMessage(preview, "FIRST_VISIT_PARTY");
+            await NativeDemoPlaytest.Capture(hasHistory ? "deck-continue-party-before-act4" : "deck-continue-party-no-history");
+            Check(SavedRunJson(save) == before && SavedRunJson(runSaves.LoadMultiplayerRunSave().SaveData!) == before,
+                "Pre-Act-4 Continue does not freeze a selection or rewrite the run.");
+            Check(JsonSerializer.Serialize(CorruptedPartyStore.Load(
+                CorruptedPlayerStore.ProfileDirectory, hostProfile, profiles)) == lineageBefore,
+                "Pre-Act-4 Continue leaves the host's party history unchanged.");
+            menu.SubmenuStack.Pop();
+            await Task.Delay(200);
+            Check(!host.IsConnected && NModalContainer.Instance?.OpenModal == null &&
+                screen.GetNodeOrNull<ContinueRunDeckPreview>("ArchitectContinueDeckPreview") == null,
+                "Closing the pre-Act-4 Continue lobby cleans up its synchronized preview.");
+        }
+    }
+
+    private static async Task CheckSoloReset(NMainMenu menu, RunSaveManager runSaves, CorruptedPlayerSnapshot snapshot)
+    {
+        var save = ResumeSave([1]);
+        SetResumeSelection(save, new ArchitectRun
+        {
+            Entered = true, EntrySnapshot = new CorruptedPlayerEnvelope { Snapshot = snapshot }
+        });
+        var strings = ExtendedSaveHandlers<IRunState, SerializableRun>.ExtendedData[save].DictForType<string>();
+        strings["OtherMod.Save"] = "preserved by reset";
+        await runSaves.SaveRun(save, isMultiplayer: false);
+        menu.RefreshButtons();
+        await Task.Delay(200);
+        var button = menu.GetNode<CorruptedDeckButton>("ArchitectContinueDeckPreview/ViewDeck");
+        var savedBefore = SavedRunJson(SaveManager.Instance.LoadRunSave().SaveData!);
+        var identity = CorruptedPlayerStore.GetProfileUuid();
+        for (int click = 1; click <= 9; click++)
+        {
+            RightClick(button);
+            await Task.Delay(80);
+            Check(SavedRunJson(SaveManager.Instance.LoadRunSave().SaveData!) == savedBefore &&
+                CorruptedPlayerStore.Load() != null, $"Solo right click {click} does not reset early.");
+        }
+        Check(NModalContainer.Instance?.OpenModal == null, "Right clicks never activate the normal preview.");
+        await NativeDemoPlaytest.Capture("deck-reset-solo-before-tenth");
+        RightClick(button);
+        button._Input(new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = true,
+            Position = Vector2.Zero });
+        button._Input(new InputEventKey { Keycode = Key.Escape, Pressed = true });
+        button.Hide();
+        button.Show();
+        await Task.Delay(2500);
+        Check(CorruptedPlayerStore.Load() == null && CorruptedPlayerStore.GetProfileUuid() == identity,
+            "Tenth solo click removes primary and backup but preserves profile identity.");
+        var corrected = SaveManager.Instance.LoadRunSave().SaveData!;
+        CheckResetSave(corrected, [1]);
+        Check(ExtendedSaveHandlers<IRunState, SerializableRun>.ExtendedData[corrected].DictForType<string>()
+                ["OtherMod.Save"] == "preserved by reset",
+            "Reset preserves other mods' saved run extensions.");
+        Check(JsonSerializer.Serialize(corrected.Players) == JsonSerializer.Serialize(save.Players) &&
+            corrected.StartTime == save.StartTime && corrected.CurrentActIndex == save.CurrentActIndex,
+            "Reset preserves the player's deck, run identity and act.");
+        Check(!button.Visible, "Successful reset burns away the button.");
+        Check(!ContinueRunDeckPreview.IsResetting(menu),
+            "Outside input and temporary hiding during reset do not strand the Continue button.");
+        await NativeDemoPlaytest.Capture("deck-reset-solo-complete");
+        button.ResetGesture();
+        Check(button.Visible, "Resetting the gesture restores a burned button for a different party.");
+    }
+
+    private static void CheckResetSave(SerializableRun save, ulong[] players)
+    {
+        var json = ExtendedSaveHandlers<IRunState, SerializableRun>.ExtendedData[save].DictForType<string>()
+            [ContinueRunPreviewSelection.SaveKey];
+        Check(ContinueRunPreviewSelection.Read(json, players).StatusKey == "FROZEN_FIRST_VISIT",
+            "Native save reload retains the reset frozen First Visit.");
+        var restored = ResumeRun(players);
+        ExtendedSaveHandlers<IRunState, SerializableRun>.Load(save, restored);
+        Check(ArchitectRun.Get(restored).EncounterSnapshots.Count == 0,
+            "BaseLib restores a run with no Corrupted Player after reset.");
+    }
+
+    private static void RightClick(CorruptedDeckButton button)
+    {
+        button._GuiInput(new InputEventMouseButton { ButtonIndex = MouseButton.Right, Pressed = true,
+            Position = button.Size / 2 });
+        button._GuiInput(new InputEventMouseButton { ButtonIndex = MouseButton.Right, Pressed = false,
+            Position = button.Size / 2 });
     }
 
     private static void CheckDisposedScreenCleanup()
@@ -283,12 +447,15 @@ internal static class DeckPreviewPlaytest
         Check(true, "Multiplayer resume cleanup after disposal is safe and repeatable.");
     }
 
-    private static SerializableRun ResumeSave(ulong[] players)
-    {
-        var run = RunState.CreateForNewRun(players.Select(id =>
+    private static RunState ResumeRun(ulong[] players) =>
+        RunState.CreateForNewRun(players.Select(id =>
                 Player.CreateForNewRun(ModelDb.Character<Defect>(), UnlockState.all, id)).ToArray(),
             [ModelDb.Act<Overgrowth>().ToMutable(), ModelDb.Act<Hive>().ToMutable(), ModelDb.Act<Glory>().ToMutable()],
             [], GameMode.Standard, 0, "CONTINUE-DECK-PREVIEW");
+
+    private static SerializableRun ResumeSave(ulong[] players)
+    {
+        var run = ResumeRun(players);
         return new SerializableRun
         {
             SchemaVersion = SaveManager.Instance.GetLatestSchemaVersion<SerializableRun>(),
@@ -311,9 +478,13 @@ internal static class DeckPreviewPlaytest
         NModalContainer.Instance?.OpenModal as CorruptedDeckPreview ??
             throw new InvalidOperationException("The native resume preview did not open.");
 
-    private static void CheckPreviewCards(CorruptedDeckPreview preview, int count) =>
-        Check(preview.GetChildren().OfType<NCardGrid>().Single().CurrentlyDisplayedCards.Count() == count,
-            $"Continue preview renders exactly {count} frozen cards, not the current on-disk lineage.");
+    private static void CheckPreviewCards(CorruptedDeckPreview preview, int count)
+    {
+        var grid = preview.GetChildren().OfType<NCardGrid>().Single();
+        // CurrentlyDisplayedCards contains only the grid's virtualized window.
+        var cards = (IReadOnlyCollection<CardModel>)AccessTools.Field(typeof(NCardGrid), "_cardsCache").GetValue(grid)!;
+        Check(cards.Count == count, $"Continue preview contains exactly {count} frozen cards, got {cards.Count}.");
+    }
 
     private static void CheckPreviewMessage(CorruptedDeckPreview preview, string key) =>
         Check(preview.GetChildren().OfType<Label>().Any(label => label.Text == CorruptedDeckButton.Localize(key)),

@@ -63,7 +63,38 @@ internal static class ContinueRunPreviewTests
         });
         test("continue multiplayer origin registration is not a selected First Visit", () =>
         {
-            Check(Read(PartyState(2), [10, 20]).StatusKey == "NOT_SELECTED");
+            var state = PartyState(2);
+            var before = JsonSerializer.Serialize(state);
+            var selection = Read(state, [10, 20]);
+            Check(selection.StatusKey == "NOT_SELECTED" && selection.Snapshots.Length == 0);
+            Check(selection.UnselectedParty?.Digest == state.Origin!.Digest);
+            Check(JsonSerializer.Serialize(state) == before && state.PendingParty == null && !state.Entered);
+        });
+        test("continue frozen and pending selections never request current lineage", () =>
+        {
+            var state = PartyState(2);
+            state.PendingParty = state.Origin! with { Lineage = Lineage(state.Origin!) };
+            Check(Read(state, [10, 20]).UnselectedParty == null);
+            state.EnterParty(state.PendingParty);
+            Check(Read(state, [10, 20]).UnselectedParty == null);
+            state.EntryParty = state.Origin;
+            Check(Read(state, [10, 20]).UnselectedParty == null);
+        });
+        test("continue unselected preview rejects inconsistent saved party identities before any lineage lookup", () =>
+        {
+            var state = PartyState(2);
+            Reject(() => Read(state, [10, 30]));
+            state.StartingHostNetId = 20;
+            Reject(() => Read(state, [10, 20]));
+            state = PartyState(2);
+            state.Id = "another-run";
+            Reject(() => Read(state, [10, 20]));
+            state = PartyState(2);
+            state.OriginalNetworkIds = [10, 30];
+            Reject(() => Read(state, [10, 20]));
+            state = PartyState(2);
+            state.Origin = state.Origin! with { Lineage = Lineage(state.Origin!) };
+            Reject(() => Read(state, [10, 20]));
         });
         test("continue preview rejects missing or mismatched frozen multiplayer data", () =>
         {

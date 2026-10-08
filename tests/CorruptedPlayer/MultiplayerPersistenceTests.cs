@@ -214,6 +214,41 @@ internal static class MultiplayerPersistenceTests
                 File.WriteAllText(path + ".backup", "{also broken");
                 Reject(() => CorruptedPartyStore.Load(directory, host, [host, client]));
             });
+            test("failsafe deletes unreadable party and recovery files without touching another group or solo history", () =>
+            {
+                var path = Path.Combine(directory, "multiplayer", host.ToString("N"), party.GroupKey + ".json");
+                var unrelated = new[]
+                {
+                    Path.Combine(directory, "corrupted_player_snapshot.json"),
+                    Path.Combine(directory, "profile_identity.json"),
+                    Path.Combine(directory, "multiplayer", host.ToString("N"), SuccessorGroup.Key([host, other]) + ".json"),
+                    Path.Combine(directory, "multiplayer", client.ToString("N"), party.GroupKey + ".json")
+                };
+                foreach (var file in unrelated)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+                    File.WriteAllText(file, "preserve");
+                }
+                foreach (var suffix in new[] { "", ".backup", ".pending", ".tmp", ".backup.pending", ".backup.tmp", ".invalid" })
+                    File.WriteAllText(path + suffix, "{corrupt");
+                CorruptedPartyStore.Delete(directory, host, [client, host]);
+                Check(CorruptedPartyStore.Load(directory, host, [host, client]) == null);
+                Check(!Directory.GetFiles(Path.GetDirectoryName(path)!).Any(file => file.StartsWith(path, StringComparison.Ordinal)));
+                Check(unrelated.All(file => File.ReadAllText(file) == "preserve"));
+                CorruptedPartyStore.Delete(directory, host, [host, client]);
+                Reject(() => CorruptedPartyStore.Delete(directory, other, [host, client]));
+            });
+            test("snapshot deletion removes backup-only solo data and reports filesystem failures", () =>
+            {
+                var path = Path.Combine(directory, "solo-reset.json");
+                File.WriteAllText(path + ".backup", "old deck");
+                AtomicSnapshotFile.Delete(path);
+                Check(!File.Exists(path + ".backup"));
+                Directory.CreateDirectory(path);
+                try { AtomicSnapshotFile.Delete(path); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return; }
+                throw new InvalidOperationException("Failed deletion must not report success.");
+            });
         }
         finally
         {

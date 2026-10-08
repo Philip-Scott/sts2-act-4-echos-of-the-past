@@ -19,6 +19,23 @@ hand is visible during your turn. In co-op, the entire last saved party fights
 together. After you defeat them all, the Architect joins the same combat.
 Use "View Corrupted Deck" or "View Corrupted Decks" on the character-select
 screen to preview your saved opponents.
+When continuing co-op, the preview uses the full party recorded in the save,
+even before anyone else rejoins. Before Act 4, it shows that party's current
+opponent history from the original host. After the encounter is selected, it
+shows the frozen decks saved with the run instead. Previewing does not change
+the saved encounter.
+
+If a saved opponent crashes or cannot load, right-click its "View Corrupted Deck"
+button 10 times in a row. Exhaust effects start on the fourth click; the tenth
+burns the button and deletes the saved opponent and its backups. A left click,
+another input, or leaving the screen cancels the sequence.
+The solo button clears only the active profile's solo opponent. In co-op, only
+the host can reset, and only that host's exact party is cleared. Unready before
+using the failsafe.
+Using a Continue-menu button also clears the opponent frozen in that ongoing
+run, without deleting the run or changing the players' decks. Continue the run
+to fight the Architect directly. A co-op Continue reset closes the lobby; reopen
+it and have the party rejoin to receive the corrected save.
 
 Whether you win or lose against the Architect, the mod saves your build as your
 next opponent. The mod stores saves on your computer and does not sync them through Steam Cloud.

@@ -36,6 +36,7 @@ internal sealed class LobbyPreviewSynchronizer(LobbyPreviewEnvironment environme
     private readonly HashSet<(ulong Member, string Request)> retiredRequests = [];
     private readonly Dictionary<ulong, Guid> identities = [];
     private ulong[] members = [];
+    private FrozenCorruptedParty? savedOrigin;
     private PartyPayloadBuffer payload = new();
     private Guid localProfile;
     private string requestId = "";
@@ -49,16 +50,31 @@ internal sealed class LobbyPreviewSynchronizer(LobbyPreviewEnvironment environme
     internal string? Error { get; private set; }
     private bool IsHost => environment.LocalNetId == environment.HostNetId;
 
-    internal void Refresh(ulong[] memberNetIds)
+    internal bool CanReset => IsHost && !IsLoading && members.Length >= 2 &&
+        identities.Count == members.Length && members.All(identities.ContainsKey);
+
+    internal void ResetLineage(Action<Guid, Guid[]> delete)
+    {
+        if (!CanReset)
+            throw new InvalidOperationException("Only the host with a complete party identity can reset this opponent.");
+        var profiles = members.Select(id => identities[id]).ToArray();
+        _ = SuccessorGroup.Key(profiles);
+        delete(localProfile, profiles);
+        Guard(BeginHostEpoch);
+    }
+
+    internal void Refresh(ulong[] memberNetIds, FrozenCorruptedParty? origin = null)
     {
         var next = memberNetIds.Order().ToArray();
-        if (!members.SequenceEqual(next))
+        if (!members.SequenceEqual(next) || savedOrigin?.Digest != origin?.Digest)
         {
+            identities.Clear();
             foreach (var request in requests)
                 retiredRequests.Add((request.Key, request.Value));
             requests.Clear();
         }
         members = next;
+        savedOrigin = origin;
         requestId = hostInstance + ":" + (++requestGeneration).ToString(CultureInfo.InvariantCulture);
         epoch = "";
         Reset();
@@ -69,6 +85,12 @@ internal sealed class LobbyPreviewSynchronizer(LobbyPreviewEnvironment environme
             if (members.Length is < 1 or > 4 || members.Distinct().Count() != members.Length ||
                 !members.Contains(environment.LocalNetId) || !members.Contains(environment.HostNetId))
                 throw new JsonException("The lobby must contain its host and one to four distinct participants.");
+            if (savedOrigin != null)
+            {
+                savedOrigin.Validate(members, environment.HostNetId);
+                if (savedOrigin.Lineage != null)
+                    throw new JsonException("A frozen opponent must be previewed from the save, not reselected.");
+            }
             if (members.Length == 1)
             {
                 IsLoading = false;
@@ -180,7 +202,9 @@ internal sealed class LobbyPreviewSynchronizer(LobbyPreviewEnvironment environme
         retryElapsed += deltaSeconds;
         if (elapsed >= TimeoutSeconds)
         {
-            Fail("Timed out loading the lobby preview. All participants must be connected with compatible mod versions.");
+            Fail(savedOrigin == null
+                ? "Timed out loading the lobby preview. All participants must be connected with compatible mod versions."
+                : "Timed out loading the saved party preview from the host. Check the connection and mod versions.");
             return;
         }
         if (!IsHost && retryElapsed >= 3)
@@ -196,11 +220,19 @@ internal sealed class LobbyPreviewSynchronizer(LobbyPreviewEnvironment environme
         Reset();
         if (Error != null)
             return;
-        ReadLocalProfile();
         identities.Clear();
-        identities[environment.LocalNetId] = localProfile;
-        foreach (var member in members.Where(id => id != environment.LocalNetId))
+        ReadLocalProfile();
+        if (savedOrigin != null)
+        {
+            foreach (var participant in savedOrigin.Participants)
+                identities[participant.NetId] = participant.ProfileUuid;
+        }
+        else
+            identities[environment.LocalNetId] = localProfile;
+        foreach (var member in Recipients())
             Send(LobbyPreviewMessageKind.IdentityRequest, member);
+        if (savedOrigin != null)
+            TryLoadParty();
     }
 
     private void ReadLocalProfile()
@@ -208,7 +240,14 @@ internal sealed class LobbyPreviewSynchronizer(LobbyPreviewEnvironment environme
         localProfile = environment.GetProfileUuid();
         if (localProfile == Guid.Empty)
             throw new JsonException("The active profile has no persistent identity.");
+        if (savedOrigin != null &&
+            savedOrigin.Participants.Single(player => player.NetId == environment.LocalNetId).ProfileUuid != localProfile)
+            throw new JsonException("The active profile does not own this saved run participant.");
     }
+
+    // Resume already knows every identity, but absent players have no preview request to answer.
+    private IEnumerable<ulong> Recipients() => members.Where(id => id != environment.LocalNetId &&
+        (savedOrigin == null || requests.ContainsKey(id)));
 
     private bool AcceptEpoch(string candidate)
     {
@@ -246,7 +285,7 @@ internal sealed class LobbyPreviewSynchronizer(LobbyPreviewEnvironment environme
             Lineage = environment.LoadLineage(localProfile, profiles)
         };
         ValidateParty(party);
-        foreach (var member in members.Where(id => id != environment.LocalNetId))
+        foreach (var member in Recipients())
             SendParty(party, member);
         Complete(party);
     }
@@ -271,6 +310,11 @@ internal sealed class LobbyPreviewSynchronizer(LobbyPreviewEnvironment environme
         if (party.RunId != epoch ||
             party.Participants.Single(player => player.NetId == environment.LocalNetId).ProfileUuid != localProfile)
             throw new JsonException("The lobby preview does not match this request and active profile.");
+        if (savedOrigin != null && (party.HostProfileUuid != savedOrigin.HostProfileUuid ||
+            party.GroupKey != savedOrigin.GroupKey ||
+            !party.Participants.OrderBy(player => player.NetId)
+                .SequenceEqual(savedOrigin.Participants.OrderBy(player => player.NetId))))
+            throw new JsonException("The lobby preview does not match the saved party identities.");
     }
 
     private void Complete(FrozenCorruptedParty party)

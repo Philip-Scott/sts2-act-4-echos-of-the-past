@@ -343,6 +343,155 @@ internal static class LobbyPreviewTests
             network.Start();
             Check(network.Peers.Values.All(peer => peer.Sync.Party != null && peer.Sync.Error == null));
         });
+        test("only the host can reset and all peers receive a fresh First Visit epoch", () =>
+        {
+            var network = new Network(3);
+            network.Start();
+            var old = network.Sent.ToArray();
+            Check(network.Peers[10].Sync.CanReset && !network.Peers[20].Sync.CanReset);
+            try { network.Peers[20].Sync.ResetLineage((_, _) => throw new Exception("Client deleted data.")); }
+            catch (InvalidOperationException) { }
+            var calls = 0;
+            network.Peers[10].Sync.ResetLineage((host, profiles) =>
+            {
+                calls++;
+                Check(host == Profile(10) && profiles.Order().SequenceEqual(network.Members.Select(Profile).Order()));
+                network.FirstVisit = true;
+            });
+            Check(!network.Peers[10].Sync.CanReset);
+            network.Pump();
+            Check(calls == 1 && network.Peers.Values.All(peer => peer.Sync.Party is { Lineage: null }));
+            var fresh = network.Peers[10].Sync.Party!.Digest;
+            foreach (var packet in old) network.Deliver(packet);
+            network.Pump();
+            Check(network.Peers.Values.All(peer => peer.Sync.Party?.Digest == fresh));
+        });
+        test("failsafe remains available after a corrupt host lineage fails to load", () =>
+        {
+            var network = new Network(2) { ReadError = new JsonException("broken saved deck") };
+            network.Start();
+            Check(network.Peers[10].Sync.Error != null && network.Peers[10].Sync.CanReset);
+            network.Peers[10].Sync.ResetLineage((_, _) =>
+            {
+                network.ReadError = null;
+                network.FirstVisit = true;
+            });
+            network.Pump();
+            Check(network.Peers.Values.All(peer => peer.Sync.Party is { Lineage: null } && peer.Sync.Error == null));
+        });
+        test("membership changes cancel reset authority until new identities arrive", () =>
+        {
+            var network = new Network(3);
+            network.Start();
+            network.Peers[10].Sync.Refresh([10, 20]);
+            Check(!network.Peers[10].Sync.CanReset);
+            network.Peers[10].Sync.Tick(LobbyPreviewSynchronizer.TimeoutSeconds);
+            Check(!network.Peers[10].Sync.CanReset);
+        });
+        foreach (int count in new[] { 2, 3, 4 })
+        {
+            test($"resume previews the complete saved {count}-player group before anyone reconnects", () =>
+            {
+                var network = new Network(count);
+                var origin = network.SavedOrigin;
+                var before = JsonSerializer.Serialize(origin);
+                network.Peers[10].Sync.Refresh(network.Members, origin);
+                Check(network.Peers[10].Sync.Party?.Lineage?.Members.Length == count);
+                Check(!network.Peers[10].Sync.IsLoading && network.Peers[10].Sync.Error == null);
+                Check(network.HostReads == 1 && network.ClientReads == 0 && network.Sent.Count == 0);
+                Check(network.LastProfiles.Order().SequenceEqual(origin.Participants.Select(player => player.ProfileUuid).Order()));
+                Check(JsonSerializer.Serialize(origin) == before && origin.Lineage == null);
+                network.Peers[10].Sync.Tick(LobbyPreviewSynchronizer.TimeoutSeconds + 1);
+                Check(network.Peers[10].Sync.Error == null);
+            });
+        }
+        test("resume clients receive host-owned decks without waiting for other saved participants", () =>
+        {
+            var network = new Network(4) { CardDataSize = 25000 };
+            var origin = network.SavedOrigin;
+            network.Peers[10].Sync.Refresh(network.Members, origin);
+            network.Peers[20].Sync.Refresh(network.Members, origin);
+            network.Pump();
+            Check(network.Peers[20].Sync.Party?.Digest == network.Peers[10].Sync.Party!.Digest);
+            Check(network.Peers[20].Sync.Party!.Lineage!.Members.Length == 4 && network.ClientReads == 0);
+            Check(network.Sent.All(packet => packet.Target is 10 or 20));
+            network.Peers[30].Sync.Refresh(network.Members, origin);
+            network.Pump();
+            Check(new ulong[] { 10, 20, 30 }.All(id =>
+                network.Peers[id].Sync.Party?.Digest == network.Peers[10].Sync.Party!.Digest));
+            Check(network.Sent.All(packet => packet.Target != 40));
+        });
+        test("resume preview distinguishes a missing party history from unknown saved identities", () =>
+        {
+            var network = new Network(2) { FirstVisit = true };
+            network.Peers[10].Sync.Refresh(network.Members, network.SavedOrigin);
+            Check(network.Peers[10].Sync.Party is { Lineage: null } && network.Peers[10].Sync.Error == null);
+            network.Peers[20].Sync.Refresh(network.Members, network.SavedOrigin);
+            network.Pump();
+            Check(network.Peers[20].Sync.Party is { Lineage: null } && network.ClientReads == 0);
+        });
+        test("resume preview reports corrupt host lineage before any peer joins and supports retry", () =>
+        {
+            var network = new Network(3) { ReadError = new JsonException("broken party file") };
+            var origin = network.SavedOrigin;
+            network.Peers[10].Sync.Refresh(network.Members, origin);
+            Check(network.Peers[10].Sync.Error!.Contains("broken party file") && network.HostReads == 1);
+            Check(network.Peers[10].Sync.CanReset);
+            network.Peers[20].Sync.Refresh(network.Members, origin);
+            network.Pump();
+            Check(network.Peers[20].Sync.Error!.Contains("broken party file"));
+            network.ReadError = null;
+            network.Peers[20].Sync.Refresh(network.Members, origin);
+            network.Pump();
+            Check(network.Peers[20].Sync.Party?.Lineage?.Members.Length == 3 && network.ClientReads == 0);
+        });
+        test("resume cannot use a different active profile or incomplete saved group", () =>
+        {
+            var network = new Network(3);
+            var origin = network.SavedOrigin;
+            network.Profiles[10] = Guid.NewGuid();
+            network.Peers[10].Sync.Refresh(network.Members, origin);
+            Check(network.HostReads == 0 && network.Peers[10].Sync.Error != null);
+            network.Profiles[10] = Profile(10);
+            network.Profiles[20] = Guid.NewGuid();
+            network.Peers[20].Sync.Refresh(network.Members, origin);
+            Check(network.Peers[20].Sync.Error != null && network.ClientReads == 0 && network.Sent.Count == 0);
+            network.Peers[10].Sync.Refresh([10, 20], origin);
+            Check(network.HostReads == 0 && network.Peers[10].Sync.Error != null);
+        });
+        test("resume client retries if its first request preceded the host handler", () =>
+        {
+            var network = new Network(2);
+            var origin = network.SavedOrigin;
+            network.Peers[20].Sync.Refresh(network.Members, origin);
+            network.Pump();
+            network.Peers[10].Sync.Refresh(network.Members, origin);
+            Check(network.Peers[10].Sync.Party != null);
+            network.Peers[20].Sync.Tick(3);
+            network.Pump();
+            Check(network.Peers[20].Sync.Party?.Digest == network.Peers[10].Sync.Party!.Digest);
+        });
+        test("resume clients reject host snapshots with changed saved profile identities", () =>
+        {
+            var network = new Network(3);
+            var origin = network.SavedOrigin;
+            network.Peers[10].Sync.Refresh(network.Members, origin);
+            network.Peers[20].Sync.Refresh(network.Members, origin);
+            network.Pump(holdSnapshots: true);
+            var snapshot = network.Held.Single();
+            var profiles = origin.Participants.Select(player => player.NetId == 30
+                ? player with { ProfileUuid = Guid.NewGuid() } : player).ToArray();
+            var wrong = network.Peers[10].Sync.Party! with
+            {
+                Participants = profiles, GroupKey = SuccessorGroup.Key(profiles.Select(player => player.ProfileUuid)),
+                Lineage = null
+            };
+            network.Deliver(snapshot with { Packet = snapshot.Packet with
+            {
+                Payload = JsonSerializer.Serialize(wrong), Digest = wrong.Digest
+            } });
+            Check(network.Peers[20].Sync.Error != null && network.Peers[20].Sync.Party == null);
+        });
     }
 
     private static void Check(bool condition, string message = "Lobby preview assertion failed.")
@@ -372,6 +521,12 @@ internal static class LobbyPreviewTests
         internal Guid[] LastProfiles = [];
         internal Exception? ReadError;
         internal ulong? SendErrorFor;
+        internal FrozenCorruptedParty SavedOrigin => new()
+        {
+            RunId = "saved-run", HostNetId = 10, HostProfileUuid = Profiles[10],
+            Participants = Members.Select(id => new SuccessorParticipant(id, Profiles[id])).ToArray(),
+            GroupKey = SuccessorGroup.Key(Members.Select(id => Profiles[id]))
+        };
 
         internal Network(int count)
         {
