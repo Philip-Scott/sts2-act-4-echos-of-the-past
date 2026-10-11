@@ -34,8 +34,8 @@ Each multiplayer enemy is named **Corrupted &lt;Player Name&gt;** and directs
 explicitly targeted cards at its matching human, falling back to another living
 player if that counterpart cannot be hit. AOE attacks still hit the whole party,
 and random-target cards and orbs retain native randomness.
-The Corrupted Player starts at twice that character's saved maximum HP, or
-2.5 times at Ascension 8 (Tough Enemies) and above in the current run (rounded up).
+The Corrupted Player starts at 2.5 times that character's saved maximum HP, or
+3.1 times at Ascension 8 (Tough Enemies) and above in the current run (rounded up).
 These values do not receive an additional multiplayer HP multiplier: the extra
 Corrupted Players provide the party-size scaling. The Architect's HP and shared
 per-turn damage cap use the native final-act boss multiplayer scaling tier

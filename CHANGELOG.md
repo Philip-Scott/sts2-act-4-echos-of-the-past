@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Increased Corrupted Player HP to 2.5 times saved maximum HP at Ascension 0-7
+  and 3.1 times at Ascension 8+, rounded up with no additional multiplayer scaling.
 - Losing the Corrupted Player Elite now shows the normal game-over screen and
   preserves the previous saved opponents. Only wins or losses against the
   Architect boss capture player decks and play the corruption ending.
