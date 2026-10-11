@@ -1,4 +1,5 @@
 {
   "THEARCHITECT-ARCHITECT_ENCOUNTER.title": "The Architect",
-  "THEARCHITECT-CORRUPTED_PLAYER_ENCOUNTER.title": "Corrupted Players"
+  "THEARCHITECT-CORRUPTED_PLAYER_ENCOUNTER.title": "Corrupted Players",
+  "THEARCHITECT-CORRUPTED_PLAYER_ENCOUNTER.loss": "Another climber falls, but the echo remains."
 }

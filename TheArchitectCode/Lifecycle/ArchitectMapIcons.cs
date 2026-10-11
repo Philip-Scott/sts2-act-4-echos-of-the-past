@@ -19,7 +19,9 @@ internal static class ArchitectMapIcons
             }
 
             void fragment() {
-                COLOR = vec4(vec3(0.16), texture(TEXTURE, UV).a) * node_tint;
+                vec4 texel = texture(TEXTURE, UV);
+                float luminance = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
+                COLOR = vec4(vec3(luminance), texel.a) * node_tint;
             }
             """
     });

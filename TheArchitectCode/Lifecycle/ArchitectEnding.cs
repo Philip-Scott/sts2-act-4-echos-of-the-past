@@ -58,7 +58,7 @@ internal static class ArchitectEnding
     internal static bool DeferResult(SerializableRun result)
     {
         var run = RunManager.Instance.DebugOnlyGetState();
-        if (!ArchitectLifecycle.IsEncounter(run) || RunManager.Instance.IsAbandoned ||
+        if (!ArchitectLifecycle.IsBossEncounter(run) || RunManager.Instance.IsAbandoned ||
             ArchitectRun.Get(run).Outcome == null)
             return false;
         if (!Presentations.TryGetValue(run, out var presentation))

@@ -1,4 +1,5 @@
 using Godot;
+using System.IO;
 using System.Text.Json;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Combat;
@@ -18,7 +19,9 @@ using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
+using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Platform;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
@@ -48,8 +51,10 @@ internal static class NativePartyPlaytest
         Require(!downfall || manual && partySize == 4, "Downfall inspection requires a manual four-member party");
         if (encountersOnly)
         {
+            foreach (var count in Enumerable.Range(1, 4))
+                await Exercise(game, count, 0, false, false, eliteDefeatOnly: true);
             await Exercise(game, 2, 0, false, false, encountersOnly: true);
-            MainFile.Logger.Info("ARCHITECT ENCOUNTERS PASSED: Elite map node, native rewards, map return, fresh boss combat.");
+            MainFile.Logger.Info("ARCHITECT ENCOUNTERS PASSED: solo/party Elite defeats preserve snapshots and show normal game over; Elite map node, native rewards, map return, fresh boss combat.");
             game.GetTree().Quit();
             return;
         }
@@ -92,7 +97,7 @@ internal static class NativePartyPlaytest
 
     private static async Task Exercise(NGame game, int count, int ascension, bool layoutOnly, bool prototypeOnly,
         bool manual = false, bool downfall = false, bool stanceVfxOnly = false, bool audioOnly = false,
-        bool layeringOnly = false, bool encountersOnly = false)
+        bool layeringOnly = false, bool encountersOnly = false, bool eliteDefeatOnly = false)
     {
         CharacterModel[] characters = [ModelDb.Character<Ironclad>(), ModelDb.Character<Defect>(),
             ModelDb.Character<Necrobinder>(), ModelDb.Character<Silent>()];
@@ -118,7 +123,8 @@ internal static class NativePartyPlaytest
             [ModelDb.Act<Overgrowth>().ToMutable(), ModelDb.Act<Hive>().ToMutable(), ModelDb.Act<Glory>().ToMutable()],
             [], GameMode.Standard, ascension, history?.Seed ?? $"ARCHITECT-PARTY-{count}-{ascension}");
         var manager = RunManager.Instance;
-        manager.SetUpTest(run, new NetSingleplayerGameService(), disableCombatStateSync: true, shouldSave: false);
+        manager.SetUpTest(run, new NetSingleplayerGameService(), disableCombatStateSync: true,
+            shouldSave: eliteDefeatOnly && count == 1);
         // SetUpTest applies new-run Ascension penalties. Histories already include those changes.
         if (historyLoadouts != null)
             NativePartyHistory.RestoreAfterInitialization(players, historyLoadouts);
@@ -196,6 +202,13 @@ internal static class NativePartyPlaytest
             $"{count}: native boss HP initialization supports Act 4");
         var enemies = combat.Enemies.Where(creature => creature.Monster is CorruptedPlayer).ToArray();
         var actors = enemies.Select(creature => ((CorruptedPlayer)creature.Monster!).Native!).ToArray();
+        if (eliteDefeatOnly)
+        {
+            Require(enemies.Length == count, "Elite defeat fixture has every corrupted opponent");
+            await ExerciseEliteDefeat(run);
+            await game.ReturnToMainMenu();
+            return;
+        }
         if (encountersOnly)
         {
             ArchitectMusicPlaytest.AssertEliteMusic();
@@ -556,6 +569,43 @@ internal static class NativePartyPlaytest
         foreach (var player in players)
             PlayerCmd.EndTurn(player, false);
         await Ready(players, nextTurn);
+    }
+
+    private static async Task ExerciseEliteDefeat(RunState run)
+    {
+        var state = ArchitectRun.Get(run);
+        Require(CorruptedPlayerStore.Commit($"elite-defeat-prior-{run.Players.Count}", "ArchitectWin",
+            CorruptedPlayerSnapshot.Capture(run.Players[0])) != null, "seed the previous solo opponent");
+        if (state.EntryParty is { } party)
+            CorruptedPartyStore.Commit(CorruptedPlayerStore.ProfileDirectory, party.HostProfileUuid,
+                party, "ArchitectWin", party.Lineage!.Members);
+        var directory = CorruptedPlayerStore.ProfileDirectory;
+        var before = Directory.GetFiles(directory, "*", SearchOption.AllDirectories)
+            .ToDictionary(path => path, File.ReadAllBytes);
+
+        if (run.Players.Count > 1)
+        {
+            await CreatureCmd.Kill(run.Players[0].Creature, true);
+            await CombatManager.Instance.CheckWinCondition();
+            Require(!run.IsGameOver && state.Outcome == null && !ArchitectEnding.IsActive(run) &&
+                NOverlayStack.Instance?.Peek() is not NGameOverScreen,
+                "one dead party member does not end the Elite fight or capture decks");
+        }
+        await CreatureCmd.Kill(run.Players.Where(player => !player.Creature.IsDead)
+            .Select(player => player.Creature).ToArray(), true);
+        await CombatManager.Instance.CheckWinCondition();
+        await ArchitectPlaytest.WaitFor(() => NOverlayStack.Instance?.Peek() is NGameOverScreen screen &&
+            screen.GetNode<NGameOverContinueButton>("%ContinueButton").IsEnabled);
+        Require(run.IsGameOver && run.CurrentRoom?.IsVictoryRoom == false &&
+            state.Outcome == null && state.SnapshotRevision == null && !ArchitectEnding.IsActive(run),
+            "Elite defeat uses native game over without an Architect outcome or corruption ending");
+        if (RunManager.Instance.ShouldSave)
+            Require(RunManager.Instance.History is { Win: false }, "Elite defeat is recorded as a loss");
+        Require(before.Keys.Order().SequenceEqual(Directory.GetFiles(directory, "*", SearchOption.AllDirectories).Order()) &&
+            before.All(file => File.ReadAllBytes(file.Key).SequenceEqual(file.Value)),
+            "Elite defeat preserves every solo/party snapshot and backup byte-for-byte");
+        await NativeDemoPlaytest.Capture($"elite-defeat-{run.Players.Count}");
+        MainFile.Logger.Info($"ELITE DEFEAT PASSED: {run.Players.Count} players; normal game over; no capture or lineage changes.");
     }
 
     private static async Task Ready(Player[] players, int turn)

@@ -19,6 +19,8 @@ hand is visible during your turn. In co-op, the entire last saved party fights
 together in a separate Elite fight between the Shop and the Architect.
 That Elite node appears only when the run has saved corrupted opponents.
 Defeating them grants normal Elite rewards and returns you to the map.
+Losing this Elite fight ends the run normally without corrupting your party or
+replacing the saved opponents.
 The Architect then starts a fresh combat with new hands, energy, and combat effects.
 Use "View Corrupted Deck" or "View Corrupted Decks" on the character-select
 screen to preview your saved opponents.

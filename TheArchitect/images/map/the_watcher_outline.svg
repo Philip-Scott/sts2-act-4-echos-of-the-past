@@ -1,7 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="278" height="278" viewBox="0 0 160 160">
-  <title>The Watcher - Ancient map silhouette</title>
-  <g fill="white" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M65 30 C54 19 61 7 77 8 C92 7 100 21 90 30 C114 37 121 56 111 85 L108 90 C128 95 136 115 146 134 L132 151 L104 153 L97 148 L62 150 L56 156 L30 152 L14 135 C23 113 32 97 48 90 L47 84 C36 71 36 46 53 35 Z"/>
-    <path d="M90 16 L99 4 L103 7 L95 26 Z M64 18 L58 3 L54 5 L59 27 Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="278" height="278" viewBox="0 0 278 278">
+  <title>The Watcher, map hover silhouette</title>
+  <desc>Filled backing for the native hover tint, aligned with the carved-ink portrait.</desc>
+  <g fill="white" stroke="white" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M109 58 L74 24 L70 25 L69 28 L104 65 Z M154 53 L186 18 L190 20 L162 57 Z"/>
+    <path d="M128 52 C119 42 125 25 136 19 C149 12 169 16 177 28 L181 40 L174 54 L171 61 L181 69 L197 66 L210 57 L202 77 L189 99 L188 118 L195 144 L204 155 L194 152 L204 169 L188 163 L174 168 L194 190 L208 213 L215 235 L183 249 L151 258 L112 260 L75 258 L41 250 L17 237 L31 211 L42 191 L62 181 L80 166 L79 158 L70 149 L63 158 L65 169 L72 174 L64 181 L54 179 L48 172 L48 163 L53 155 L59 147 L61 119 L64 100 L74 83 L90 72 L104 64 Z"/>
+    <path d="M225 26 L212 44 C201 57 201 71 210 80 L217 85 L217 92 L219 97 L219 99 C204 111 210 124 216 130 L222 133 L219 258 L224 253 L227 101 L230 97 L231 91 L232 85 L231 83 C246 75 248 60 239 46 Z"/>
+    <path d="M68 157 L65 169 L70 172"/>
   </g>
 </svg>

@@ -204,7 +204,7 @@ internal static class ArchitectOutcomePatch
     private static void Prefix(RunManager __instance, ref bool isVictory)
     {
         var run = __instance.DebugOnlyGetState();
-        if (!ArchitectLifecycle.IsEncounter(run) || __instance.IsAbandoned)
+        if (!ArchitectLifecycle.IsBossEncounter(run) || __instance.IsAbandoned)
             return;
         var state = ArchitectRun.Get(run);
         if (state.Outcome == null)
@@ -237,7 +237,7 @@ internal static class ArchitectVictoryRoomPatch
 {
     private static void Postfix(AbstractRoom __instance, ref bool __result)
     {
-        if (__instance is CombatRoom { Encounter: ArchitectEncounter or CorruptedPlayerEncounter } room &&
+        if (__instance is CombatRoom { Encounter: ArchitectEncounter } room &&
             ArchitectRun.Get(room.CombatState.RunState).Outcome != null)
             __result = true;
     }
@@ -256,7 +256,7 @@ internal static class ArchitectGameOverPatch
 {
     private static void Postfix(RunState __instance, ref bool __result)
     {
-        if (ArchitectLifecycle.IsEncounter(__instance) && ArchitectRun.Get(__instance).Outcome != null)
+        if (ArchitectLifecycle.IsBossEncounter(__instance) && ArchitectRun.Get(__instance).Outcome != null)
             __result = true;
     }
 }

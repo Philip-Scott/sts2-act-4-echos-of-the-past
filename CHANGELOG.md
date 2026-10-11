@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Losing the Corrupted Player Elite now shows the normal game-over screen and
+  preserves the previous saved opponents. Only wins or losses against the
+  Architect boss capture player decks and play the corruption ending.
+- Fixed Act 4 map icons losing their interior details. Shop and campfire icons
+  now retain light and dark contrast instead of appearing as solid silhouettes.
+
 ## 1.2.1 Changes
 
 Released October 7, 2026 at 10:35 p.m. PDT.

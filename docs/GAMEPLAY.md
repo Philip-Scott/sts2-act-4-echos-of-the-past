@@ -23,6 +23,9 @@ In multiplayer, repeat visits fight the **entire last saved party** for the same
 host and group membership. All Corrupted Players enter the Elite together.
 Defeating every member ends that combat, grants normal Elite rewards, and returns
 the party to the map. The Architect starts a separate boss combat.
+If the player, or the entire co-op party, dies in the Elite fight, the normal
+game-over screen opens. No corruption ending plays and no player decks are
+captured; the previous saved opponents and their backups remain unchanged.
 **The Hollow Pulse** plays only during the Architect boss fight as a 64-second
 loop. The Corrupted Player Elite uses Act 3's normal battle music. The theme follows
 the game's music volume setting and stops when the encounter ends or is exited.
@@ -53,6 +56,10 @@ the five-node map, separation of the Elite from the boss artwork and hitbox,
 native Elite rewards, boss-only theme music, return to the map, and a fresh boss-only
 combat. It needs no saved-opponent input. Map tests also cover First Visits,
 save/reload, legacy-map upgrades, and removing the Elite after an opponent reset.
+The scenario also checks solo and simulated two-to-four-player Elite defeats,
+including a single party member dying before the rest, normal game over, and
+unchanged snapshot files. The solo defeat enables saving; the party fixtures
+exercise native combat locally without networking.
 
 ## The Watcher's gifts
 
@@ -128,7 +135,15 @@ First and Repeat Visits use the same pool. Turn counts include extra turns.
 The Elite and boss are separate combats, so start-of-combat bonuses trigger in
 each and combat-only relic counters reset normally. Only permanent deck and maximum-HP changes enter the existing
 terminal snapshot; relics, Gold, potions, and combat-only Glam do not.
-The Watcher uses the supplied full-scene Ancient artwork and a matching map icon.
+The Watcher uses the supplied full-scene Ancient artwork and an original ink map
+portrait with a topknot, closed eyes, wrapped cowl, and ring staff. Its close crop,
+angular shadows, and carved hair highlights match the map's ink illustrations.
+The map portrait uses transparent paper areas and white ink so native map and run-history tints
+remain intact. Its separate filled silhouette preserves native hover highlighting.
+Editable sources and 278x278 PNGs are in `TheArchitect/images/map/the_watcher*`.
+Regenerate both PNGs with Godot 4.5.1:
+`godot --headless --path . --script scripts/render-watcher-map.gd`.
+The renderer downsamples a four-times-size SVG raster to keep fine ink edges legible.
 Its background fills the viewport with aspect-preserving cover sizing, without
 the inset portrait scale and offsets used by other Ancients.
 Seven new relic icons were illustrated in parallel, isolated GPT-6 Astra contexts,
@@ -220,6 +235,9 @@ cards/effects are explicitly marked **Unsupported**, rather than guessing at
 changed internals. This is not blanket coverage of every Downfall card or UI.
 
 ## Ending
+
+Only the Architect boss fight captures player decks, on either victory or defeat.
+Deaths in the Corrupted Player Elite do not create successors.
 
 The vanilla post-Act 3 dialogue and attack sequence now plays after **either**
 Architect outcome. After the Architect's final attack, the whole party is bound
