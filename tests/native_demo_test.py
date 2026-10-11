@@ -16,7 +16,167 @@ demo = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(demo)
 
 
+def party_history_fixture(root, count):
+    members = []
+    for index in range(count):
+        member = {"MaxEnergy": 3, "BaseOrbSlotCount": 0}
+        for role in ("Player", "Opponent"):
+            history = root / f"{role}-{index}.run"
+            history.write_text(json.dumps({"seed": f"{role}-{index}", "start_time": index,
+                                           "win": True, "was_abandoned": False, "players": [{}]}))
+            member[role + "HistoryPath"] = str(history)
+        members.append(member)
+    config = root / "selection.json"
+    config.write_text(json.dumps({"Seed": "PARTY-SEED", "Members": members}))
+    return config
+
+
+class PartyHistoryTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory(dir=demo.ROOT)
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.config = party_history_fixture(self.root, 2)
+
+    def test_history_requires_manual_visible_individual_non_downfall_party(self):
+        for manual, visible, scenario in (
+                (False, True, "party-2"), (True, False, "party-2"),
+                (True, True, "party"), (True, True, "downfall-party"),
+                (True, True, "downfall-champ")):
+            with self.subTest(manual=manual, visible=visible, scenario=scenario), \
+                 patch.object(demo, "required_file") as required:
+                with self.assertRaisesRegex(ValueError, "--party-history requires"):
+                    demo.launch(SimpleNamespace(party_history=str(self.config), manual=manual,
+                                                shared_visible=visible, scenario=scenario))
+                required.assert_not_called()
+
+    def test_cli_accepts_history_config_with_manual_party(self):
+        with patch.object(demo.sys, "argv", ["native-demo.py", "run", "/game", "--party-2",
+                                           "--manual", "--shared-visible", "--party-history",
+                                           str(self.config)]), \
+             patch.object(demo, "launch", return_value=0) as launch:
+            self.assertEqual(demo.main(), 0)
+        args = launch.call_args.args[0]
+        self.assertEqual(args.party_history, str(self.config))
+        self.assertEqual(args.scenario, "party-2")
+        self.assertTrue(args.manual)
+        self.assertTrue(args.shared_visible)
+
+    def test_copy_freezes_histories_rewrites_paths_and_receipts_hashes(self):
+        for count in (1, 2, 3, 4):
+            with self.subTest(count=count):
+                config = party_history_fixture(self.root, count)
+                before = demo.hashes(self.root)
+                selection = demo.load_party_history(config, count)
+                run = self.root / f"run-{count}"
+                run.mkdir()
+                receipt = demo.copy_party_history(run, selection)
+                copied = json.loads((run / "party-history.json").read_text())
+                self.assertEqual(copied["Seed"], "PARTY-SEED")
+                self.assertEqual(len(copied["Members"]), count)
+                self.assertEqual(receipt["party_history_source_sha256"], before["selection.json"])
+                self.assertEqual(receipt["party_history_files"], demo.hashes(run))
+                for index, member in enumerate(copied["Members"], 1):
+                    for role in ("Player", "Opponent"):
+                        path = Path(member[role + "HistoryPath"])
+                        self.assertEqual(path, run / f"party-history/{role.lower()}-{index}.run")
+                        original = self.root / f"{role}-{index - 1}.run"
+                        self.assertEqual(path.read_bytes(), original.read_bytes())
+                        self.assertEqual(before[original.name], demo.hashlib.sha256(original.read_bytes()).hexdigest())
+                original = self.root / "Player-0.run"
+                original.write_text("changed")
+                self.assertNotEqual((run / "party-history/player-1.run").read_text(), original.read_text())
+
+    def test_config_rejects_invalid_seed_count_stats_and_paths(self):
+        valid = json.loads(self.config.read_text())
+        cases = [None, [], {}, {**valid, "Seed": ""}, {**valid, "Seed": " \n"},
+                 {**valid, "Seed": 3}, {**valid, "Members": {}},
+                 {**valid, "Members": valid["Members"][:1]}, {**valid, "Members": [None, None]}]
+        for field, values in (("MaxEnergy", (None, 0, -1, True, 3.5, "3")),
+                              ("BaseOrbSlotCount", (None, -1, False, 1.5, "0")),
+                              ("PlayerHistoryPath", (None, "relative.run", str(self.root))),
+                              ("OpponentHistoryPath", (None, "relative.run", str(self.root)))):
+            for value in values:
+                members = [{**member} for member in valid["Members"]]
+                if value is None:
+                    del members[0][field]
+                else:
+                    members[0][field] = value
+                cases.append({**valid, "Members": members})
+        for invalid in cases:
+            with self.subTest(config=invalid):
+                self.config.write_text(json.dumps(invalid))
+                with self.assertRaises(ValueError):
+                    demo.load_party_history(self.config, 2)
+        self.config.write_text("{")
+        with self.assertRaises(ValueError):
+            demo.load_party_history(self.config, 2)
+
+    def test_rejects_nonvictory_multiplayer_missing_and_duplicate_histories(self):
+        history = self.root / "Player-0.run"
+        valid = json.loads(history.read_text())
+        cases = [None, [], {}, {**valid, "win": False}, {**valid, "win": 1},
+                 {**valid, "was_abandoned": True}, {**valid, "was_abandoned": 0},
+                 {**valid, "players": []}, {**valid, "players": [{}, {}]},
+                 {**valid, "players": [None]}, {**valid, "seed": None},
+                 {**valid, "start_time": None}, {**valid, "start_time": True}]
+        for invalid in cases:
+            with self.subTest(history=invalid):
+                history.write_text(json.dumps(invalid))
+                with self.assertRaises(ValueError):
+                    demo.load_party_history(self.config, 2)
+        history.write_text("{")
+        with self.assertRaises(ValueError):
+            demo.load_party_history(self.config, 2)
+        history.unlink()
+        with self.assertRaises(FileNotFoundError):
+            demo.load_party_history(self.config, 2)
+        history.write_bytes((self.root / "Opponent-1.run").read_bytes())
+        with self.assertRaisesRegex(ValueError, "distinct victories"):
+            demo.load_party_history(self.config, 2)
+
+    def test_serve_passes_only_the_runtime_config_to_the_game(self):
+        run = self.root / "run-test"
+        run.mkdir()
+        metadata = {"scenario": "party-2", "manual": True, "party_history": True,
+                    "display_mode": "shared-visible", "host_display": ":7", "game": "/game"}
+        process = Mock(returncode=0, pid=123)
+        process.poll.return_value = 0
+        with patch.object(demo, "owned_run", return_value=(run, metadata)), \
+             patch.dict(demo.os.environ, {"ARCHITECT_NATIVE_RUNTIME": str(run), "DISPLAY": ":7"}), \
+             patch.object(Path, "read_text", return_value="bwrap\n"), \
+             patch.object(demo.os, "chdir"), patch.object(demo.os, "chmod"), \
+             patch.object(demo.os, "readlink", return_value="namespace"), \
+             patch.object(demo.signal, "signal"), patch.object(demo.socket, "socket"), \
+             patch.object(demo.subprocess, "run", return_value=Mock(returncode=0)), \
+             patch.object(demo.subprocess, "Popen", return_value=process) as popen, \
+             patch("builtins.print"):
+            self.assertEqual(demo.serve(SimpleNamespace(run=run.name)), 0)
+        command = popen.call_args.args[0]
+        self.assertEqual(command[command.index("--architect-native-party-history") + 1],
+                         str(run / "party-history.json"))
+        self.assertNotIn(str(self.config), command)
+
+
 class NativeDemoTests(unittest.TestCase):
+    def test_downfall_matchup_requires_visible_manual_mode(self):
+        with patch.object(demo, "required_file") as required:
+            with self.assertRaisesRegex(ValueError, "--downfall-matchup requires"):
+                demo.launch(SimpleNamespace(manual=False, scenario="downfall-matchup"))
+            with self.assertRaisesRegex(ValueError, "--manual requires"):
+                demo.launch(SimpleNamespace(manual=True, shared_visible=False, scenario="downfall-matchup"))
+            required.assert_not_called()
+
+    def test_cli_accepts_manual_downfall_matchup(self):
+        with patch.object(demo.sys, "argv", ["native-demo.py", "run", "/game",
+                                           "--downfall-matchup", "--manual", "--shared-visible"]), \
+             patch.object(demo, "launch", return_value=0) as launch:
+            self.assertEqual(demo.main(), 0)
+        args = launch.call_args.args[0]
+        self.assertEqual(args.scenario, "downfall-matchup")
+        self.assertTrue(args.manual)
+        self.assertTrue(args.shared_visible)
+
     def test_watcher_probes_reject_shared_desktop_before_accessing_files(self):
         for scenario in ("enchantment-art", "stance-tooltips", "stance-vfx", "watcher-audio", "watcher-background"):
             with self.subTest(scenario=scenario), patch.object(demo, "required_file") as required:
@@ -246,6 +406,20 @@ class NativeDemoTests(unittest.TestCase):
                             render_threads=4, shared_visible=False, render_device="/dev/dri/renderD128")), 0)
                         party_run = next((root / "runs").glob(f"run-*-{scenario}-*"))
                         self.assertFalse((party_run / "snapshot-input.json").exists())
+                    history_config = party_history_fixture(root, 2)
+                    with patch.dict(demo.os.environ, {"DISPLAY": ":7", "XAUTHORITY": str(snapshot)}), \
+                         patch.object(Path, "is_socket", return_value=True), \
+                         patch.object(Path, "is_char_device", return_value=True):
+                        self.assertEqual(demo.launch(SimpleNamespace(game=str(game), label="history",
+                            scenario="party-2", resolution="1280x720", cache_from=None, cold=True,
+                            manual=True, layout_only=False, render_threads=4, shared_visible=True,
+                            render_device="/dev/dri/renderD128", party_history=str(history_config))), 0)
+                    history_run = next((root / "runs").glob("run-*-history-*"))
+                    history_receipt = json.loads((history_run / "run.json").read_text())
+                    self.assertTrue(history_receipt["party_history"])
+                    self.assertEqual(len(history_receipt["party_history_files"]), 5)
+                    self.assertTrue((history_run / "party-history.json").is_file())
+                    self.assertFalse((history_run / "run-input.json").exists())
             self.assertEqual(result, 0)
             self.assertEqual(ancient_result, 0)
             self.assertEqual(party_result, 0)

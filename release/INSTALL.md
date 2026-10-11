@@ -1,4 +1,4 @@
-# Act 4: Echos of the Past 1.2.0
+# Act 4: Echos of the Past 1.2.1
 
 Previously named The Architect. This is the same mod and Workshop item:
 the internal ID, `TheArchitect` installation folder and saved lineages are unchanged.
@@ -61,6 +61,9 @@ the next opponents.
 Saved decks can be viewed from character select. Corrupted Player lineages are
 local to the modded profile and are **not synchronized by Steam Cloud**.
 Keep the same character and content mods enabled for later visits.
+Multiplayer Continue also previews the full saved party before other players
+rejoin. Before Act 4 it reads the original host's current party history; once
+opponents are selected it shows the frozen decks saved with the run.
 
 ## Known limitations and troubleshooting
 
@@ -69,6 +72,15 @@ cards. Human-only mod interfaces and mechanics requiring uncaptured relics or
 custom state may need specific compatibility work. Unrecognized saved extension
 formats remain visibly Unsupported and unplayed. Not every combination is audited.
 Missing saved content can block entry rather than silently discard cards.
+To remove a broken saved opponent, right-click its "View Corrupted Deck" button
+10 times in a row. Exhaust effects start on click four, and click ten burns the
+button and clears that opponent and its backups. This affects only the active
+solo profile or the exact co-op party. Co-op resets are host-only; unready first.
+On a Continue screen, it also clears the opponent frozen inside the ongoing
+run without deleting the run or the players' decks. The fight then goes directly
+to the Architect. A co-op Continue reset closes the lobby; reopen it and have
+everyone rejoin with the corrected save.
+
 Host migration is not supported. Avoid force-closing during result transitions;
 crash-transaction recovery remains incomplete. Combat reloads restart encounters,
 as in the supported beta game.

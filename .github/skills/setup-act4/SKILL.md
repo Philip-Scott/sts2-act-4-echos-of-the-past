@@ -133,12 +133,18 @@ Once the game is closed:
 3. Inspect the target for active single-player or multiplayer saves.
 4. If an active run exists and replacement was not explicitly authorized, ask.
 
-The native setup launcher deliberately refuses active runs. Even after reset
-permission, do not bypass this guard or delete only a local current-run file:
-Steam Cloud can restore it. Use the game's native abandon/delete flow for the
-target run, preserving the backup. If that cannot be performed safely, ask the
-user to abandon the target run in-game. Never discard a multiplayer run without
-specific authorization.
+The user has confirmed that Steam Cloud is disabled on the current local
+playtest machine. Do not cite Cloud restoration as a blocker here. Do not assume
+the same setting on another machine, or after the user reports a change.
+
+The native setup launcher deliberately refuses active runs. Even with Cloud
+disabled and reset permission, retain its safety guard and use the game's native
+abandon/delete flow for the target run, preserving the backup. Direct save edits
+are technically possible, but disabling Cloud does not make hand-written run
+saves equivalent to a native history import. When Cloud is enabled or its state
+is unknown, it can also restore a deleted local current-run file. If native
+abandonment cannot be performed safely, ask the user to abandon the target run
+in-game. Never discard a multiplayer run without specific authorization.
 
 Preserve completed target history, preferences, progress and unlocks. Replacing
 the target's Corrupted Player lineage is intentional for this playtest; the

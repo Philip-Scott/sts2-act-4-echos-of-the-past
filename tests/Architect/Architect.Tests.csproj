@@ -20,7 +20,6 @@
     <Compile Include="../../TheArchitectCode/Audio/WatcherStanceAudio.cs" />
     <Compile Include="../../TheArchitectCode/Enchantments/*.cs" />
     <Compile Include="../../TheArchitectCode/Acts/ArchitectMap.cs" Link="ArchitectMap.cs" />
-    <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/CorruptedPartyPhase.cs" Link="CorruptedPartyPhase.cs" />
     <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/CorruptedPlayerHealth.cs" Link="CorruptedPlayerHealth.cs" />
     <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/NativeCardSupport.cs" Link="NativeCardSupport.cs" />
     <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/NativeDownfallApi.cs" Link="NativeDownfallApi.cs" />

@@ -7,6 +7,7 @@ using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using TheArchitect.TheArchitectCode.Encounters;
+using TheArchitect.TheArchitectCode.Persistence;
 
 namespace TheArchitect.TheArchitectCode.Acts;
 
@@ -23,7 +24,8 @@ public sealed class ArchitectAct : CustomActModel, ILocalizationProvider
     protected override int NumberOfWeakEncounters => 0;
     public override IEnumerable<AncientEventModel> AllAncients => [ArchitectModels.Ancient];
     public override IEnumerable<EventModel> AllEvents => [];
-    public override IEnumerable<EncounterModel> GenerateAllEncounters() => [ArchitectModels.Encounter];
+    public override IEnumerable<EncounterModel> GenerateAllEncounters() =>
+        [ArchitectModels.CorruptedEncounter, ArchitectModels.Encounter];
     protected override string CustomBackgroundScenePath => ArchitectBackgroundScenePath;
     protected override BackgroundAssets CustomGenerateBackgroundAssets(Rng rng) => new(BackgroundTitle, rng);
     // Map decorations are Texture2D resources, not room background scenes.
@@ -36,11 +38,12 @@ public sealed class ArchitectAct : CustomActModel, ILocalizationProvider
     public override Color MapTraveledColor => new("292929");
     public override Color MapUntraveledColor => new("555555");
     protected override ActMap CustomCreateMap(RunState runState, bool replaceTreasureWithElites) =>
-        new ArchitectMap(Ancient != null);
+        new ArchitectMap(Ancient != null, ArchitectRun.Get(runState).EncounterSnapshots.Count > 0);
 
     public void InitializeRooms()
     {
         AssertMutable();
         _rooms = new RoomSet { Ancient = ArchitectModels.Ancient, Boss = ArchitectModels.Encounter };
+        _rooms.eliteEncounters.Add(ArchitectModels.CorruptedEncounter);
     }
 }

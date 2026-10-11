@@ -100,14 +100,8 @@ internal static class ArchitectHistoryPlaytest
         var opponent = ReadVictory(setup.OpponentHistoryPath);
         if (hero.History.StartTime == opponent.History.StartTime && hero.History.Seed == opponent.History.Seed)
             throw new InvalidDataException("Choose two different victories.");
-        var snapshotCards = opponent.Player.Deck.Select(card => JsonSerializer.SerializeToElement(card,
-            JsonSerializationUtility.GetTypeInfo<SerializableCard>())).ToArray();
-        if (NativeCardSupport.Preflight(snapshotCards) is { } error)
-            throw new InvalidDataException("Opponent deck cannot be restored: " + error);
-        foreach (var card in hero.Player.Deck)
-            _ = CardModel.FromSerializable(card);
-        foreach (var relic in hero.Player.Relics)
-            _ = RelicModel.FromSerializable(relic);
+        var snapshot = opponent.CreateSnapshot();
+        hero.ValidateLoadout();
 
         Directory.CreateDirectory(setup.OutputDirectory);
         var character = ModelDb.GetById<CharacterModel>(hero.Player.Character);
@@ -119,22 +113,12 @@ internal static class ArchitectHistoryPlaytest
 
         var save = RunManager.Instance.ToSave(null);
         var restored = save.Players.Single();
-        restored.Deck = hero.Player.Deck.ToList();
-        restored.Relics = hero.Player.Relics.ToList();
-        restored.Potions = hero.Player.Potions.ToList();
-        restored.MaxPotionSlotCount = hero.Player.MaxPotionSlotCount;
-        restored.MaxHp = hero.MaxHp;
-        restored.CurrentHp = hero.CurrentHp;
-        restored.Gold = hero.Gold;
-        restored.MaxEnergy = setup.MaxEnergy;
-        restored.BaseOrbSlotCount = setup.BaseOrbSlotCount;
+        hero.RestoreLoadout(restored, setup.MaxEnergy, setup.BaseOrbSlotCount);
         await game.ReturnToMainMenu();
         run = RunState.FromSerializable(save);
         await RunManager.Instance.SetUpSavedSingleplayer(run, save);
         await game.LoadRun(run, save.PreFinishedRoom);
 
-        var snapshot = new CorruptedPlayerSnapshot(opponent.Player.Character.ToString(), opponent.MaxHp,
-            snapshotCards, CorruptedPlayerSnapshot.Hash(opponent.Player.Character.ToString(), opponent.MaxHp, snapshotCards));
         if (CorruptedPlayerStore.Commit("history-setup-" + opponent.History.StartTime, "HistoryVictory", snapshot) == null)
             throw new IOException($"Could not persist Slot {setup.ProfileId}'s Corrupted Player.");
         var player = run.Players.Single();
@@ -190,7 +174,7 @@ internal static class ArchitectHistoryPlaytest
         throw new InvalidOperationException("Could not find a native seed offering Mirror.");
     }
 
-    private static Victory ReadVictory(string path)
+    internal static Victory ReadVictory(string path)
     {
         if (!Path.IsPathFullyQualified(path))
             throw new InvalidDataException("Victory history paths must be absolute.");
@@ -212,5 +196,52 @@ internal static class ArchitectHistoryPlaytest
         return new Victory(history, history.Players.Single(), maxHp, hp, stats.GetProperty("current_gold").GetInt32());
     }
 
-    private sealed record Victory(RunHistory History, RunHistoryPlayer Player, int MaxHp, int CurrentHp, int Gold);
+    internal sealed record Victory(RunHistory History, RunHistoryPlayer Player, int MaxHp, int CurrentHp, int Gold)
+    {
+        internal CorruptedPlayerSnapshot CreateSnapshot()
+        {
+            _ = ModelDb.GetById<CharacterModel>(Player.Character);
+            var cards = Player.Deck.Select(card => JsonSerializer.SerializeToElement(card,
+                JsonSerializationUtility.GetTypeInfo<SerializableCard>())).ToArray();
+            if (NativeCardSupport.Preflight(cards) is { } error)
+                throw new InvalidDataException("History deck cannot be restored: " + error);
+            var character = Player.Character.ToString();
+            return new(character, MaxHp, cards, CorruptedPlayerSnapshot.Hash(character, MaxHp, cards));
+        }
+
+        internal void ValidateLoadout()
+        {
+            _ = CreateSnapshot();
+            foreach (var card in Player.Deck)
+                _ = CardModel.FromSerializable(card);
+            foreach (var relic in Player.Relics)
+            {
+                if (relic.Id == null || ModelDb.GetByIdOrNull<RelicModel>(relic.Id) == null)
+                    throw new InvalidDataException($"History relic is not installed: {relic.Id}.");
+                _ = RelicModel.FromSerializable(relic);
+            }
+            foreach (var potion in Player.Potions)
+            {
+                if (potion.Id == null || ModelDb.GetByIdOrNull<PotionModel>(potion.Id) == null)
+                    throw new InvalidDataException($"History potion is not installed: {potion.Id}.");
+                _ = PotionModel.FromSerializable(potion);
+            }
+        }
+
+        internal void RestoreLoadout(SerializablePlayer target, int maxEnergy, int baseOrbSlotCount)
+        {
+            target.CharacterId = Player.Character;
+            target.Deck = Player.Deck.Select(card => NativeCardSupport.ForNativeLoad(
+                JsonSerializer.SerializeToElement(card, JsonSerializationUtility.GetTypeInfo<SerializableCard>()),
+                card)).ToList();
+            target.Relics = Player.Relics.ToList();
+            target.Potions = Player.Potions.ToList();
+            target.MaxPotionSlotCount = Player.MaxPotionSlotCount;
+            target.MaxHp = MaxHp;
+            target.CurrentHp = CurrentHp;
+            target.Gold = Gold;
+            target.MaxEnergy = maxEnergy;
+            target.BaseOrbSlotCount = baseOrbSlotCount;
+        }
+    }
 }

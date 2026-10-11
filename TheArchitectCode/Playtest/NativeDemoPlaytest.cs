@@ -107,6 +107,11 @@ internal static class NativeDemoPlaytest
             await NativeDownfallPlaytest.Run(game, downfallCharacter);
             return;
         }
+        if (CommandLineHelper.HasArg("architect-native-downfall-matchup"))
+        {
+            await NativeDownfallPlaytest.Run(game, "Hexaghost", matchup: true);
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-native-ending"))
         {
             await ArchitectEndingPlaytest.Run(game);
@@ -115,6 +120,11 @@ internal static class NativeDemoPlaytest
         if (CommandLineHelper.HasArg("architect-native-deck-preview"))
         {
             await DeckPreviewPlaytest.Run(game);
+            return;
+        }
+        if (CommandLineHelper.HasArg("architect-native-encounters"))
+        {
+            await NativePartyPlaytest.Run(game, encountersOnly: true);
             return;
         }
         var partySize = Enumerable.Range(1, 4).FirstOrDefault(count =>
@@ -216,9 +226,9 @@ internal static class NativeDemoPlaytest
         await RunManager.Instance.EnterMapCoord(rest.Children.Single().coord);
         await Task.Delay(500);
         await Capture("shop");
-        await RunManager.Instance.EnterMapCoord(run.Map.BossMapPoint.coord);
+        await ArchitectPlaytest.EnterCorruptedElite(run);
         await PlayerTurn(human, 1);
-        var music = ArchitectMusicPlaytest.AssertPlaying(checkDecoder: true);
+        ArchitectMusicPlaytest.AssertEliteMusic();
         var combat = human.Creature.CombatState!;
         var monster = (CorruptedPlayer)combat.Enemies.Single().Monster!;
         var actor = monster.Native ?? throw new InvalidOperationException("Native actor not bound.");
@@ -298,14 +308,13 @@ internal static class NativeDemoPlaytest
         var saved = SaveManager.Instance.LoadRunSave().SaveData ?? throw new InvalidOperationException("Disposable room save missing.");
         var oldActor = actor;
         await game.ReturnToMainMenu();
-        ArchitectMusicPlaytest.AssertStopped(music);
         Require(oldActor.Cleaned, "actor cleaned on save-and-quit");
         run = RunState.FromSerializable(saved);
         await RunManager.Instance.SetUpSavedSingleplayer(run, saved);
         await game.LoadRun(run, saved.PreFinishedRoom);
         human = run.Players.Single();
         await PlayerTurn(human, 1);
-        music = ArchitectMusicPlaytest.AssertPlaying();
+        ArchitectMusicPlaytest.AssertEliteMusic();
         combat = human.Creature.CombatState!;
         actor = ((CorruptedPlayer)combat.Enemies.Single(c => c.Monster is CorruptedPlayer).Monster!).Native!;
         actor.TurnStarting += () => rngBefore = AllRng(human);
@@ -338,29 +347,25 @@ internal static class NativeDemoPlaytest
             observedOrbCleanup = true;
         }
         combat.CreaturesChanged += AfterActorRemoved;
-        var hand = human.PlayerCombatState!.Hand.Cards.ToArray();
-        var energy = human.PlayerCombatState.Energy;
-        var before = human.Creature.CurrentHp;
         if (CommandLineHelper.HasArg("architect-native-poison"))
         {
             await PowerCmd.Apply<PoisonPower>(context, actor.Body, actor.Body.CurrentHp, human.Creature, null);
-            var nextTurn = human.PlayerCombatState.TurnNumber + 1;
             PlayerCmd.EndTurn(human, false);
-            await PlayerTurn(human, nextTurn);
+            await WaitFor(() => actor.Cleaned);
         }
         else
         {
             await CreatureCmd.Damage(context, actor.Body, actor.Body.CurrentHp,
                 ValueProp.Unblockable | ValueProp.Unpowered, human.Creature);
-            Require(human.Creature.CurrentHp == before && human.PlayerCombatState.Energy == energy &&
-                human.PlayerCombatState.Hand.Cards.SequenceEqual(hand), "continuous handoff preserved human state");
         }
         combat.CreaturesChanged -= AfterActorRemoved;
         Require(observedOrbCleanup && combat.Players.Count == 1 && run.Players.Count == 1,
             "orb cleanup survived handoff without enrolling the actor in the party");
         Require(actor.Cleaned, "dead actor unsubscribed and cleared native piles");
+        await ArchitectPlaytest.EnterBossAfterElite(run);
+        var music = ArchitectMusicPlaytest.AssertPlaying(checkDecoder: true);
+        combat = human.Creature.CombatState!;
         var boss = combat.Enemies.Single(c => c.Monster is ArchitectBoss);
-        ArchitectMusicPlaytest.AssertSame(music);
         await Capture("architect");
         await CreatureCmd.Kill(boss, true);
         await CombatManager.Instance.CheckWinCondition();

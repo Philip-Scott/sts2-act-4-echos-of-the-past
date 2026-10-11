@@ -1,17 +1,70 @@
-# Publishing 1.2.0 - Act 4: Echos of the Past
+# Publishing 1.2.1 - Act 4: Echos of the Past
 
-Version 1.2.0 is prepared for release, not published. Steam Workshop and GitHub
-publication both require approval. Steam Workshop 1.1.0 remains the published version.
+Steam Workshop 1.2.1 is published. GitHub Release publication still requires approval.
 Preparation does not publish, tag, or commit anything.
 This updates the existing Workshop item **3799307965**. The internal mod ID and
 runtime filenames remain `TheArchitect`; do not create a second Workshop item.
 
-## Publication status
+## Published 1.2.1
 
-The 1.2.0 candidate includes changes since 1.1.0 through `77219bb`, plus the local
-release metadata, documentation, relic text, and build exclusion for `artifacts/`.
-Its change note uses the author's edited 1.2.0 changelog bullets. No 1.2.0 upload,
-GitHub Release, push, tag, or commit has been made.
+The author approved publication on **2026-10-07**. Steam accepted the update at
+**10:35:08 p.m. PDT**. The published change note exactly matches
+`release/workshop.json`. Before/after listing snapshots confirm that the title,
+description, thumbnail, and screenshot gallery are unchanged.
+
+The published build uses committed source `89bb0d2` plus the staged 1.2.1 release
+metadata. It excludes the unrelated uncommitted playtest changes in the main worktree.
+The build used an isolated export of that commit with only these release files
+overlaid: `TheArchitect.json`, `TheArchitect.csproj`, `CHANGELOG.md`,
+`release/INSTALL.md`, `release/RELEASE_NOTES.md`, `release/workshop.json`,
+and this publishing handoff.
+
+The bundle is `artifacts/releases/v1.2.1/`. The separate content-only Workshop
+workspace is `artifacts/releases/v1.2.1-steam-content-only/`; it contains only
+the three runtime files in `content/`, `mod_id.txt`, and a `workshop.json` with
+`changeNote`, plus the upload log, listing snapshots, and publication receipt.
+It contains no images or listing metadata for upload. Do not rerun the uploader
+without approval for another update to existing item ID `3799307965`.
+
+The original preparation bundle remains unchanged as evidence of the submitted
+build. Its `PREPARATION.json`, `release-metadata.patch`, and `SHA256SUMS` record
+the exact source overlay and runtime hashes. The content-only workspace's
+`publication-receipt.json` records Steam's publication time and verification.
+No commit, push, release tag, or GitHub Release was made during publication.
+The change note covers the multiplayer resume cleanup fix, saved-party previews
+before peers reconnect, and the Corrupted Deck reset shortcut. Existing frozen
+opponents and other parties' histories remain unchanged unless explicitly reset.
+Real multi-process co-op playtesting was not run for this publication. Protocol
+tests and host-only resume smoke probes passed but do not replace it.
+
+## Published 1.2.0
+
+The author approved the Steam update on **2026-09-16**. Steam accepted 1.2.0 at
+**2:23 p.m. PDT**, built from committed and pushed source `7f740f8`. This includes
+the confirmed Corrupted Player overlay-layering and Wrath/Calm tooltip-icon fixes.
+The published change note is retained in its content-only workspace; the main description,
+title, thumbnail, and screenshot list are unchanged.
+
+The fresh bundle is `artifacts/releases/steam-v1.2.0-7f740f8/v1.2.0/`. Its runtime
+files exactly match the content-only upload in
+`artifacts/releases/v1.2.0-steam-content-only/content/` and the refreshed
+`~/TheArchitect-v1.2.0.zip`. The content-only workspace retains the submitted
+changelog, upload log, before/after listing snapshots, and
+`publication-receipt.json` with source identity, publication time, and hashes.
+
+The earlier `artifacts/releases/v1.2.0/` candidate predates both fixes; retain it
+as an earlier preparation artifact, not the published build. No GitHub Release
+or release tag was created by this Steam upload.
+
+The author separately approved updating the Workshop thumbnail on **2026-09-16**.
+The thumbnail-only update uploaded `docs/media/workshop-thumbnail.png`; the
+published original matches that file byte-for-byte. It did not change mod content,
+the description, visibility, dependencies, or the screenshot gallery.
+`artifacts/releases/v1.2.0-steam-thumbnail-only/` retains the image, upload log,
+listing snapshots, and receipt. Its separate local uploader variant at
+`artifacts/tools/mod-uploader-v0.2.0-thumbnail-only/` calls only `SetItemPreview`
+before submission, requires item ID `3799307965`, and rejects content or preview
+directories and nonempty listing configuration.
 
 ## Previous release: 1.1.0
 
@@ -57,10 +110,10 @@ content-only upload. No promotional images were uploaded with 1.1.0.
 - Review source and artwork provenance and choose a repository license.
   No license has been assigned by this preparation. Confirm rights to redistribute
   all shipped assets; this is a release decision, not inferred from files being present.
-- Review the changes since 1.1.0 and the local release metadata before choosing
+- Review the changes since 1.2.0 and the local release metadata before choosing
   the release commit. Do not publish a package from unreviewed working-tree changes.
 - Review the known limitations in `release/INSTALL.md` and `RELEASE_NOTES.md`.
-  Crash-safe result transactions remain tracked in #12; do not describe 1.2.0
+  Crash-safe result transactions remain tracked in #12; do not describe 1.2.1
   as universally card-compatible or crash-proof.
 
 ## Build and stage
@@ -95,11 +148,11 @@ Python runs on the host; only compilation runs in the existing
 inside the build image. Podman output must remain under the repository so it is
 visible in the container mount.
 
-Output under `artifacts/releases/v1.2.0/`:
+Output under `artifacts/releases/v1.2.1/`:
 
 | File/directory | Use |
 | --- | --- |
-| `TheArchitect-v1.2.0.zip` | Manual install; only this mod's three runtime files plus install instructions |
+| `TheArchitect-v1.2.1.zip` | Manual install; only this mod's three runtime files plus install instructions |
 | `SHA256SUMS` | SHA-256 hashes of the staged files |
 | `workshop/` | Existing-item update workspace; preserves Steam description and visibility |
 | `media/` | Thumbnail, banner and gameplay screenshots |
@@ -131,11 +184,12 @@ website and retain the explicit branch/version requirement in the description.
 content-only update.** Omitting `previews/` preserves additional screenshots but
 does not prevent the thumbnail upload.
 
-The staged 1.2.0 workspace includes promotional images for review, not permission
-to upload them. Before an approved content-only publication, prepare a separate
-`v1.2.0-steam-content-only/` workspace with the same runtime files, only
-`changeNote` in `workshop.json`, and no `image.png` or `previews/`.
-Do not reuse or overwrite the published 1.1.0 workspace.
+The staged bundle includes promotional images for review, not permission to upload
+them. The approved 1.2.0 upload used the separate `v1.2.0-steam-content-only/`
+workspace with only `changeNote` in `workshop.json` and no `image.png` or
+`previews/`. It used the same content-only uploader described below, with that
+workspace path and explicit item ID `3799307965`. Do not rerun an upload or
+overwrite either published workspace without approval for another update.
 
 For 1.1.0, a local variant of official source commit
 `4c4db1262cdce6a1c4550a494f2e1088dbeda346` was built under
@@ -174,7 +228,7 @@ a listing identifier, not a credential.
 ## GitHub Release
 
 After approval, commit the reviewed release changes and tag that exact commit
-`v1.2.0`. Create a GitHub Release from the tag, use `release/RELEASE_NOTES.md`
+`v1.2.1`. Create a GitHub Release from the tag, use `release/RELEASE_NOTES.md`
 as the description, and attach the ZIP, `SHA256SUMS`, and install instructions.
 The archive is a working-tree build: rebuild from the approved commit if anything
 has changed since staging. Link the Workshop item in the announcement. Keep a

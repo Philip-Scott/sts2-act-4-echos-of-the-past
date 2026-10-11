@@ -8,6 +8,8 @@ using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
 using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
+using MegaCrit.Sts2.Core.Nodes.Screens;
+using MegaCrit.Sts2.Core.Rewards;
 using TheArchitect.TheArchitectCode.Acts;
 using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using MegaCrit.Sts2.Core.Saves;
@@ -36,8 +38,11 @@ namespace TheArchitect.TheArchitectCode.Playtest;
 public sealed class ArchitectPlaytest : IBootstrapSettings
 {
     public CharacterModel Character => ModelDb.Character<Ironclad>();
-    public RoomType RoomType => CommandLineHelper.HasArg("architect-route") ? RoomType.Event : RoomType.Boss;
-    public EncounterModel Encounter => ArchitectModels.Encounter;
+    private static bool Repeat => CommandLineHelper.HasArg("architect-repeat") ||
+        CommandLineHelper.HasArg("architect-feedback");
+    public RoomType RoomType => CommandLineHelper.HasArg("architect-route") ? RoomType.Event :
+        Repeat ? RoomType.Elite : RoomType.Boss;
+    public EncounterModel Encounter => Repeat ? ArchitectModels.CorruptedEncounter : ArchitectModels.Encounter;
     public EventModel Event => ModelDb.Event<MegaCrit.Sts2.Core.Models.Events.TheArchitect>();
     public ActModel Act => ModelDb.Act<Glory>();
     public int Ascension => 0;
@@ -57,7 +62,7 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
             return;
         }
         ArchitectLifecycle.AppendAct(run);
-        await RunManager.Instance.SetActInternal(3);
+        ArchitectRun.Get(run).Entered = true;
         ArchitectRun.Get(run).EntrySnapshot = CommandLineHelper.HasArg("architect-repeat")
             ? new CorruptedPlayerEnvelope { Revision = 1, Snapshot = CorruptedPlayerSnapshot.Capture(localPlayer) }
             : null;
@@ -81,7 +86,8 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
                 }
             };
         }
-        MainFile.Logger.Info("Architect playtest: unsaved first-visit encounter ready.");
+        await RunManager.Instance.SetActInternal(3);
+        MainFile.Logger.Info("Architect playtest: unsaved encounter ready.");
         if (CommandLineHelper.HasArg("architect-smoke"))
             _ = TaskHelper.RunSafely(Smoke(localPlayer));
     }
@@ -115,9 +121,10 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
         await Task.Delay(4000);
         await Capture(".map");
         var points = NMapScreen.Instance!.FindChildren("*", "", true, false).OfType<NMapPoint>().ToArray();
-        if (points.Length != 4 || points.Any(point => !NGame.Instance!.GetViewport().GetVisibleRect()
+        var expectedPoints = ArchitectRun.Get(run).EncounterSnapshots.Count > 0 ? 5 : 4;
+        if (points.Length != expectedPoints || points.Any(point => !NGame.Instance!.GetViewport().GetVisibleRect()
                 .Encloses(point.GetGlobalRect().Grow(24f))))
-            throw new InvalidOperationException("All four Act 4 map nodes must fit on screen without scrolling: " +
+            throw new InvalidOperationException("All Act 4 map nodes must fit on screen without scrolling: " +
                 string.Join("; ", points.Select(point => $"{point.Name}: {point.GetGlobalRect()}")));
         var beforeScroll = points[0].GlobalPosition.Y;
         NMapScreen.Instance._GuiInput(new InputEventMouseButton { ButtonIndex = MouseButton.WheelUp, Pressed = true });
@@ -144,9 +151,42 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
         AssertBackdrop(NMerchantRoom.Instance!.GetNode<Control>("SceneContainer"),
             ArchitectRoomBackgrounds.ShopBackgroundPath);
         await Capture(".shop");
-        await RunManager.Instance.EnterMapCoord(run.Map.BossMapPoint.coord);
-        MainFile.Logger.Info("Architect smoke: Act 4 Ancient -> Rest -> Shop -> Boss passed.");
+        if (ArchitectRun.Get(run).EncounterSnapshots.Count > 0)
+            await EnterCorruptedElite(run);
+        else
+            await RunManager.Instance.EnterMapCoord(run.Map.BossMapPoint.coord);
+        MainFile.Logger.Info("Architect smoke: Act 4 Ancient -> Rest -> Shop -> combat passed.");
         await Smoke(player);
+    }
+
+    internal static Task EnterCorruptedElite(IRunState run) =>
+        RunManager.Instance.EnterMapCoord(run.Map.GetAllMapPoints()
+            .Single(point => point.PointType == MegaCrit.Sts2.Core.Map.MapPointType.Elite).coord);
+
+    internal static async Task EnterBossAfterElite(IRunState run)
+    {
+        var elite = run.CurrentRoom as CombatRoom ??
+            throw new InvalidOperationException("Expected the completed Corrupted Player Elite.");
+        await CombatManager.Instance.CheckWinCondition();
+        await WaitFor(() => elite.IsPreFinished && !CombatManager.Instance.IsInProgress);
+        if (elite.Encounter is not CorruptedPlayerEncounter || !elite.Encounter.ShouldGiveRewards ||
+            ArchitectRun.Get(run).Outcome != null || run.IsGameOver ||
+            elite.CombatState.Enemies.Any(enemy => enemy.Monster is ArchitectBoss))
+            throw new InvalidOperationException("The Elite must end with rewards, not an Architect spawn or run outcome.");
+        await WaitFor(() => NOverlayStack.Instance?.Peek() is NRewardsScreen);
+        var screen = (NRewardsScreen)NOverlayStack.Instance!.Peek()!;
+        var rewards = (RewardsSet)AccessTools.Field(typeof(NRewardsScreen), "_rewardsSet").GetValue(screen)!;
+        if (!rewards.Rewards.OfType<RelicReward>().Any() || !rewards.Rewards.OfType<CardReward>().Any() ||
+            !rewards.Rewards.OfType<GoldReward>().Any())
+            throw new InvalidOperationException("The Corrupted Player Elite must offer native relic, card, and gold rewards.");
+        await RunManager.Instance.ProceedFromTerminalRewardsScreen();
+        await WaitFor(() => NMapScreen.Instance?.IsOpen == true);
+        await RunManager.Instance.EnterMapCoord(run.Map.BossMapPoint.coord);
+        await WaitFor(() => run.Players.All(player => player.PlayerCombatState is
+            { TurnNumber: 1, Phase: PlayerTurnPhase.Play }) && !CombatManager.Instance.IsStarting);
+        if (ReferenceEquals(elite.CombatState, run.Players[0].Creature.CombatState) ||
+            run.Players[0].Creature.CombatState!.Enemies.Any(enemy => enemy.Monster is CorruptedPlayer))
+            throw new InvalidOperationException("The Architect must start a fresh boss-only combat.");
     }
 
     private static void AssertBackdrop(Control parent, string texturePath)
@@ -160,7 +200,7 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
                 $"actual texture {background.Texture?.ResourcePath}, bounds {background.GetGlobalRect()}.");
     }
 
-    private static async Task WaitFor(Func<bool> condition)
+    internal static async Task WaitFor(Func<bool> condition)
     {
         var deadline = DateTime.UtcNow.AddSeconds(25);
         while (!condition())
@@ -209,14 +249,9 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
                 CombatManager.Instance.IsPartOfPlayerTurn(player));
             if (player.Creature.CurrentHp >= initialHp)
                 throw new InvalidOperationException("The Corrupted Player starter plan did not execute its attacks.");
-            var hp = player.Creature.CurrentHp;
-            var hand = player.PlayerCombatState!.Hand.Cards.ToArray();
-            var energy = player.PlayerCombatState.Energy;
             await CreatureCmd.Kill(corruptedPlayer, true);
-            if (player.Creature.CurrentHp != hp || player.PlayerCombatState.Energy != energy ||
-                !player.PlayerCombatState.Hand.Cards.SequenceEqual(hand) ||
-                !combat.Enemies.Any(enemy => enemy.Monster is ArchitectBoss))
-                throw new InvalidOperationException("Corrupted Player handoff did not preserve player combat state.");
+            await EnterBossAfterElite(player.RunState);
+            combat = player.Creature.CombatState!;
             var boss = combat.Enemies.Single(enemy => enemy.Monster is ArchitectBoss);
             if (NCombatRoom.Instance!.GetCreatureNode(boss)!.GlobalPosition.X <
                 NGame.Instance.GetViewport().GetVisibleRect().Size.X * 0.6f)
@@ -230,7 +265,7 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
         if (!player.Creature.HasPower<VulnerablePower>() || !player.Creature.HasPower<WeakPower>() ||
             !player.Creature.HasPower<FrailPower>())
             throw new InvalidOperationException("Architect Rewrite did not apply its opening debuffs.");
-        MainFile.Logger.Info("Architect smoke: opening and continuous combat state passed.");
+        MainFile.Logger.Info("Architect smoke: separate Elite and boss combat opening passed.");
         await Capture("");
         var terminal = CommandLineHelper.HasArg("architect-loss")
             ? CreatureCmd.Kill(player.Creature, true)

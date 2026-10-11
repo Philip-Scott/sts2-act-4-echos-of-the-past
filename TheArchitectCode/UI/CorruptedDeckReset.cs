@@ -7,6 +7,7 @@ using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Managers;
+using TheArchitect.TheArchitectCode.Acts;
 using TheArchitect.TheArchitectCode.Persistence;
 
 namespace TheArchitect.TheArchitectCode.UI;
@@ -52,12 +53,31 @@ internal static class CorruptedDeckReset
             throw new JsonException("Cannot copy the saved run for the reset.");
         ExtendedSaveHandlers<IRunState, SerializableRun>.ExtendedData[corrected].DictForType<string>()
             [ContinueRunPreviewSelection.SaveKey] = selection.Json;
+        foreach (var act in corrected.Acts.Where(act => act.Id == ArchitectModels.ActId))
+        {
+            if (act.SavedMap is not { } map || ArchitectMap.RemoveCorruptedElite(map) is not { } elite)
+                continue;
+            if (corrected.Acts[corrected.CurrentActIndex] != act)
+                continue;
+            var wasAtElite = corrected.VisitedMapCoords.LastOrDefault() == elite;
+            corrected.VisitedMapCoords.Remove(elite);
+            if (wasAtElite)
+            {
+                corrected.VisitedMapCoords.Add(map.BossPoint.Coord);
+                corrected.PreFinishedRoom = null;
+            }
+        }
         if (manager.CurrentRunSaveTask is { } pending)
             await pending;
         RequireOriginalProfile();
         var runSaves = (RunSaveManager)AccessTools.Field(typeof(SaveManager), "_runSaveManager").GetValue(manager)!;
         await runSaves.SaveRun(corrected, isMultiplayer: host != null);
         strings[ContinueRunPreviewSelection.SaveKey] = selection.Json;
+        for (var index = 0; index < save.Acts.Count; index++)
+            if (save.Acts[index].Id == ArchitectModels.ActId)
+                save.Acts[index].SavedMap = corrected.Acts[index].SavedMap;
+        save.VisitedMapCoords = corrected.VisitedMapCoords;
+        save.PreFinishedRoom = corrected.PreFinishedRoom;
         RequireOriginalProfile();
         // The native store backs up the previous primary. A second write also removes the bad deck from recovery.
         await runSaves.SaveRun(corrected, isMultiplayer: host != null);

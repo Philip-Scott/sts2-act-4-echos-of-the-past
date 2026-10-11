@@ -79,7 +79,7 @@ internal static class CorruptionVisualPlaytest
         await WaitFor(() => NMapScreen.Instance?.IsOpen == true, label + " map");
         await RunManager.Instance.EnterMapCoord(run.Map.StartingMapPoint.coord);
         await RunManager.Instance.EnterMapCoord(run.Map.StartingMapPoint.Children.Single().coord);
-        await RunManager.Instance.EnterMapCoord(run.Map.BossMapPoint.coord);
+        await ArchitectPlaytest.EnterCorruptedElite(run);
         await NativeDemoPlaytest.PlayerTurn(human, 1);
         var actor = RequireNativeActor(human.Creature.CombatState!.Enemies
             .Single(c => c.Monster is CorruptedPlayer).Monster as CorruptedPlayer);
@@ -239,15 +239,14 @@ internal static class CorruptionVisualPlaytest
         await Capture(label, "death");
         await death;
         Require(actor.Cleaned && actor.Body.GetCreatureNode() == null,
-            $"{label}: native death removes and cleans the Corrupted Player during boss handoff");
+            $"{label}: native death removes and cleans the Corrupted Player");
         Require(!GodotObject.IsInstanceValid(orbs) || !orbs.Visible,
             $"{label}: native orb UI is hidden or freed after death");
         await WaitFor(() => (!GodotObject.IsInstanceValid(front) || !front.IsVisibleInTree()) &&
             (!GodotObject.IsInstanceValid(back) || !back.IsVisibleInTree()),
             label + " bindings disappear after death");
         await Capture(label, "handoff");
-        Require(human.Creature.CombatState!.Enemies.Any(c => c.Monster is ArchitectBoss),
-            $"{label}: death used the production Architect boss handoff");
+        await ArchitectPlaytest.EnterBossAfterElite(human.RunState);
         await game.ReturnToMainMenu();
         await WaitFor(() => new Node[] { effect, front, back, bodyGroup }
             .All(n => !GodotObject.IsInstanceValid(n)), label + " room nodes freed");

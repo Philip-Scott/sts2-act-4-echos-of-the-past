@@ -14,16 +14,31 @@ internal static class ArchitectMapLayout
     internal static bool Applies(ActMap map) => map is ArchitectMap ||
         RunManager.Instance.DebugOnlyGetState() is { Act: ArchitectAct } run && ReferenceEquals(run.Map, map);
 
-    private static float CompactExtent(float value, ActMap map) =>
-        Applies(map) ? value switch
+    private static void Postfix(ActMap map, NBossMapPoint ____bossPointNode)
+    {
+        if (!Applies(map) || !map.GetAllMapPoints().Any(point => point.PointType == MapPointType.Elite))
+            return;
+        ____bossPointNode.PivotOffset = ____bossPointNode.Size / 2f;
+        ____bossPointNode.Scale = Vector2.One * 0.6f;
+    }
+
+    private static float CompactExtent(float value, ActMap map)
+    {
+        if (!Applies(map))
+            return value;
+        var hasElite = map.GetAllMapPoints().Any(point => point.PointType == MapPointType.Elite);
+        var hasAncient = map.StartingMapPoint.PointType == MapPointType.Ancient;
+        return value switch
         {
-            2325f => map.StartingMapPoint.PointType == MapPointType.Ancient ? 460f : 220f,
-            -1980f => map.StartingMapPoint.PointType == MapPointType.Ancient ? -400f : -180f,
-            740f => map.StartingMapPoint.PointType == MapPointType.Ancient ? 430f : 460f,
+            // The boss artwork extends below its node; leave room for the Elite beneath it.
+            2325f => hasElite ? 350f : hasAncient ? 460f : 220f,
+            -1980f => hasAncient || hasElite ? -400f : -180f,
+            740f => hasElite ? 300f : hasAncient ? 430f : 460f,
             720f => 300f,
             800f => 400f,
             _ => value
-        } : value;
+        };
+    }
 
     private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
     {

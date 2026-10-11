@@ -1,6 +1,10 @@
 using Godot;
+using HarmonyLib;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.Acts;
 using MegaCrit.Sts2.Core.Nodes.Audio;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
+using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Saves;
 using TheArchitect.TheArchitectCode.Lifecycle;
 
@@ -8,6 +12,22 @@ namespace TheArchitect.TheArchitectCode.Playtest;
 
 internal static class ArchitectMusicPlaytest
 {
+    internal static void AssertEliteMusic()
+    {
+        var room = NCombatRoom.Instance ?? throw new InvalidOperationException("Music playtest has no combat room.");
+        if (room.GetNodeOrNull<AudioStreamPlayer>(ArchitectMusic.PlayerName) is { Playing: true })
+            throw new InvalidOperationException("The Architect theme must not play during the Corrupted Player Elite.");
+        var controller = NRunMusicController.Instance!;
+        var currentTrack = (string?)AccessTools.Field(typeof(NRunMusicController), "_currentTrack").GetValue(controller);
+        var failedTrack = AccessTools.Field(typeof(NRunMusicController), "_failedTrack").GetValue(controller);
+        var progress = AccessTools.Method(typeof(NRunMusicController), "GetTrack")
+            .Invoke(controller, [RoomType.Elite]);
+        if (!ModelDb.Act<Glory>().BgMusicOptions.Contains(currentTrack) || failedTrack != null ||
+            progress?.ToString() != "Enemy")
+            throw new InvalidOperationException("The Elite must use the loaded Act 3 music bank's normal battle track.");
+        MainFile.Logger.Info($"ELITE MUSIC PASSED: {currentTrack}, normal battle track, no Architect theme.");
+    }
+
     internal static AudioStreamPlayer AssertPlaying(bool checkDecoder = false)
     {
         var room = NCombatRoom.Instance ?? throw new InvalidOperationException("Music playtest has no combat room.");
@@ -27,12 +47,6 @@ internal static class ArchitectMusicPlaytest
             AssertDecoderLoop(stream);
         }
         return player;
-    }
-
-    internal static void AssertSame(AudioStreamPlayer previous)
-    {
-        if (AssertPlaying() != previous)
-            throw new InvalidOperationException("Corrupted Player handoff must preserve the playing music instance.");
     }
 
     internal static void AssertStopped(AudioStreamPlayer previous)

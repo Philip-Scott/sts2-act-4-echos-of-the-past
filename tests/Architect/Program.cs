@@ -155,24 +155,54 @@ foreach (int limit in new[] { 200, 300, 520, 780, 1040, 1170, 1560 })
 }
 
 foreach (var hasAncient in new[] { true, false })
+foreach (var hasCorruptedPlayers in new[] { true, false })
 {
-    Test($"map: fixed route (Ancient={hasAncient})", () =>
+    Test($"map: fixed route (Ancient={hasAncient}, CorruptedPlayers={hasCorruptedPlayers})", () =>
     {
-        var map = new ArchitectMap(hasAncient);
-        MapPointType[] expected = hasAncient
-            ? [MapPointType.Ancient, MapPointType.RestSite, MapPointType.Shop, MapPointType.Boss]
-            : [MapPointType.RestSite, MapPointType.Shop, MapPointType.Boss];
+        var map = new ArchitectMap(hasAncient, hasCorruptedPlayers);
+        var expected = new List<MapPointType>();
+        if (hasAncient)
+            expected.Add(MapPointType.Ancient);
+        expected.AddRange([MapPointType.RestSite, MapPointType.Shop]);
+        if (hasCorruptedPlayers)
+            expected.Add(MapPointType.Elite);
+        expected.Add(MapPointType.Boss);
         var point = map.StartingMapPoint;
-        for (var row = 0; row < expected.Length; row++)
+        for (var row = 0; row < expected.Count; row++)
         {
             Check(point.PointType == expected[row] && point.coord.col == 3 && point.coord.row == row);
             Check(!point.CanBeModified);
-            if (row < expected.Length - 1)
+            Check(map.GetPoint(point.coord) == point, "Every route node must be addressable.");
+            if (row < expected.Count - 1)
                 point = point.Children.Single();
         }
         Check(point == map.BossMapPoint && !point.Children.Any());
-        Check(map.GetAllMapPoints().Count() == expected.Length - 2,
+        Check(map.GetAllMapPoints().Count() == expected.Count - 2,
             "Starting Ancient and boss must be outside the interior grid.");
+        var restored = new SavedActMap(MegaCrit.Sts2.Core.Saves.Runs.SerializableActMap.FromActMap(map));
+        Check(restored.GetAllMapPoints().Count(p => p.PointType == MapPointType.Elite) ==
+            (hasCorruptedPlayers ? 1 : 0), "Save/reload must retain the conditional Elite.");
+        Check(restored.GetPoint(map.BossMapPoint.coord)?.PointType == MapPointType.Boss);
+        var save = MegaCrit.Sts2.Core.Saves.Runs.SerializableActMap.FromActMap(map);
+        var removed = ArchitectMap.RemoveCorruptedElite(save);
+        Check(removed.HasValue == hasCorruptedPlayers);
+        var cleared = new SavedActMap(save);
+        Check(!cleared.GetAllMapPoints().Any(p => p.PointType == MapPointType.Elite));
+        Check(cleared.GetAllMapPoints().Single(p => p.PointType == MapPointType.Shop)
+            .Children.Single() == cleared.BossMapPoint, "A reset must connect the Shop directly to the boss.");
+        Check(cleared.BossMapPoint.coord == map.BossMapPoint.coord,
+            "Reset must preserve the saved boss coordinate.");
+        Check(ArchitectMap.RemoveCorruptedElite(save) == null, "Reset must be idempotent.");
+        var legacy = MegaCrit.Sts2.Core.Saves.Runs.SerializableActMap.FromActMap(new ArchitectMap(hasAncient));
+        var oldBossCoord = legacy.BossPoint.Coord;
+        ArchitectMap.AddCorruptedElite(legacy);
+        ArchitectMap.AddCorruptedElite(legacy);
+        var upgraded = new SavedActMap(legacy);
+        Check(upgraded.GetAllMapPoints().Count(p => p.PointType == MapPointType.Elite) == 1);
+        Check(upgraded.GetPoint(oldBossCoord)?.PointType == MapPointType.Elite);
+        Check(upgraded.GetAllMapPoints().Single(p => p.PointType == MapPointType.Shop)
+            .Children.Single().Children.Single() == upgraded.BossMapPoint,
+            "A legacy map must gain exactly one Elite between the Shop and boss.");
     });
 }
 

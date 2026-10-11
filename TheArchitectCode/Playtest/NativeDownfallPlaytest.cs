@@ -58,12 +58,15 @@ internal static class NativeDownfallPlaytest
         }).ToArray();
     }
 
-    internal static async Task Run(NGame game, string name)
+    internal static async Task Run(NGame game, string name, bool matchup = false)
     {
         Require(NativeDemoSafety.Enabled, "requires disposable storage");
+        Require(!matchup || NativeDemoSafety.SharedVisible &&
+            CommandLineHelper.HasArg("architect-native-party-manual"),
+            "matchup inspection requires a visible, manual disposable run");
         Require(!typeof(NativeDownfallSupport).Assembly.GetReferencedAssemblies().Any(reference => reference.Name == "Downfall"),
             "production mod has no assembly reference to the optional Downfall mod");
-        SaveManager.Instance.PrefsSave.FastMode = CommandLineHelper.HasArg("architect-native-recording")
+        SaveManager.Instance.PrefsSave.FastMode = matchup || CommandLineHelper.HasArg("architect-native-recording")
             ? FastModeType.Normal : FastModeType.Instant;
         var registered = ModelDb.All.ToArray();
         MainFile.Logger.Info("DOWNFALL REGISTERED CHARACTERS: " +
@@ -98,7 +101,11 @@ internal static class NativeDownfallPlaytest
         var startingHp = keywordMode ? 500 : character.StartingHp;
         var snapshot = new CorruptedPlayerSnapshot(characterId, startingHp, deck,
             CorruptedPlayerSnapshot.Hash(characterId, startingHp, deck));
-        var human = Player.CreateForNewRun(ModelDb.Character<Ironclad>(), UnlockState.all, 1);
+        var humanCharacter = matchup
+            ? registered.OfType<CharacterModel>().Single(model =>
+                model.GetType().FullName == "Awakened.AwakenedCode.Core.Awakened")
+            : ModelDb.Character<Ironclad>();
+        var human = Player.CreateForNewRun(humanCharacter, UnlockState.all, 1);
         if (keywordMode)
         {
             await CreatureCmd.SetMaxHp(human.Creature, 1000);
@@ -121,12 +128,31 @@ internal static class NativeDownfallPlaytest
         CorruptionVisualPlaytest.RecordingNativeVisuals = true;
         try
         {
-            await manager.EnterMapCoord(run.Map.BossMapPoint.coord);
+            if (matchup)
+            {
+                MainFile.Logger.Info($"DOWNFALL MATCHUP ENTERING: player={human.Character.Id}, " +
+                    $"cards={human.Deck.Cards.Count}, relics={human.Relics.Count}; " +
+                    $"opponent={character.Id}, cards={deck.Length}, snapshotHp={startingHp}.");
+                await ArchitectPlaytest.EnterCorruptedElite(run).WaitAsync(TimeSpan.FromSeconds(90));
+                await NativeDemoPlaytest.PlayerTurn(human, 1, timeoutSeconds: 90);
+                await NativeDemoPlaytest.Capture("downfall-matchup-ready");
+                MainFile.Logger.Info($"DOWNFALL MATCHUP READY: phase={human.PlayerCombatState!.Phase}, " +
+                    $"hand={human.PlayerCombatState.Hand.Cards.Count}; manual input enabled, no cards played.");
+                return;
+            }
+            await ArchitectPlaytest.EnterCorruptedElite(run);
+        }
+        catch (TimeoutException error) when (matchup)
+        {
+            MainFile.Logger.Error($"DOWNFALL MATCHUP FROZEN: {error}");
+            await NativeDemoPlaytest.Capture("downfall-matchup-frozen");
         }
         finally
         {
             CorruptionVisualPlaytest.RecordingNativeVisuals = false;
         }
+        if (matchup)
+            return;
         await NativeDemoPlaytest.PlayerTurn(human, 1, timeoutSeconds: 180);
         var combat = human.Creature.CombatState!;
         var actor = ((CorruptedPlayer)combat.Enemies.Single().Monster!).Native

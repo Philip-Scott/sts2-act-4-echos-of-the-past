@@ -40,7 +40,7 @@ internal static class NativeAttackVfxPlaytest
         ArchitectLifecycle.AppendAct(run);
         await RunManager.Instance.SetActInternal(3);
         ArchitectRun.Get(run).EntrySnapshot = snapshot;
-        await RunManager.Instance.EnterMapCoord(run.Map.BossMapPoint.coord);
+        await ArchitectPlaytest.EnterCorruptedElite(run);
         var human = run.Players.Single();
         await NativeDemoPlaytest.PlayerTurn(human, 1);
         var monster = (CorruptedPlayer)human.Creature.CombatState!.Enemies.Single().Monster!;

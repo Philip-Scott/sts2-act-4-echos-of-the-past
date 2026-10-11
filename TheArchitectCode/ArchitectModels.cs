@@ -11,6 +11,7 @@ internal static partial class ArchitectModels
 {
     internal static readonly ModelId ActId = new("ACT", "THEARCHITECT-ARCHITECT_ACT");
     internal static readonly ModelId EncounterId = new("ENCOUNTER", "THEARCHITECT-ARCHITECT_ENCOUNTER");
+    internal static readonly ModelId CorruptedEncounterId = new("ENCOUNTER", "THEARCHITECT-CORRUPTED_PLAYER_ENCOUNTER");
     internal static readonly ModelId AncientId = new("EVENT", "THEARCHITECT-THE_UNWRITTEN");
     private static readonly ModelId BossId = new("MONSTER", "THEARCHITECT-ARCHITECT_BOSS");
     private static readonly ModelId CorruptedPlayerId = new("MONSTER", "THEARCHITECT-CORRUPTED_PLAYER");
@@ -21,6 +22,8 @@ internal static partial class ArchitectModels
     // Resolve the existing canonical IDs directly; do not register aliases or change saved IDs.
     internal static ArchitectAct Act => ModelDb.GetById<ArchitectAct>(ActId);
     internal static ArchitectEncounter Encounter => ModelDb.GetById<ArchitectEncounter>(EncounterId);
+    internal static CorruptedPlayerEncounter CorruptedEncounter =>
+        ModelDb.GetById<CorruptedPlayerEncounter>(CorruptedEncounterId);
     internal static TheUnwritten Ancient => ModelDb.GetById<TheUnwritten>(AncientId);
     internal static ArchitectBoss Boss => ModelDb.GetById<ArchitectBoss>(BossId);
     internal static CorruptedPlayer CorruptedPlayer => ModelDb.GetById<CorruptedPlayer>(CorruptedPlayerId);

@@ -1,10 +1,23 @@
 # Changelog
 
-## Unreleased
+## 1.2.1 Changes
+
+Released October 7, 2026 at 10:35 p.m. PDT.
 
 - Fixed a multiplayer resume black screen caused by deck-preview cleanup accessing
   an already-freed lobby screen. The same cleanup error when starting a new
   multiplayer run is also fixed.
+- Multiplayer Continue previews now show the full saved party's Corrupted Decks
+  before the other players rejoin, including runs that have not reached Act 4.
+  Once opponents are selected, the preview keeps using the decks saved with the run.
+- Added a recovery shortcut for broken Corrupted Decks. Right-click "View Corrupted
+  Deck" 10 times in a row to clear the saved opponent and its backups. Exhaust
+  effects start on the fourth click; the tenth burns away the button.
+- Solo resets affect only the active profile's opponent. Co-op resets are
+  host-only and affect only that exact party.
+- Using the recovery shortcut on a Continue screen also clears that run's frozen
+  opponent without deleting the run or changing the players' decks. Co-op
+  Continue resets close the lobby so everyone can rejoin with the corrected save.
 
 ## 1.2.0 Changes
 

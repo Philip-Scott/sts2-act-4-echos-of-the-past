@@ -29,6 +29,9 @@ public static class ArchitectLifecycle
         ?? throw new MissingMethodException("The beta RunState.Acts setter changed.");
 
     public static bool IsEncounter([NotNullWhen(true)] IRunState? run) =>
+        run is { CurrentRoom: CombatRoom { Encounter: ArchitectEncounter or CorruptedPlayerEncounter } };
+
+    public static bool IsBossEncounter([NotNullWhen(true)] IRunState? run) =>
         run is { CurrentRoom: CombatRoom { Encounter: ArchitectEncounter } };
 
     public static void AppendAct(RunState run)
@@ -45,7 +48,7 @@ public static class ArchitectLifecycle
     public static void FinishVictory()
     {
         var run = RunManager.Instance.DebugOnlyGetState();
-        if (!IsEncounter(run) || ArchitectRun.Get(run).Outcome != null)
+        if (!IsBossEncounter(run) || ArchitectRun.Get(run).Outcome != null)
             return;
         var save = RunManager.Instance.OnEnded(true);
         NRun.Instance?.ShowGameOverScreen(save);
@@ -152,12 +155,29 @@ internal static class CaptureCorruptedPlayerAtEntryPatch
     }
 }
 
+[HarmonyPatch(typeof(RunManager), nameof(RunManager.GenerateMap))]
+internal static class UpgradeSavedArchitectMapPatch
+{
+    private static void Prefix(RunManager __instance)
+    {
+        var run = __instance.DebugOnlyGetState();
+        if (run?.Act is not ArchitectAct || ArchitectRun.Get(run).EncounterSnapshots.Count == 0 ||
+            __instance.SavedMapsToLoad is not { } maps ||
+            !maps.TryGetValue(run.CurrentActIndex, out var map))
+            return;
+        // Preserve an already-entered legacy boss room, including its prefinished result.
+        if (run.VisitedMapCoords.Any(coord => coord == map.BossPoint.Coord))
+            return;
+        ArchitectMap.AddCorruptedElite(map);
+    }
+}
+
 [HarmonyPatch(typeof(NCombatUi), "OnCombatWon")]
 internal static class FinishArchitectWithoutRewardsPatch
 {
     private static bool Prefix(CombatRoom room)
     {
-        if (!ArchitectLifecycle.IsEncounter(room.CombatState.RunState))
+        if (!ArchitectLifecycle.IsBossEncounter(room.CombatState.RunState))
             return true;
         // Let combat-end notifications finish before recording the result and starting the ending.
         Callable.From(ArchitectLifecycle.FinishVictory).CallDeferred();
@@ -170,7 +190,7 @@ internal static class ResumeFinishedArchitectPatch
 {
     private static bool Prefix(CombatRoom __instance, ref Task __result)
     {
-        if (!ArchitectLifecycle.IsEncounter(__instance.CombatState.RunState))
+        if (!ArchitectLifecycle.IsBossEncounter(__instance.CombatState.RunState))
             return true;
         Callable.From(ArchitectLifecycle.FinishVictory).CallDeferred();
         __result = Task.CompletedTask;
@@ -217,7 +237,7 @@ internal static class ArchitectVictoryRoomPatch
 {
     private static void Postfix(AbstractRoom __instance, ref bool __result)
     {
-        if (__instance is CombatRoom { Encounter: ArchitectEncounter } room &&
+        if (__instance is CombatRoom { Encounter: ArchitectEncounter or CorruptedPlayerEncounter } room &&
             ArchitectRun.Get(room.CombatState.RunState).Outcome != null)
             __result = true;
     }
@@ -270,6 +290,8 @@ public sealed class ArchitectConsoleCommand : AbstractConsoleCmd
             save.EventIds ??= [];
             save.NormalEncounterIds ??= [];
             save.EliteEncounterIds ??= [];
+            if (!save.EliteEncounterIds.Contains(ArchitectModels.CorruptedEncounterId))
+                save.EliteEncounterIds.Add(ArchitectModels.CorruptedEncounterId);
         }
     }
 }

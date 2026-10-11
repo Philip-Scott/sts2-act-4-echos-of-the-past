@@ -6,7 +6,7 @@ Meet The Watcher and choose an Ancient gift before fighting the Architect.
 On later visits, you first fight a Corrupted Player that uses your previous deck.
 Play solo or with a party of 2-4 players.
 
-Version 1.2.0 is available on
+Version 1.2.1 is available on
 [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3799307965).
 
 ## Gameplay and compatibility
@@ -16,7 +16,10 @@ After Act 3, visit The Watcher, a Rest Site, and a Shop before the boss.
 On your first visit, you fight only the Architect. Later visits begin with your
 saved Corrupted Player, whose deck keeps its upgrades and enchantments. Its upcoming
 hand is visible during your turn. In co-op, the entire last saved party fights
-together. After you defeat them all, the Architect joins the same combat.
+together in a separate Elite fight between the Shop and the Architect.
+That Elite node appears only when the run has saved corrupted opponents.
+Defeating them grants normal Elite rewards and returns you to the map.
+The Architect then starts a fresh combat with new hands, energy, and combat effects.
 Use "View Corrupted Deck" or "View Corrupted Decks" on the character-select
 screen to preview your saved opponents.
 When continuing co-op, the preview uses the full party recorded in the save,

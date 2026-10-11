@@ -16,10 +16,10 @@ internal static class NativeCorruptedPlayerPreflight
     private static bool Prefix(RunManager __instance, MapCoord coord, ref Task __result)
     {
         var run = __instance.DebugOnlyGetState();
-        if (run?.Act is not ArchitectAct || coord != run.Map.BossMapPoint.coord)
+        if (run?.Act is not ArchitectAct || run.Map.GetPoint(coord)?.PointType != MapPointType.Elite)
             return true;
         var error = ArchitectRun.Get(run).EncounterSnapshots.Select(snapshot =>
-                run.Players.Count > 1 && snapshot.ResolveCharacter() == null
+                snapshot.ResolveCharacter() == null
                     ? "A saved Corrupted Player character is unavailable. Install the matching character mod before entering."
                     : NativeCardSupport.Preflight(snapshot.Deck))
             .FirstOrDefault(message => message != null);

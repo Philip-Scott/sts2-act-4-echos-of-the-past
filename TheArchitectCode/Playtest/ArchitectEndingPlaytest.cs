@@ -93,8 +93,7 @@ internal static class ArchitectEndingPlaytest
             try
             {
                 var combat = run.Players[0].Creature.CombatState!;
-                for (var phase = 0; phase < 2 && combat.Enemies.Any(enemy => enemy.IsAlive); phase++)
-                    await CreatureCmd.Kill(combat.Enemies.ToArray(), true);
+                await CreatureCmd.Kill(combat.Enemies.ToArray(), true);
                 await CombatManager.Instance.CheckWinCondition();
                 if (HoldVictoryForReload)
                 {

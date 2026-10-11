@@ -5,7 +5,7 @@ This context defines the recurring final-act challenge and the lineage it carrie
 ## Language
 
 **Architect Act**:
-The mandatory fourth act presented to the player as **Act 4 — The Architect**, containing a fixed Ancient, Rest Site, Shop, and Architect encounter.
+The mandatory fourth act presented to the player as **Act 4 — The Architect**, containing an Ancient, Rest Site, Shop, an optional Corrupted Player Elite, and the Architect boss.
 _Avoid_: Bonus act, secret act
 
 **The Watcher**:
@@ -33,7 +33,7 @@ An Architect Act entered when no compatible Corrupted Player Snapshot exists for
 _Avoid_: First attempt, first run, empty lineage
 
 **Repeat Visit**:
-An Architect Act entered with a compatible Corrupted Player Snapshot or complete saved Successor Group, producing a continuous Corrupted Player-to-Architect encounter.
+An Architect Act entered with a compatible Corrupted Player Snapshot or complete saved Successor Group, adding a separate Corrupted Player Elite before the Architect boss.
 _Avoid_: Rematch, second visit
 
 **Corrupted Player Snapshot**:
@@ -41,7 +41,7 @@ A terminal record of one participant's character identity, final deck including 
 _Avoid_: Run save, checkpoint, ghost, build
 
 **Architect Outcome**:
-The mod-owned result of the Architect encounter, either Architect Win or Architect Loss, distinct from the base game's victory result for the completed run.
+The mod-owned result of the Act 4 fights, either Architect Win for defeating the Architect or Architect Loss for falling to the Corrupted Player Elite or Architect, distinct from the base game's victory result.
 _Avoid_: Run result, Act 3 result
 
 **Successor Lineage**:
@@ -61,7 +61,7 @@ The corrupted version of a previous player character, restored from a compatible
 _Avoid_: Challenger, Corrupted Challenger, player clone, ghost player
 
 **Corrupted Party**:
-The complete set of Corrupted Players from the latest saved Successor Lineage, fought together before the Architect. The Architect appears only after every member has been defeated.
+The complete set of Corrupted Players from the latest saved Successor Lineage, fought together in an Elite encounter before the separate Architect boss encounter.
 _Avoid_: Random member, representative character
 
 **Corrupted Player Simulation**:

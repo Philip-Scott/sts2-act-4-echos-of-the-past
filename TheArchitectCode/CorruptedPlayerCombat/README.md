@@ -81,11 +81,10 @@ intervenes. An extra turn belongs only to that Corrupted Player and its pets,
 not the rest of the Corrupted Party. Powers and card-local mutations persist between turns.
 
 Each Corrupted Player retains its monster lifecycle listener and cleans up its
-own pets and actor state on death. Only the last confirmed member death adds the
-Architect, before the native engine removes that enemy, preserving continuous
-combat and human hand/energy/HP. A shared one-shot phase prevents duplicate bosses
-from simultaneous or nested deaths; a member whose death is prevented still
-blocks the transition. Each member has 2x saved maximum HP, or 2.5x at A8+, rounded
+own pets and actor state on death. The native engine ends the Elite after every
+member dies; no death hook spawns the Architect. A prevented death keeps the
+Elite running. Normal Elite rewards precede a return to the map and a separate
+Architect boss combat. Each member has 2x saved maximum HP, or 2.5x at A8+, rounded
 up, without native multiplayer HP scaling. Native terminal outcomes, snapshot deduplication and atomic
 replacement remain in the existing lifecycle/persistence implementation.
 
@@ -290,7 +289,7 @@ not a live network connection. It exercises full-party generation with reordered
 saved members, counterpart names and targets, dead/revived target fallback,
 single-target versus AOE damage, fixed HP,
 independent native/extra turns, preview layout, and sequential/AoE deaths through
-the production encounter and handoff. Transport consensus, host ownership, and
+the production Elite and separate boss encounter. Transport consensus, host ownership, and
 frozen save/rejoin behavior have separate deterministic regression coverage.
 The default scenario first loads the supplied snapshot through normal encounter
 entry, then exercises native reload and targeted mechanics in that disposable
@@ -389,6 +388,15 @@ ARCHITECT_MODS_INPUT="$PWD/artifacts/downfall-mods" \
 ```
 
 The optional bundle must contain Downfall as well as BaseLib and TheArchitect.
+For a disposable Awakened versus corrupted Hexaghost opening-fight reproduction,
+use that bundle with `--downfall-matchup --manual --shared-visible`. Both sides
+use starter decks at Ascension 0. The player keeps its starting relics; the
+Corrupted Player has none. The game leaves the opening turn available for input
+without playing cards. If combat startup times out, it logs `DOWNFALL MATCHUP FROZEN`,
+captures the viewport, and leaves the window open for inspection. This scenario
+does not read or change live profiles and does not claim to reproduce a reported
+victory deck or a character from another mod.
+
 `--downfall-keywords` selects mechanic assertions rather than the existing
 starter-card smoke scenario; combine it with one `--downfall-<character>` flag.
 Successful catalog serialization alone is not evidence that card effects or
@@ -560,6 +568,6 @@ The runtime probes cover real saved Defect cards and upgrades; Perfected Strike
 and Impervious with native modifiers; generated cards, choices, persistent powers,
 Rage/Thorns/Flame Barrier reactions, saved Genetic Algorithm properties and Sharp
 enchantment, private RNG, orb rendering, Osty placement/revival, extra turns,
-exclusion/error reporting, reload, cleanup, handoff and native terminal outcomes.
+exclusion/error reporting, reload, cleanup, separate Elite/boss combats and native terminal outcomes.
 The old `CorruptedPlayerPlanner`, exact-adapter classes and pure tests are retained as
 historical regression/reference code, but are not the production execution path.

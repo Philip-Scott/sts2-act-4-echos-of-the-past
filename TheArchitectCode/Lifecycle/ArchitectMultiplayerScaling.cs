@@ -13,7 +13,7 @@ internal static class ArchitectMultiplayerScaling
         MultiplayerScalingModel.GetMultiplayerScaling(encounter, GetActIndex(encounter, actIndex));
 
     internal static int GetActIndex(EncounterModel? encounter, int actIndex) =>
-        actIndex == 3 && (encounter is ArchitectEncounter ||
+        actIndex == 3 && (encounter is ArchitectEncounter or CorruptedPlayerEncounter ||
             encounter is TheArchitectEventEncounter && ArchitectEnding.IsActive(RunManager.Instance.DebugOnlyGetState()))
             ? 2 : actIndex;
 }

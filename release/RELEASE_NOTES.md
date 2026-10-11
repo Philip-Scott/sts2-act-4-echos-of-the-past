@@ -1,24 +1,40 @@
-# Act 4: Echos of the Past 1.2.0
+# Act 4: Echos of the Past 1.2.1
 
 **Your past is the final boss.**
 
-This update from **1.1.0** introduces The Watcher Ancient, expands Ancient gifts,
-adds Wrath and Calm stances, and brings new music to the final encounter.
+This update from **1.2.0** fixes multiplayer Continue previews and adds a way to
+remove broken saved opponents. Published on Steam Workshop on October 7, 2026.
 
 ## What's new
 
-- The Watcher replaces The Unwritten as the Act 4 Ancient!
-- Expanded Ancient gifts to 12 relics across 3 different categories: Preparation,
-  Discipline, and Transcendence.
-- Added Scry and Wrath/Calm enchantments and stances. Wrath increases Attack damage
-  dealt and enemy damage received by 50%; leaving Calm grants 1 Energy.
-- Added "The Hollow Pulse" boss music.
+- Fixed a black screen when resuming multiplayer and a related cleanup error
+  when starting a new multiplayer run.
+- Multiplayer Continue now previews every saved party member's opponent before
+  anyone else rejoins, including runs before Act 4. Selected opponents still
+  come from the run's frozen decks, not a newer party history.
+- Added a ten-right-click recovery shortcut to the Corrupted Deck buttons.
+  It clears only the relevant solo or host-owned party opponent and its backups.
+
+## Recovering a broken opponent
+
+Right-click "View Corrupted Deck" or "View Corrupted Decks" 10 times in a row.
+Exhaust effects start on the fourth click; the tenth burns away the button.
+Other input or leaving the screen cancels an incomplete sequence. In co-op,
+only the host can reset; unready first.
+
+The solo button clears the active profile's saved opponent. The co-op button
+clears only that host's exact party. Continue-menu resets also clear the
+opponent saved inside the ongoing run, without deleting the run or changing
+the players' decks. Continue to fight the Architect directly.
+A co-op Continue reset closes the lobby; reopen it and have everyone rejoin
+to receive the corrected save. Errors are shown instead of reporting a
+successful reset.
 
 The internal ID, runtime filenames and installation folder remain `TheArchitect`.
 Update the existing installation; do not install this as a second mod.
-Existing saves retain retired relics and the Ancient's original saved identity.
-The planned Workshop update must preserve the Steam-edited description,
-visibility, thumbnail, and screenshots.
+Existing saves remain compatible. The content-only Workshop update
+preserves the Steam-edited description, title, visibility, thumbnail, and
+screenshot gallery.
 
 ## Compatibility and limitations
 
@@ -36,6 +52,6 @@ audited. Lineages are local, not Steam Cloud data. Host migration is unsupported
 Avoid force-closing during the result transition; full crash-transaction recovery
 is still tracked in issue #12.
 
-Use `TheArchitect-v1.2.0.zip` for manual installation, not GitHub's source archives.
+Use `TheArchitect-v1.2.1.zip` for manual installation, not GitHub's source archives.
 Extract its `TheArchitect` folder into the game's `mods` folder with the game
 closed. See `INSTALL.md` for details and `SHA256SUMS` for file hashes.

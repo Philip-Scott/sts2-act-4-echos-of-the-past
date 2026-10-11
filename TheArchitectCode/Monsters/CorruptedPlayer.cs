@@ -33,8 +33,6 @@ public sealed class CorruptedPlayer : CustomMonsterModel
     private int _maxHp = 80;
     private CorruptedPlayerTelegraph? _telegraph;
     private bool _deathHandled;
-    private CorruptedPartyPhase? _party;
-    private int _partyIndex;
     private Player? _counterpart;
     internal int FormationIndex { get; private set; }
     public NativeCorruptedPlayer? Native { get; private set; }
@@ -87,11 +85,9 @@ public sealed class CorruptedPlayer : CustomMonsterModel
         _counterpart = counterpart;
     }
 
-    internal void JoinParty(CorruptedPartyPhase party, int index, int formationIndex)
+    internal void SetFormationIndex(int formationIndex)
     {
         AssertMutable();
-        _party = party;
-        _partyIndex = index;
         FormationIndex = formationIndex;
     }
 
@@ -146,15 +142,10 @@ public sealed class CorruptedPlayer : CustomMonsterModel
     public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature,
         bool wasRemovalPrevented, float deathAnimLength)
     {
-        if (creature != Creature || wasRemovalPrevented || _deathHandled ||
-            Creature.CombatState is not { } combat)
+        if (creature != Creature || wasRemovalPrevented || _deathHandled)
             return;
         _deathHandled = true;
-        // Count confirmed deaths, not zero HP: another member in a lethal AoE may still revive.
-        var lastMember = (_party ??= new CorruptedPartyPhase(1)).Defeat(_partyIndex);
         StopTelegraph();
-        if (lastMember && combat.PlayerCreatures.Any(player => player.IsAlive))
-            await CreatureCmd.Add(ArchitectModels.Boss.ToMutable(), combat);
         if (Native != null)
             foreach (var pet in Native.State.Pets.ToArray())
                 await CreatureCmd.Kill(pet, true);

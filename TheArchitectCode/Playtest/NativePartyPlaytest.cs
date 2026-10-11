@@ -7,6 +7,7 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Acts;
 using MegaCrit.Sts2.Core.Models.Cards;
@@ -17,6 +18,7 @@ using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Platform;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
@@ -36,12 +38,21 @@ internal static class NativePartyPlaytest
 {
     internal static async Task Run(NGame game, bool layoutOnly = false, int? partySize = null,
         bool prototypeOnly = false, bool manual = false, bool downfall = false, bool stanceVfxOnly = false,
-        bool audioOnly = false, bool layeringOnly = false)
+        bool audioOnly = false, bool layeringOnly = false, bool encountersOnly = false)
     {
         Require(NativeDemoSafety.Enabled, "party probes require disposable storage and Steam disabled");
+        Require(!CommandLineHelper.HasArg("architect-native-party-history") ||
+            manual && !downfall, "victory histories require a manual, non-Downfall party inspection");
         Require(!audioOnly || !NativeDemoSafety.SharedVisible && !manual && partySize == 2,
             "audio probes require a private two-player fixture");
         Require(!downfall || manual && partySize == 4, "Downfall inspection requires a manual four-member party");
+        if (encountersOnly)
+        {
+            await Exercise(game, 2, 0, false, false, encountersOnly: true);
+            MainFile.Logger.Info("ARCHITECT ENCOUNTERS PASSED: Elite map node, native rewards, map return, fresh boss combat.");
+            game.GetTree().Quit();
+            return;
+        }
         if (manual)
         {
             Require(NativeDemoSafety.SharedVisible && partySize is >= 1 and <= 4 &&
@@ -75,13 +86,13 @@ internal static class NativePartyPlaytest
             return;
         }
         MainFile.Logger.Info(layoutOnly ? "NATIVE PARTY LAYOUT PASSED" :
-            $"NATIVE PARTY PASSED: {(partySize?.ToString() ?? "2-4")} humans and saved enemies; counterpart names/targets, AOE, fixed HP, independent turns, sequential/AoE handoff.");
+            $"NATIVE PARTY PASSED: {(partySize?.ToString() ?? "2-4")} humans and saved enemies; counterpart names/targets, AOE, fixed HP, independent turns, separate Elite and boss.");
         game.GetTree().Quit();
     }
 
     private static async Task Exercise(NGame game, int count, int ascension, bool layoutOnly, bool prototypeOnly,
         bool manual = false, bool downfall = false, bool stanceVfxOnly = false, bool audioOnly = false,
-        bool layeringOnly = false)
+        bool layeringOnly = false, bool encountersOnly = false)
     {
         CharacterModel[] characters = [ModelDb.Character<Ironclad>(), ModelDb.Character<Defect>(),
             ModelDb.Character<Necrobinder>(), ModelDb.Character<Silent>()];
@@ -92,11 +103,25 @@ internal static class NativePartyPlaytest
         var snapshots = downfall ? NativeDownfallPlaytest.InspectionParty() : players.Select(player => manual || layoutOnly
             ? InspectionSnapshot(player)
             : CorruptedPlayerSnapshot.Capture(player)).ToArray();
+        NativePartyHistory? history = null;
+        if (CommandLineHelper.GetValue("architect-native-party-history") is { } historyPath)
+        {
+            var loaded = NativePartyHistory.Load(historyPath, count);
+            history = loaded.Configuration;
+            players = loaded.Players;
+            snapshots = loaded.Opponents;
+            ascension = loaded.Ascension;
+            characters = players.Select(player => player.Character).ToArray();
+        }
+        var historyLoadouts = history == null ? null : players.Select(player => player.ToSerializable()).ToArray();
         var run = RunState.CreateForNewRun(players,
             [ModelDb.Act<Overgrowth>().ToMutable(), ModelDb.Act<Hive>().ToMutable(), ModelDb.Act<Glory>().ToMutable()],
-            [], GameMode.Standard, ascension, $"ARCHITECT-PARTY-{count}-{ascension}");
+            [], GameMode.Standard, ascension, history?.Seed ?? $"ARCHITECT-PARTY-{count}-{ascension}");
         var manager = RunManager.Instance;
         manager.SetUpTest(run, new NetSingleplayerGameService(), disableCombatStateSync: true, shouldSave: false);
+        // SetUpTest applies new-run Ascension penalties. Histories already include those changes.
+        if (historyLoadouts != null)
+            NativePartyHistory.RestoreAfterInitialization(players, historyLoadouts);
         manager.GenerateRooms();
         ArchitectLifecycle.AppendAct(run);
         var state = ArchitectRun.Get(run);
@@ -138,9 +163,30 @@ internal static class NativePartyPlaytest
         if (audioOnly)
             WatcherAudioPlaytest.Begin(game);
         await manager.EnterAct(3, doTransition: false);
+        if (encountersOnly)
+        {
+            await ArchitectPlaytest.WaitFor(() => NMapScreen.Instance?.IsOpen == true);
+            NMapScreen.Instance!.SetMap(run.Map, run.Rng.Seed, clearDrawings: false);
+            NMapScreen.Instance.SetMap(run.Map, run.Rng.Seed, clearDrawings: false);
+            await game.AwaitProcessFrame();
+            var points = NMapScreen.Instance!.FindChildren("*", "", true, false).OfType<NMapPoint>().ToArray();
+            Require(points.Length == 5 && points.All(point => game.GetViewport().GetVisibleRect()
+                .Encloses(point.GetGlobalRect().Grow(24f))), "five-node map fits the viewport");
+            var bossPoint = points.Single(point => point.Point == run.Map.BossMapPoint);
+            var elitePoint = points.Single(point => point.Point.PointType == MegaCrit.Sts2.Core.Map.MapPointType.Elite);
+            var bossBounds = bossPoint.GetGlobalRect()
+                .Merge(bossPoint.GetNode<Control>("%PlaceholderImage").GetGlobalRect());
+            var eliteBounds = elitePoint.GetGlobalRect()
+                .Merge(elitePoint.GetNode<Control>("%Icon").GetGlobalRect());
+            MainFile.Logger.Info($"ENCOUNTER MAP BOUNDS: boss={bossBounds}, elite={eliteBounds}");
+            Require(!bossBounds.Grow(12f).Intersects(eliteBounds.Grow(24f)),
+                "the Elite icon and hitbox are separate from the Architect artwork");
+            await Task.Delay(4000);
+            await NativeDemoPlaytest.Capture("encounters-map");
+        }
         if (audioOnly)
             await WatcherAudioPlaytest.Ancient(game, players[0]);
-        await manager.EnterMapCoord(run.Map.BossMapPoint.coord);
+        await ArchitectPlaytest.EnterCorruptedElite(run);
         await Ready(players, 1);
         var combat = players[0].Creature.CombatState!;
         var bossProbe = new Creature(ArchitectModels.Boss.ToMutable(), CombatSide.Enemy, null);
@@ -150,6 +196,17 @@ internal static class NativePartyPlaytest
             $"{count}: native boss HP initialization supports Act 4");
         var enemies = combat.Enemies.Where(creature => creature.Monster is CorruptedPlayer).ToArray();
         var actors = enemies.Select(creature => ((CorruptedPlayer)creature.Monster!).Native!).ToArray();
+        if (encountersOnly)
+        {
+            ArchitectMusicPlaytest.AssertEliteMusic();
+            await CreatureCmd.Kill(enemies, true);
+            await ArchitectPlaytest.EnterBossAfterElite(run);
+            var music = ArchitectMusicPlaytest.AssertPlaying(checkDecoder: true);
+            await NativeDemoPlaytest.Capture("encounters-boss");
+            await game.ReturnToMainMenu();
+            ArchitectMusicPlaytest.AssertStopped(music);
+            return;
+        }
         if (layeringOnly)
         {
             await NativeEnemyResourcePlaytest.VerifyScreenLayering(game, players,
@@ -172,6 +229,18 @@ internal static class NativePartyPlaytest
         {
             Require(enemies.Length == count && combat.Players.Count == count && run.Players.Count == count,
                 $"{count}: complete manual party loaded");
+            if (history != null)
+            {
+                foreach (var actor in actors)
+                {
+                    var expected = snapshots[((CorruptedPlayer)actor.Body.Monster!).FormationIndex];
+                    Require(actor.Player.Character.Id.ToString() == expected.CharacterId &&
+                        actor.Player.Deck.Cards.Count == expected.Deck.Length &&
+                        actor.Body.MaxHp == CorruptedPlayerHealth.CalculateMaxHp(expected.MaxHp, ascension),
+                        "history opponent character, complete deck and scaled HP restored");
+                }
+                history.WriteReceipt(players, snapshots, ascension);
+            }
             if (downfall)
                 foreach (var actor in actors)
                 {
@@ -318,9 +387,6 @@ internal static class NativePartyPlaytest
             $"{count}: extra turns do not advance other corrupted players");
         await NativeCombatOwnershipPlaytest.Party(players, actors);
 
-        var hand = players[0].PlayerCombatState!.Hand.Cards.ToArray();
-        var energy = players[0].PlayerCombatState!.Energy;
-        var hp = players.Select(player => player.Creature.CurrentHp).ToArray();
         await CreatureCmd.Kill(enemies[0], force: true);
         Require(actors[0].Cleaned && actors.Skip(1).All(actor => !actor.Cleaned),
             $"{count}: an early death cleans only its own actor");
@@ -332,20 +398,19 @@ internal static class NativePartyPlaytest
             $"{count}: Architect is absent while any corrupted member remains");
         await CreatureCmd.Damage(context, enemies.Skip(1), 10000, ValueProp.Unpowered | ValueProp.Unblockable,
             players[0].Creature);
-        Require(combat.Enemies.Count(creature => creature.Monster is ArchitectBoss) == 1 &&
+        Require(!combat.Enemies.Any(creature => creature.Monster is ArchitectBoss) &&
             !combat.Enemies.Any(creature => creature.Monster is CorruptedPlayer) && actors.All(actor => actor.Cleaned),
-            $"{count}: the final AoE produces exactly one Architect and cleans every actor");
+            $"{count}: the final AoE cleans every actor without spawning the Architect");
         Require(panels.All(panel => !HasEnergyCounter(panel)),
             $"{count}: the final AoE detaches all defeated native energy counters");
         Require(panels.All(panel => !HasStarCounter(panel)),
             $"{count}: the final AoE detaches all defeated native star counters");
+        await ArchitectPlaytest.EnterBossAfterElite(run);
+        combat = players[0].Creature.CombatState!;
         var boss = combat.Enemies.Single(creature => creature.Monster is ArchitectBoss);
         Require(boss.MaxHp == (int)Creature.ScaleHpForMultiplayer(boss.Monster!.MaxInitialHp, combat.Encounter, count, 2),
             $"{count}: Architect uses the native final-act boss HP tier");
-        Require(players[0].PlayerCombatState!.Hand.Cards.SequenceEqual(hand) &&
-            players[0].PlayerCombatState!.Energy == energy && players.Select(player => player.Creature.CurrentHp).SequenceEqual(hp),
-            $"{count}: handoff preserves human hands, energy and HP");
-        await NativeDemoPlaytest.Capture($"party-{count}-handoff");
+        await NativeDemoPlaytest.Capture($"party-{count}-boss");
         var limit = (int)Creature.ScaleHpForMultiplayer(ascension >= 8 ? 200 : 300,
             combat.Encounter, count, 2);
         var invincible = boss.GetPower<ArchitectInvinciblePower>()!;
@@ -359,7 +424,7 @@ internal static class NativePartyPlaytest
         Require(boss.CurrentHp == bossHp - limit && invincible.DisplayAmount == 0 &&
             invincible.DynamicVars["Remaining"].IntValue == 0 && boss.HpDisplay == HpDisplay.InfiniteWithNumbers,
             $"{count}: human players share one scaled damage budget");
-        await EndTurn(players, 4);
+        await EndTurn(players, 2);
         Require(invincible.Amount == limit && invincible.DisplayAmount == limit &&
             invincible.DynamicVars["Remaining"].IntValue == limit && boss.HpDisplay == HpDisplay.Normal,
             $"{count}: the next Architect turn restores the scaled budget without scaling it again");

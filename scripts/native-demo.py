@@ -22,6 +22,7 @@ CACHE_PATHS = ("cache/mesa_shader_cache", "xdg/SlayTheSpire2/shader_cache")
 DOWNFALL_SCENARIOS = tuple("downfall-" + name for name in (
     "snecko", "slimeboss", "hermit", "hexaghost", "guardian", "champ", "awakened", "automaton"))
 MANUAL_PARTIES = ("party-1", "party-2", "party-3", "party-4", "downfall-party")
+DOWNFALL_INSPECTIONS = ("downfall-party", "downfall-matchup")
 
 
 def required_file(path):
@@ -47,6 +48,67 @@ def write_json(path, value):
     temporary = path.with_suffix(".tmp")
     temporary.write_text(json.dumps(value, indent=2) + "\n")
     temporary.replace(path)
+
+
+def load_party_history(path, member_count):
+    source = required_file(path).read_bytes()
+    config = json.loads(source)
+    if not isinstance(config, dict) or not isinstance(config.get("Seed"), str) or not config["Seed"].strip():
+        raise ValueError("Party history requires a nonempty Seed string.")
+    members = config.get("Members")
+    if not isinstance(members, list) or len(members) != member_count:
+        raise ValueError(f"Party history requires exactly {member_count} Members.")
+    copied_config = {"Seed": config["Seed"], "Members": []}
+    histories = {}
+    identities = set()
+    for index, member in enumerate(members, 1):
+        if not isinstance(member, dict):
+            raise ValueError(f"Party history member {index} must be an object.")
+        copied_member = {}
+        for field, minimum in (("MaxEnergy", 1), ("BaseOrbSlotCount", 0)):
+            value = member.get(field)
+            if type(value) is not int or value < minimum:
+                raise ValueError(f"Party history member {index} requires integer {field} >= {minimum}.")
+            copied_member[field] = value
+        for field, role in (("PlayerHistoryPath", "player"), ("OpponentHistoryPath", "opponent")):
+            value = member.get(field)
+            if not isinstance(value, str) or not Path(value).is_absolute():
+                raise ValueError(f"Party history member {index} requires an absolute {field}.")
+            content = required_file(value).read_bytes()
+            history = json.loads(content)
+            if (not isinstance(history, dict) or history.get("win") is not True or
+                    history.get("was_abandoned") is not False or
+                    not isinstance(history.get("players"), list) or len(history["players"]) != 1 or
+                    not isinstance(history["players"][0], dict)):
+                raise ValueError(f"Party history member {index} {role} requires a completed single-player victory.")
+            seed, start_time = history.get("seed"), history.get("start_time")
+            if not isinstance(seed, str) or not seed.strip() or type(start_time) is not int:
+                raise ValueError(f"Party history member {index} {role} requires a seed and integer start_time.")
+            identity = (seed, start_time)
+            if identity in identities:
+                raise ValueError("Choose distinct victories across all party history selections.")
+            identities.add(identity)
+            relative = f"party-history/{role}-{index}.run"
+            histories[relative] = content
+            copied_member[field] = relative
+        copied_config["Members"].append(copied_member)
+    return copied_config, histories, hashlib.sha256(source).hexdigest()
+
+
+def copy_party_history(run, selection):
+    config, histories, source_hash = selection
+    (run / "party-history").mkdir(mode=0o700)
+    for relative, content in histories.items():
+        (run / relative).write_bytes(content)
+    members = [{**member,
+                "PlayerHistoryPath": str(run / member["PlayerHistoryPath"]),
+                "OpponentHistoryPath": str(run / member["OpponentHistoryPath"])}
+               for member in config["Members"]]
+    write_json(run / "party-history.json", {"Seed": config["Seed"], "Members": members})
+    files = ["party-history.json", *histories]
+    return {"party_history": True, "party_history_source_sha256": source_hash,
+            "party_history_files": {relative: hashlib.sha256((run / relative).read_bytes()).hexdigest()
+                                    for relative in files}}
 
 
 def owned_run(name):
@@ -190,12 +252,16 @@ def sandbox_command(game, run, xvfb, render_threads=4, shared_display=None, rend
 
 
 def launch(args):
+    party_history_path = getattr(args, "party_history", None)
+    if party_history_path is not None and (
+            not args.manual or not args.shared_visible or args.scenario not in MANUAL_PARTIES[:4]):
+        raise ValueError("--party-history requires --manual --shared-visible and --party-1/2/3/4.")
     if args.scenario in ("enchantment-art", "stance-tooltips", "stance-vfx", "watcher-audio", "watcher-background") and args.shared_visible:
         raise ValueError(f"--{args.scenario} requires a private display; omit --shared-visible.")
-    if args.manual and (not args.shared_visible or args.scenario not in MANUAL_PARTIES):
-        raise ValueError("--manual requires --shared-visible and --party-1/2/3/4 or --downfall-party.")
-    if args.scenario == "downfall-party" and not args.manual:
-        raise ValueError("--downfall-party requires --manual and --shared-visible.")
+    if args.manual and (not args.shared_visible or args.scenario not in MANUAL_PARTIES + DOWNFALL_INSPECTIONS):
+        raise ValueError("--manual requires --shared-visible and --party-1/2/3/4, --downfall-party or --downfall-matchup.")
+    if args.scenario in DOWNFALL_INSPECTIONS and not args.manual:
+        raise ValueError(f"--{args.scenario} requires --manual and --shared-visible.")
     if args.scenario == "party-1" and not args.manual:
         raise ValueError("--party-1 requires --manual.")
     if args.layout_only and (args.manual or args.scenario not in ("party-2", "party-3", "party-4")):
@@ -211,8 +277,9 @@ def launch(args):
         tool("pipewire")
         tool("wireplumber")
         tool("pactl")
+    party_history = load_party_history(party_history_path, int(args.scenario[-1])) if party_history_path is not None else None
     game = required_file(Path(args.game) / "SlayTheSpire2").parent
-    requires_snapshot = args.scenario not in DOWNFALL_SCENARIOS + ("downfall-party", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "watcher-audio", "watcher-background", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx")
+    requires_snapshot = args.scenario not in DOWNFALL_SCENARIOS + DOWNFALL_INSPECTIONS + ("ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "watcher-audio", "watcher-background", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx", "encounters")
     if requires_snapshot and not os.environ.get("ARCHITECT_SNAPSHOT_INPUT"):
         raise ValueError("Set ARCHITECT_SNAPSHOT_INPUT to the captured snapshot to copy (never modified).")
     snapshot = required_file(os.environ["ARCHITECT_SNAPSHOT_INPUT"]) if (
@@ -241,7 +308,7 @@ def launch(args):
     required_file("/usr/share/glvnd/egl_vendor.d/50_mesa.json")
     mods = Path(os.environ.get("ARCHITECT_MODS_INPUT", ROOT / "artifacts/mods")).resolve()
     required_file(mods / "TheArchitect/TheArchitect.dll")
-    if args.scenario in DOWNFALL_SCENARIOS + ("downfall-party",):
+    if args.scenario in DOWNFALL_SCENARIOS + DOWNFALL_INSPECTIONS:
         for suffix in ("dll", "json", "pck"):
             required_file(mods / f"Downfall/Downfall.{suffix}")
     RUNS.mkdir(parents=True, exist_ok=True)
@@ -293,6 +360,8 @@ def launch(args):
         if run_save is not None:
             shutil.copyfile(run_save, run / "run-input.json")
             metadata["run_save_sha256"] = hashlib.sha256((run / "run-input.json").read_bytes()).hexdigest()
+        if party_history is not None:
+            metadata.update(copy_party_history(run, party_history))
         metadata.update(mods=hashes(run / "mods"),
                         snapshot_sha256=hashlib.sha256((run / "snapshot-input.json").read_bytes()).hexdigest()
                         if snapshot is not None else None,
@@ -479,6 +548,8 @@ def serve(args):
             command.append("--architect-shared-visible")
         if metadata.get("manual"):
             command.append("--architect-native-party-manual")
+        if metadata.get("party_history"):
+            command += ["--architect-native-party-history", str(run / "party-history.json")]
         if metadata.get("layout_only"):
             command.append("--architect-native-party-layout")
         if metadata.get("downfall_keywords"):
@@ -593,7 +664,9 @@ def main():
     run.add_argument("--shared-visible", action="store_true",
                      help="Opt in to GPU windows on the shared desktop; no external input automation.")
     run.add_argument("--manual", action="store_true",
-                     help="Leave a shared-visible --party-1/2/3/4 or --downfall-party fight open with GUI input enabled.")
+                     help="Leave a shared-visible --party-1/2/3/4, --downfall-party or --downfall-matchup fight open with GUI input enabled.")
+    run.add_argument("--party-history", metavar="PATH",
+                     help="Copy single-player victory loadouts from this JSON config for --manual --shared-visible --party-1/2/3/4.")
     run.add_argument("--layout-only", action="store_true",
                      help="Check a --party-2/3/4 inspection layout and card hover, then exit without playing turns.")
     run.add_argument("--downfall-keywords", action="store_true",
@@ -608,7 +681,7 @@ def main():
     cache.add_argument("--cache-from", help="Copy shader caches from this completed run ID.")
     cache.add_argument("--cold", action="store_true", help="Do not seed shader caches from a completed run.")
     scenarios = run.add_mutually_exclusive_group()
-    for scenario in DOWNFALL_SCENARIOS + ("downfall-party", "loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "watcher-audio", "watcher-background", "previews", "media", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx"):
+    for scenario in DOWNFALL_SCENARIOS + DOWNFALL_INSPECTIONS + ("loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "watcher-audio", "watcher-background", "previews", "media", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx", "encounters"):
         scenarios.add_argument("--" + scenario, dest="scenario", action="store_const", const=scenario)
     run.set_defaults(scenario="default")
     for action in ("status", "capture", "stop", "pointer", "click", "key", "_serve"):

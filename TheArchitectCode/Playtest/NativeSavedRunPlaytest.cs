@@ -103,15 +103,16 @@ internal static class NativeSavedRunPlaytest
             await CreatureCmd.Damage(context, actor.Body, actor.Body.CurrentHp,
                 ValueProp.Unblockable | ValueProp.Unpowered, player.Creature);
         }
-        if (!actor.Cleaned || combat.Enemies.Count(creature => creature.Monster is ArchitectBoss) != 1 ||
+        if (!actor.Cleaned || combat.Enemies.Any(creature => creature.Monster is ArchitectBoss) ||
             (GodotObject.IsInstanceValid(counter) && counter.IsInsideTree()))
-            throw new InvalidOperationException("Lethal handoff must detach the native energy counter and create one Architect.");
+            throw new InvalidOperationException("Elite completion must detach the native energy counter without spawning the Architect.");
         if (GodotObject.IsInstanceValid(telegraph))
         {
             actor.Show(telegraph);
             if (telegraph.Visible || telegraph.FindChild("Energy", true, false).GetChildren().OfType<NEnergyCounter>().Any())
                 throw new InvalidOperationException("A stopped hand preview must not recreate its native energy counter.");
         }
+        await ArchitectPlaytest.EnterBossAfterElite(player.RunState);
         actor.State.Energy++;
         await PowerCmd.Apply<StrengthPower>(context, player.Creature, 1, player.Creature, null);
         await game.AwaitProcessFrame();
