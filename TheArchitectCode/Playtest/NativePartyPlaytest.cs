@@ -53,6 +53,7 @@ internal static class NativePartyPlaytest
         {
             foreach (var count in Enumerable.Range(1, 4))
                 await Exercise(game, count, 0, false, false, eliteDefeatOnly: true);
+            await Exercise(game, 1, 0, false, false, encountersOnly: true);
             await Exercise(game, 2, 0, false, false, encountersOnly: true);
             MainFile.Logger.Info("ARCHITECT ENCOUNTERS PASSED: solo/party Elite defeats preserve snapshots and show normal game over; Elite map node, native rewards, map return, fresh boss combat.");
             game.GetTree().Quit();
@@ -211,8 +212,14 @@ internal static class NativePartyPlaytest
         }
         if (encountersOnly)
         {
-            ArchitectMusicPlaytest.AssertEliteMusic();
-            await CreatureCmd.Kill(enemies, true);
+            ArchitectMusicPlaytest.AssertEliteMusic(checkDecoder: true);
+            await CreatureCmd.Kill(enemies[0], true);
+            await CombatManager.Instance.CheckWinCondition();
+            if (enemies.Length > 1)
+            {
+                ArchitectMusicPlaytest.AssertEliteMusic();
+                await CreatureCmd.Kill(enemies.Skip(1).ToArray(), true);
+            }
             await ArchitectPlaytest.EnterBossAfterElite(run);
             var music = ArchitectMusicPlaytest.AssertPlaying(checkDecoder: true);
             await NativeDemoPlaytest.Capture("encounters-boss");
@@ -573,6 +580,7 @@ internal static class NativePartyPlaytest
 
     private static async Task ExerciseEliteDefeat(RunState run)
     {
+        var music = ArchitectMusicPlaytest.AssertEliteMusic();
         var state = ArchitectRun.Get(run);
         Require(CorruptedPlayerStore.Commit($"elite-defeat-prior-{run.Players.Count}", "ArchitectWin",
             CorruptedPlayerSnapshot.Capture(run.Players[0])) != null, "seed the previous solo opponent");
@@ -590,12 +598,14 @@ internal static class NativePartyPlaytest
             Require(!run.IsGameOver && state.Outcome == null && !ArchitectEnding.IsActive(run) &&
                 NOverlayStack.Instance?.Peek() is not NGameOverScreen,
                 "one dead party member does not end the Elite fight or capture decks");
+            ArchitectMusicPlaytest.AssertEliteMusic();
         }
         await CreatureCmd.Kill(run.Players.Where(player => !player.Creature.IsDead)
             .Select(player => player.Creature).ToArray(), true);
         await CombatManager.Instance.CheckWinCondition();
         await ArchitectPlaytest.WaitFor(() => NOverlayStack.Instance?.Peek() is NGameOverScreen screen &&
             screen.GetNode<NGameOverContinueButton>("%ContinueButton").IsEnabled);
+        ArchitectMusicPlaytest.AssertStopped(music);
         Require(run.IsGameOver && run.CurrentRoom?.IsVictoryRoom == false &&
             state.Outcome == null && state.SnapshotRevision == null && !ArchitectEnding.IsActive(run),
             "Elite defeat uses native game over without an Architect outcome or corruption ending");

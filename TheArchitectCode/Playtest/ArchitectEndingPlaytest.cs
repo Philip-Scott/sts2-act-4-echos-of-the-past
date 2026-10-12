@@ -9,6 +9,7 @@ using MegaCrit.Sts2.Core.Models.Acts;
 using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Multiplayer;
 using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.Audio;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
@@ -37,6 +38,7 @@ internal static class ArchitectEndingPlaytest
         game.GetWindow().Title = "The Architect - ISOLATED ENDING REVIEW";
         foreach (var loss in new[] { false, true })
         {
+            NAudioManager.Instance!.StopMusic();
             var run = await game.StartNewSingleplayerRun(ModelDb.Character<Ironclad>(), true,
                 [ModelDb.Act<Overgrowth>(), ModelDb.Act<Hive>(), ModelDb.Act<Glory>()],
                 [], "ARCHITECT-ENDING-" + loss, GameMode.Standard);
@@ -45,6 +47,7 @@ internal static class ArchitectEndingPlaytest
         }
         foreach (var loss in new[] { false, true })
         {
+            NAudioManager.Instance!.StopMusic();
             CharacterModel[] characters = [ModelDb.Character<Silent>(), ModelDb.Character<Defect>(),
                 ModelDb.Character<Necrobinder>(), ModelDb.Character<Regent>()];
             var players = characters.Select((character, index) =>
@@ -82,6 +85,7 @@ internal static class ArchitectEndingPlaytest
             !ArchitectEnding.IsActive(run), "Act 3 enters Act 4 without the ending or terminal outcome");
         await manager.EnterMapCoord(run.Map.BossMapPoint.coord);
         await WaitFor(() => CombatManager.Instance.IsInProgress && !CombatManager.Instance.IsStarting);
+        var music = ArchitectMusicPlaytest.AssertPlaying();
         if (!loss && run.Players.Count > 1)
             await CreatureCmd.Kill(run.Players.Last().Creature, true);
         var revision = manager.ShouldSave ? CorruptedPlayerStore.Load()?.Revision ?? 0 : 0;
@@ -95,6 +99,7 @@ internal static class ArchitectEndingPlaytest
                 var combat = run.Players[0].Creature.CombatState!;
                 await CreatureCmd.Kill(combat.Enemies.ToArray(), true);
                 await CombatManager.Instance.CheckWinCondition();
+                ArchitectMusicPlaytest.AssertStopped(music);
                 if (HoldVictoryForReload)
                 {
                     await WaitFor(() => run.CurrentRoom is CombatRoom { IsPreFinished: true });
@@ -104,6 +109,7 @@ internal static class ArchitectEndingPlaytest
                         "prefinished victory is reloadable before finalization");
                     var game = NGame.Instance!;
                     await game.ReturnToMainMenu();
+                    NAudioManager.Instance!.StopMusic();
                     HoldVictoryForReload = false;
                     run = RunState.FromSerializable(saved);
                     await manager.SetUpSavedSingleplayer(run, saved);
@@ -126,8 +132,11 @@ internal static class ArchitectEndingPlaytest
                 saved.TerminalRunId == ArchitectRun.Get(run).Id, "one terminal snapshot, even after the animation");
         }
         var screen = NOverlayStack.Instance!.Peek();
+        var endingMusic = ArchitectMusicPlaytest.AssertEndingMusic(allowFinished: true);
         await manager.WinRun();
         Require(ReferenceEquals(screen, NOverlayStack.Instance.Peek()), "duplicate completion does not open another result");
+        Require(ArchitectMusicPlaytest.AssertEndingMusic(allowFinished: true) == endingMusic,
+            "duplicate completion does not restart the run-termination cue");
         MainFile.Logger.Info("ARCHITECT ENDING CASE PASSED: " + label);
     }
 
@@ -137,6 +146,8 @@ internal static class ArchitectEndingPlaytest
         await WaitFor(() => NCombatRoom.Instance is { Mode: CombatRoomMode.VisualOnly } room &&
             room.CreatureNodes.Count(node => node.Entity.IsPlayer) == run.Players.Count);
         await Task.Delay(2000);
+        ArchitectMusicPlaytest.AssertEndingMusicNotStarted();
+        GodotObject? endingMusic = null;
         Require(NOverlayStack.Instance?.Peek() is not NGameOverScreen, "result waits for the ending");
         var hp = run.Players.Select(player => player.Creature.CurrentHp).ToArray();
         var snapshots = run.Players.Select(CorruptedPlayerSnapshot.Capture).ToArray();
@@ -153,6 +164,8 @@ internal static class ArchitectEndingPlaytest
         }
         await binding;
         await WaitFor(() => NOverlayStack.Instance?.Peek() is NGameOverScreen);
+        Require(ArchitectMusicPlaytest.AssertEndingMusic(allowFinished: true) == endingMusic,
+            "the run-termination cue continues or ends naturally without restarting at the result");
         Require(run.Players.Select(player => player.Creature.CurrentHp).SequenceEqual(hp) &&
             run.Players.Select(player => CorruptedPlayerSnapshot.Capture(player).ContentHash)
                 .SequenceEqual(snapshots.Select(snapshot => snapshot.ContentHash)),
@@ -165,6 +178,7 @@ internal static class ArchitectEndingPlaytest
                 node.Visuals.GetNodeOrNull<CorruptedPlayerCorruption>("BoundEcho") != null));
             await Task.Delay(900);
             await NGame.Instance!.AwaitProcessFrame();
+            endingMusic = ArchitectMusicPlaytest.AssertEndingMusic();
             if (NativeDemoSafety.Enabled)
                 await NativeDemoPlaytest.Capture("ending-" + label + "-binding");
             Require(NOverlayStack.Instance?.Peek() is not NGameOverScreen, "binding is visible before the result");

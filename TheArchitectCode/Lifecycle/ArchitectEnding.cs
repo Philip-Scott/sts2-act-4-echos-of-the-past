@@ -11,6 +11,7 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.Audio;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Nodes.Screens.Capstones;
@@ -121,6 +122,7 @@ internal static class ArchitectEnding
                 throw new InvalidOperationException("Architect ending has no combat presentation.");
             if (room.Mode != CombatRoomMode.VisualOnly)
                 throw new InvalidOperationException("Architect binding requires the ending event's visual-only room.");
+            ArchitectMusic.PlayEnding();
             foreach (var player in run.Players)
             {
                 var node = room.GetCreatureNode(player.Creature) ??
@@ -150,6 +152,14 @@ internal static class ArchitectEnding
 internal static class DeferArchitectResultPatch
 {
     private static bool Prefix(SerializableRun serializableRun) => !ArchitectEnding.DeferResult(serializableRun);
+}
+
+[HarmonyPatch(typeof(NAudioManager), nameof(NAudioManager.PlayMusic))]
+internal static class DeferArchitectDeathMusicPatch
+{
+    private static bool Prefix(string music) =>
+        music != ArchitectMusic.EndingTrackPath || RunManager.Instance.IsAbandoned ||
+        !ArchitectLifecycle.IsBossEncounter(RunManager.Instance.DebugOnlyGetState());
 }
 
 [HarmonyPatch]

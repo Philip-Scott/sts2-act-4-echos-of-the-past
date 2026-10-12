@@ -169,6 +169,7 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
             throw new InvalidOperationException("Expected the completed Corrupted Player Elite.");
         await CombatManager.Instance.CheckWinCondition();
         await WaitFor(() => elite.IsPreFinished && !CombatManager.Instance.IsInProgress);
+        var eliteMusic = ArchitectMusicPlaytest.AssertEliteOutro();
         if (elite.Encounter is not CorruptedPlayerEncounter || !elite.Encounter.ShouldGiveRewards ||
             ArchitectRun.Get(run).Outcome != null || run.IsGameOver ||
             elite.CombatState.Enemies.Any(enemy => enemy.Monster is ArchitectBoss))
@@ -181,12 +182,17 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
             throw new InvalidOperationException("The Corrupted Player Elite must offer native relic, card, and gold rewards.");
         await RunManager.Instance.ProceedFromTerminalRewardsScreen();
         await WaitFor(() => NMapScreen.Instance?.IsOpen == true);
+        if (ArchitectMusicPlaytest.AssertEliteOutro() != eliteMusic)
+            throw new InvalidOperationException("The Elite ending restarted on the map.");
+        if (run.Players.Count == 1)
+            await ArchitectMusicPlaytest.AssertEliteOutroFinishes(eliteMusic);
         await RunManager.Instance.EnterMapCoord(run.Map.BossMapPoint.coord);
         await WaitFor(() => run.Players.All(player => player.PlayerCombatState is
             { TurnNumber: 1, Phase: PlayerTurnPhase.Play }) && !CombatManager.Instance.IsStarting);
         if (ReferenceEquals(elite.CombatState, run.Players[0].Creature.CombatState) ||
             run.Players[0].Creature.CombatState!.Enemies.Any(enemy => enemy.Monster is CorruptedPlayer))
             throw new InvalidOperationException("The Architect must start a fresh boss-only combat.");
+        ArchitectMusicPlaytest.AssertStopped(eliteMusic);
     }
 
     private static void AssertBackdrop(Control parent, string texturePath)

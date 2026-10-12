@@ -26,10 +26,25 @@ the party to the map. The Architect starts a separate boss combat.
 If the player, or the entire co-op party, dies in the Elite fight, the normal
 game-over screen opens. No corruption ending plays and no player decks are
 captured; the previous saved opponents and their backups remain unchanged.
-**The Hollow Pulse** plays only during the Architect boss fight as a 64-second
-loop. The Corrupted Player Elite uses Act 3's normal battle music. The theme follows
-the game's music volume setting and stops when the encounter ends or is exited.
-See the [music credits](../TheArchitect/audio/CREDITS.txt) for source-material and instrument attribution.
+**The Heart OST but it's Metal** by RYS plays during both fights.
+Each new Architect fight starts at 0:00, then loops from 2:54.75 back to 0:18.01 without
+replaying the intro. The packaged OGG ends at 2:54.75 and Godot loops inside the
+decoder, so no timer or separate intro track is needed.
+The Corrupted Player Elite starts at 3:02.44 and loops from 3:20.71 back to 3:04.94.
+After every corrupted enemy dies, looping turns off without seeking or restarting.
+The song continues from its current position through the ending once, including
+on the rewards screen and map. Normal act music resumes when the song ends.
+Starting the Architect fight replaces this ending with the boss intro.
+After the Architect's final strike in the ending scene, the game's normal
+run-termination music plays. It does not play an Act 3 boss victory outro or
+restart act background music. Wins, losses, and reloaded victories use the same
+cue, once, while keeping the recorded combat outcome and player health unchanged.
+On a boss loss, the normal death cue is deferred until this final strike.
+Both tracks follow the game's music volume setting. Defeat or leaving an unfinished
+fight stops its music; returning to the main menu stops any remaining ending.
+The Elite uses a PCM WAV excerpt with an interior sample loop, retaining the full
+ending so disabling the loop does not require a timer or a track swap.
+See the [music credits](../TheArchitect/audio/CREDITS.txt) for attribution.
 Each multiplayer enemy is named **Corrupted &lt;Player Name&gt;** and directs
 explicitly targeted cards at its matching human, falling back to another living
 player if that counterpart cannot be hit. AOE attacks still hit the whole party,
@@ -53,7 +68,7 @@ removes the Elite from that run's saved map.
 
 The isolated `scripts/native-demo.py run "$STS2_PATH" --encounters` scenario checks
 the five-node map, separation of the Elite from the boss artwork and hitbox,
-native Elite rewards, boss-only theme music, return to the map, and a fresh boss-only
+native Elite rewards, both music loops, the Elite's non-repeating ending, return to the map, and a fresh boss-only
 combat. It needs no saved-opponent input. Map tests also cover First Visits,
 save/reload, legacy-map upgrades, and removing the Elite after an opponent reset.
 The scenario also checks solo and simulated two-to-four-player Elite defeats,

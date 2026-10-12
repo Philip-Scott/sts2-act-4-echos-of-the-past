@@ -1,27 +1,33 @@
-THE HOLLOW PULSE
+THE HEART OST BUT IT'S METAL
 
-64-second, 6/8 gothic/doom arrangement in B minor.
-Plays throughout the Architect boss encounter, including the Corrupted Player
-phase, using a whole-file, gapless Ogg Vorbis decoder loop.
+Architect boss and Corrupted Player soundtrack, supplied as heart-metal-cover.m4a.
+Attribution from the supplied recording's metadata:
+Arranged, recorded, performed and mixed by RYS.
+Original composer: Clark Aboud. Game: Slay the Spire by MegaCrit.
+https://www.youtube.com/watch?v=ZziTuFU49EQ
+https://rys-music.com
 
-This arrangement develops short melodic contours traced from the user-supplied
-"SLAY THE SPIRE - THE HEART - SYMPHONIC METAL COVER" recording, whose artist
-metadata identifies JakeWoodwardMusic:
-https://www.youtube.com/watch?v=ESQN5YV1--E
-The source recording itself is not sampled or included.
-Source-music rights remain with their respective creators; inclusion here does
-not establish permission to distribute the underlying composition publicly.
+Music and recording rights remain with their respective creators. Supplying
+this recording does not establish permission for public redistribution.
 
-Virtual instruments: GeneralUser GS v2.0.3 by S. Christian Collins.
-https://www.schristiancollins.com/generaluser
-See GeneralUser-GS-LICENSE.txt for the complete license and sample-provenance
-disclosure. The instrument bank is not bundled.
+Packaged file: heart_metal_cover.ogg, stereo Ogg Vorbis, 44,100 Hz.
+Each new Architect fight starts at sample 0.
+Loop start: sample 794,241, 0:18.01.
+Loop end: sample 7,706,475 (exclusive), 2:54.75.
+The file ends at the loop end; Godot's decoder repeats from the loop start.
+The source file is unchanged. No fades or silence were added.
 
-Rendered with TinySoundFont (MIT), NumPy, and FFmpeg. The arrangement uses
-cello, piano, tubular bells, distorted guitars, bass, strings, and percussion.
-It is a sample-based render, not a live band recording.
+Re-encode from the supplied source with FFmpeg:
+ffmpeg -i heart-metal-cover.m4a -map 0:a:0 -af "atrim=end_sample=7706475,asetpts=PTS-STARTPTS" -c:a libvorbis -q:a 6 -map_metadata -1 -metadata title="The Heart OST but it's Metal" -metadata artist=RYS heart_metal_cover.ogg
 
-Format: stereo Ogg Vorbis, 44,100 Hz.
-Loop start: sample 0. Loop end: sample 2,822,400 (exclusive), 64 seconds.
-Instrument releases and ambience were wrapped during rendering, not faded out
-or appended as silence. Keep the entire file when replacing/re-encoding it.
+Corrupted Player excerpt: heart_metal_cover_corrupted.wav.
+Stereo 16-bit PCM, 44,100 Hz, starting at source time 3:02.44.
+The full source ending is retained, for a duration of about 37.755 seconds.
+Relative loop start: sample 110,250, source time 3:04.94.
+Relative loop end: sample 805,707 (exclusive), source time 3:20.71.
+Godot loops those sample boundaries until victory, then disables looping and
+continues from the current position to EOF. The ending never repeats.
+WAV is used because its decoder supports disabling an interior loop without
+discarding the audio after the loop end.
+
+ffmpeg -i heart-metal-cover.m4a -map 0:a:0 -af "atrim=start=182.44,asetpts=PTS-STARTPTS" -c:a pcm_s16le -map_metadata -1 heart_metal_cover_corrupted.wav

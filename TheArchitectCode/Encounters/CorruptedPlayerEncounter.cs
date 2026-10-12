@@ -1,6 +1,5 @@
 using BaseLib.Abstracts;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Nodes.Audio;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using HarmonyLib;
@@ -22,6 +21,7 @@ public sealed class CorruptedPlayerEncounter : CustomEncounterModel
 
     public override bool IsValidForAct(ActModel act) => act is ArchitectAct;
     public override bool HasScene => false;
+    public override string CustomBgm => ArchitectMusic.CorruptedTrackPath;
     public override IReadOnlyList<string> Slots => [];
     public override IEnumerable<MonsterModel> AllPossibleMonsters =>
         [ArchitectModels.CorruptedPlayer];
@@ -74,16 +74,5 @@ internal static class PrepareCorruptedPlayerEncounterPatch
     {
         if (__instance is CorruptedPlayerEncounter encounter)
             encounter.Prepare(runState);
-    }
-
-    [HarmonyPatch(typeof(NRunMusicController), "GetTrack")]
-    internal static class CorruptedPlayerBattleMusicPatch
-    {
-        private static void Prefix(ref RoomType roomType)
-        {
-            if (roomType == RoomType.Elite &&
-                RunManager.Instance.DebugOnlyGetState()?.CurrentRoom is CombatRoom { Encounter: CorruptedPlayerEncounter })
-                roomType = RoomType.Monster;
-        }
     }
 }
