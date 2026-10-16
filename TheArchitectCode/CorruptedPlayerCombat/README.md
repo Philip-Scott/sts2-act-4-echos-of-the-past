@@ -138,6 +138,15 @@ inside `NCombatUi`, below run-level and game-level screens. Native
 `ActiveScreenContext` changes dismiss previews and disable mouse/controller
 inspection on every party member while pause, deck, pile or other screens are
 active; closing the screen restores combat inspection.
+Hand changes animate like the player's hand (`CorruptedPlayerHandAnimator`).
+Drawn cards emerge small and tilted from the HUD draw pile. They arrive one at
+a time at the native draw stagger and ease into place with the native hand's
+exponential motion. Kept cards slide to their new slots instead of jumping.
+Discards and draw-pile returns use native `NCardFlyVfx` to the HUD pile icons.
+Exhausted cards burn in place with the native exhaust flames, scaled to the
+HUD: the full-card smoke burst is hidden, so the card fades to gray and shrinks.
+Card nodes survive hand rebuilds, so in-flight cards are not restarted.
+Instant fast mode skips all of these animations.
 Supported hand cards and their hover previews use native combat values, including
 the Corrupted Player's Strength/Weak and its current target's Vulnerable.
 All-enemy and random-enemy attacks use native multi-target preview rules.

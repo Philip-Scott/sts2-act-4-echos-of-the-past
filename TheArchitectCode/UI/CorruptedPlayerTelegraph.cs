@@ -34,6 +34,7 @@ public sealed record CorruptedPlayerTelegraphCard(
 public partial class CorruptedPlayerTelegraph : VBoxContainer
 {
     private static readonly Vector2 CardFaceSize = new(120, 160);
+    private const float MiniatureScale = 0.36f;
     private NCreature _anchor = null!;
     private Creature _creature = null!;
     private ScrollContainer _scroll = null!;
@@ -48,6 +49,9 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     private MegaLabel _discard = null!;
     private MegaLabel _exhaust = null!;
     private PlayerCombatState? _nativeState;
+    private CorruptedPlayerHandAnimator? _hand;
+    private readonly Dictionary<PileType, Control> _pileIcons = [];
+    private bool _refreshQueued;
     private Action _refreshPlan = null!;
     private readonly List<CardCell> _cells = [];
     private CardCell? _inspected;
@@ -125,9 +129,9 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             Visible = false
         };
         _resources.AddChild(_starSlot);
-        _draw = AddPileButton("Draw", () => _nativeState!.DrawPile);
-        _discard = AddPileButton("Discard", () => _nativeState!.DiscardPile);
-        _exhaust = AddPileButton("Exhaust", () => _nativeState!.ExhaustPile);
+        _draw = AddPileButton(PileType.Draw, () => _nativeState!.DrawPile);
+        _discard = AddPileButton(PileType.Discard, () => _nativeState!.DiscardPile);
+        _exhaust = AddPileButton(PileType.Exhaust, () => _nativeState!.ExhaustPile);
         _scroll = new ScrollContainer
         {
             Name = "HandScroll",
@@ -191,6 +195,10 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             return;
         }
         ClearPreview();
+        // Cards still in hand keep their node and glide to their new slot instead of snapping.
+        foreach (var cell in _cells)
+            if (cell is { Miniature: { } node, Entry.Card: { } model })
+                _hand?.Release(model, node);
         _cells.Clear();
         foreach (var child in _row.GetChildren())
         {
@@ -201,11 +209,13 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             _row.AddChild(new Label { Text = "No cards", CustomMinimumSize = CardFaceSize });
         foreach (var card in cards)
             AddCard(card);
+        _hand?.DropUnclaimed();
         ApplyHandSpacing();
     }
 
-    private MegaLabel AddPileButton(string name, Func<CardPile> getPile)
+    private MegaLabel AddPileButton(PileType pile, Func<CardPile> getPile)
     {
+        var name = pile.ToString();
         var button = new Button
         {
             Name = name + "Pile",
@@ -245,6 +255,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         }
         IgnoreMouse(visuals);
         button.AddChild(visuals);
+        _pileIcons[pile] = visuals.GetNode<Control>("Icon");
         var count = visuals.GetNode<MegaLabel>("CountContainer/Count");
         void UpdateHighlight()
         {
@@ -276,6 +287,12 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             _layoutInputs = null;
         _nativeDisplay = true;
         _nativeState = state;
+        if (_hand?.Uses(player) != true)
+        {
+            _hand?.Dispose();
+            _hand = new CorruptedPlayerHandAnimator(player, CardFaceSize / 2f, MiniatureScale,
+                PileIconCenter, TakeMiniature, QueueRefresh);
+        }
         _heading.Hide();
         _resources.Show();
         if (_energy == null)
@@ -315,6 +332,37 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         _pileCounts = counts;
     }
 
+    private Vector2? PileIconCenter(PileType pile) =>
+        _pileIcons.TryGetValue(pile, out var icon) && icon.IsVisibleInTree()
+            ? icon.GetGlobalTransform() * (icon.Size / 2f) : null;
+
+    private NCard? TakeMiniature(CardModel card)
+    {
+        var cell = _cells.FirstOrDefault(cell => cell.Entry.Card == card && cell.Miniature != null);
+        if (cell == null)
+            return null;
+        if (_inspected == cell)
+            ClearPreview();
+        var node = cell.Miniature;
+        cell.Miniature = null;
+        return node;
+    }
+
+    // Native draws happen inside a single command; refresh once per frame so new cards get slots.
+    private void QueueRefresh()
+    {
+        if (_refreshQueued || _stopped)
+            return;
+        _refreshQueued = true;
+        Callable.From(() =>
+        {
+            _refreshQueued = false;
+            if (GodotObject.IsInstanceValid(this) && !_stopped && !_creature.IsDead &&
+                !CombatManager.Instance.IsOverOrEnding)
+                _refreshPlan();
+        }).CallDeferred();
+    }
+
     private void UpdateStarVisibility()
     {
         _starSlot.Visible = _stars?.Visible == true;
@@ -350,6 +398,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         UnsubscribeState();
         UnsubscribeStars();
         ReleaseLayout();
+        DisposeHand();
         SetProcess(false);
         Hide();
         ClearPreview();
@@ -388,19 +437,27 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         _cells.Add(binding);
         if (entry.Card is { } card)
         {
-            var miniature = NCard.Create(card);
+            var reused = _hand?.Claim(card, face);
+            var miniature = reused ?? NCard.Create(card);
             if (miniature != null)
             {
-                miniature.SetForceUnpoweredPreview(true);
-                face.AddChild(miniature);
+                if (reused == null)
+                {
+                    miniature.SetForceUnpoweredPreview(true);
+                    face.AddChild(miniature);
+                    miniature.Scale = Vector2.One * MiniatureScale;
+                    miniature.Position = CardFaceSize / 2f;
+                    IgnoreMouse(miniature);
+                }
                 binding.Miniature = miniature;
-                miniature.Scale = Vector2.One * 0.36f;
-                miniature.Position = CardFaceSize / 2f;
-                IgnoreMouse(miniature);
                 if (!entry.PlayOrder.HasValue && !entry.NativeCurrentState)
                     miniature.Modulate = new Color(0.42f, 0.42f, 0.42f, 0.65f);
                 else if (entry.Unsupported)
                     miniature.Modulate = new Color(1f, 0.72f, 0.95f);
+                else
+                    miniature.Modulate = Colors.White;
+                if (reused == null)
+                    _hand?.Arrive(card, miniature, face);
             }
             face.MouseEntered += () => Inspect(binding);
             face.FocusEntered += () => Inspect(binding);
@@ -578,9 +635,11 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         {
             Hide();
             ClearPreview();
+            DisposeHand();
             return;
         }
         UpdateLayout();
+        _hand?.Process(delta, IsVisibleInTree());
         if (!IsVisibleInTree() || !CanInspect || NHoverTipSet.shouldBlockHoverTips)
             ClearPreview();
         else
@@ -649,6 +708,12 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         _partyLayout = null;
     }
 
+    private void DisposeHand()
+    {
+        _hand?.Dispose();
+        _hand = null;
+    }
+
     private void UnsubscribeState()
     {
         if (_stateTracker == null)
@@ -663,6 +728,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         UnsubscribeState();
         UnsubscribeStars();
         ReleaseLayout();
+        DisposeHand();
         ClearPreview();
     }
 }

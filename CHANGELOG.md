@@ -9,6 +9,9 @@
   at the start of each turn.
 - Corrupted Player hand previews overlap cards so up to 10 fit without
   scrolling; the scroll arrows are removed.
+- Corrupted Player hands now animate like the player's hand: cards are drawn
+  from their draw pile one at a time, kept cards slide into place, discards fly
+  to their discard pile and exhausted cards burn away.
 - The corrupted Regent renders slightly smaller so his hand preview clears the
   relic bar.
 - Custom power icons now load their own art instead of the missing-icon

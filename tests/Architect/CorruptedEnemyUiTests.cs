@@ -1,9 +1,50 @@
+using Godot;
+using MegaCrit.Sts2.Core.Settings;
 using TheArchitect.TheArchitectCode.UI;
 
 internal static class CorruptedEnemyUiTests
 {
     internal static void Run(Action<string, Action> test, Action<bool, string> check)
     {
+        test("corrupted hand: draws arrive one at a time like the native hand", () =>
+        {
+            var stagger = CorruptedHandMotion.DrawStagger(FastModeType.Normal);
+            check(stagger == 0.25 && CorruptedHandMotion.DrawStagger(FastModeType.Fast) == 0.1,
+                "Native draws await a 0.25s (Fast: 0.1s) pile tween per card.");
+            check(!CorruptedHandMotion.Animates(FastModeType.Instant) && CorruptedHandMotion.Animates(FastModeType.Normal),
+                "Instant mode places cards without animation.");
+            var next = 0.0;
+            var starts = Enumerable.Range(0, 5).Select(_ => CorruptedHandMotion.ScheduleArrival(1, ref next, stagger)).ToArray();
+            check(starts.SequenceEqual([1, 1.25, 1.5, 1.75, 2]), "A five-card draw in one frame is staggered.");
+            check(CorruptedHandMotion.ScheduleArrival(10, ref next, stagger) == 10, "A later draw starts immediately.");
+        });
+
+        test("corrupted hand: cards ease into their slot and snap when close", () =>
+        {
+            var position = new Vector2(0, 0);
+            var target = new Vector2(300, 100);
+            var previous = position.DistanceTo(target);
+            for (var frame = 0; frame < 120 && position != target; frame++)
+            {
+                position = CorruptedHandMotion.StepPosition(position, target, 1f / 60f);
+                var distance = position.DistanceTo(target);
+                check(distance < previous || distance == 0, "Each frame moves closer.");
+                previous = distance;
+            }
+            check(position == target, "The card settles exactly within two seconds.");
+            check(CorruptedHandMotion.StepPosition(position, target, 1f) == target, "Large frame steps never overshoot.");
+            var scale = Vector2.Zero;
+            for (var frame = 0; frame < 120 && scale != Vector2.One; frame++)
+                scale = CorruptedHandMotion.StepScale(scale, Vector2.One, 1f / 60f);
+            check(scale == Vector2.One, "Generated cards finish growing to full size.");
+        });
+
+        test("corrupted hand: discard arcs scale with the short HUD hop", () =>
+        {
+            check(CorruptedHandMotion.FlyArc(Vector2.Zero, new Vector2(10, 0), 0) == 60, "Short hops keep a visible arc.");
+            check(CorruptedHandMotion.FlyArc(Vector2.Zero, new Vector2(300, 400), 20) == 320, "The arc grows with distance.");
+        });
+
         test("corrupted hand: a full ten-card hand overlaps to fit the panel without scrolling", () =>
         {
             const float card = 120f, panel = 680f;
