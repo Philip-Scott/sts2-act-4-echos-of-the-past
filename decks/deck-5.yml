@@ -1,0 +1,136 @@
+schema: 1
+name: Regent victory
+character: CHARACTER.REGENT
+ascension: 6
+cards:
+- enchantment:
+    amount: 1
+    id: ENCHANTMENT.TEZCATARAS_EMBER
+  floor_added_to_deck: 1
+  id: CARD.STRIKE_REGENT
+- current_upgrade_level: 1
+  enchantment:
+    amount: 1
+    id: ENCHANTMENT.TEZCATARAS_EMBER
+  floor_added_to_deck: 1
+  id: CARD.STRIKE_REGENT
+- enchantment:
+    amount: 1
+    id: ENCHANTMENT.TEZCATARAS_EMBER
+  floor_added_to_deck: 1
+  id: CARD.STRIKE_REGENT
+- current_upgrade_level: 1
+  enchantment:
+    amount: 1
+    id: ENCHANTMENT.TEZCATARAS_EMBER
+  floor_added_to_deck: 1
+  id: CARD.STRIKE_REGENT
+- floor_added_to_deck: 1
+  id: CARD.DEFEND_REGENT
+- floor_added_to_deck: 1
+  id: CARD.DEFEND_REGENT
+- floor_added_to_deck: 1
+  id: CARD.DEFEND_REGENT
+- floor_added_to_deck: 1
+  id: CARD.DEFEND_REGENT
+- floor_added_to_deck: 1
+  id: CARD.FALLING_STAR
+- floor_added_to_deck: 1
+  id: CARD.VENERATE
+- floor_added_to_deck: 1
+  id: CARD.ASCENDERS_BANE
+- enchantment:
+    amount: 1
+    id: ENCHANTMENT.TEZCATARAS_EMBER
+  floor_added_to_deck: 1
+  id: CARD.STRIKE_REGENT
+- floor_added_to_deck: 1
+  id: CARD.DEFEND_REGENT
+- enchantment:
+    amount: 1
+    id: ENCHANTMENT.SOWN
+  floor_added_to_deck: 2
+  id: CARD.BEGONE
+- current_upgrade_level: 1
+  enchantment:
+    amount: 2
+    id: ENCHANTMENT.SHARP
+  floor_added_to_deck: 3
+  id: CARD.CELESTIAL_MIGHT
+- current_upgrade_level: 1
+  floor_added_to_deck: 5
+  id: CARD.ORBIT
+- floor_added_to_deck: 8
+  id: CARD.SHOCKWAVE
+- floor_added_to_deck: 12
+  id: CARD.GLOW
+- enchantment:
+    amount: 1
+    id: ENCHANTMENT.PERFECT_FIT
+  floor_added_to_deck: 15
+  id: CARD.CHARGE
+- current_upgrade_level: 1
+  floor_added_to_deck: 19
+  id: CARD.PALE_BLUE_DOT
+- floor_added_to_deck: 23
+  id: CARD.GUIDING_STAR
+- current_upgrade_level: 1
+  floor_added_to_deck: 29
+  id: CARD.GATHER_LIGHT
+- current_upgrade_level: 1
+  floor_added_to_deck: 30
+  id: CARD.BOLAS
+- current_upgrade_level: 1
+  floor_added_to_deck: 33
+  id: CARD.MONARCHS_GAZE
+- current_upgrade_level: 1
+  floor_added_to_deck: 38
+  id: CARD.HIDDEN_GEM
+relics:
+- floor_added_to_deck: 1
+  id: RELIC.DIVINE_RIGHT
+- floor_added_to_deck: 1
+  id: RELIC.LARGE_CAPSULE
+- floor_added_to_deck: 1
+  id: RELIC.WHETSTONE
+- floor_added_to_deck: 1
+  id: RELIC.GIRYA
+  props:
+    ints:
+    - name: TimesLifted
+      value: 3
+- floor_added_to_deck: 10
+  id: RELIC.ETERNAL_FEATHER
+- floor_added_to_deck: 15
+  id: RELIC.BRONZE_SCALES
+- floor_added_to_deck: 18
+  id: RELIC.NUTRITIOUS_SOUP
+- floor_added_to_deck: 20
+  id: RELIC.MEAL_TICKET
+- floor_added_to_deck: 21
+  id: RELIC.HAPPY_FLOWER
+  props:
+    ints:
+    - name: TurnsSeen
+      value: 1
+- floor_added_to_deck: 26
+  id: RELIC.JUZU_BRACELET
+- floor_added_to_deck: 29
+  id: RELIC.ORNAMENTAL_FAN
+- floor_added_to_deck: 34
+  id: RELIC.JEWELED_MASK
+- floor_added_to_deck: 41
+  id: RELIC.ANCHOR
+- floor_added_to_deck: 42
+  id: RELIC.LUNAR_PASTRY
+- floor_added_to_deck: 46
+  id: RELIC.FORGOTTEN_SOUL
+potions:
+- id: POTION.VULNERABLE_POTION
+  slot_index: 0
+current_hp: 40
+max_hp: 75
+gold: 74
+max_potion_slot_count: 2
+max_energy: 3
+base_orb_slot_count: 0

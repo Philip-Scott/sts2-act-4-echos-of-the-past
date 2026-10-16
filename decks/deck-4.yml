@@ -1,0 +1,126 @@
+schema: 1
+name: Defect victory
+character: CHARACTER.DEFECT
+ascension: 5
+cards:
+- floor_added_to_deck: 1
+  id: CARD.STRIKE_DEFECT
+- floor_added_to_deck: 1
+  id: CARD.STRIKE_DEFECT
+- enchantment:
+    amount: 10
+    id: ENCHANTMENT.GOOPY
+  floor_added_to_deck: 1
+  id: CARD.DEFEND_DEFECT
+- current_upgrade_level: 1
+  enchantment:
+    amount: 11
+    id: ENCHANTMENT.GOOPY
+  floor_added_to_deck: 1
+  id: CARD.DEFEND_DEFECT
+- enchantment:
+    amount: 10
+    id: ENCHANTMENT.GOOPY
+  floor_added_to_deck: 1
+  id: CARD.DEFEND_DEFECT
+- current_upgrade_level: 1
+  floor_added_to_deck: 1
+  id: CARD.ZAP
+- floor_added_to_deck: 1
+  id: CARD.DUALCAST
+- floor_added_to_deck: 1
+  id: CARD.ASCENDERS_BANE
+- floor_added_to_deck: 1
+  id: CARD.NEOWS_FURY
+- floor_added_to_deck: 2
+  id: CARD.CHILL
+- floor_added_to_deck: 4
+  id: CARD.BOOST_AWAY
+- current_upgrade_level: 1
+  floor_added_to_deck: 4
+  id: CARD.BULK_UP
+- current_upgrade_level: 1
+  floor_added_to_deck: 5
+  id: CARD.OVERCLOCK
+- current_upgrade_level: 1
+  floor_added_to_deck: 9
+  id: CARD.FLAK_CANNON
+- current_upgrade_level: 1
+  floor_added_to_deck: 14
+  id: CARD.ITERATION
+- current_upgrade_level: 1
+  floor_added_to_deck: 15
+  id: CARD.CLAW
+- current_upgrade_level: 1
+  floor_added_to_deck: 17
+  id: CARD.BUFFER
+- current_upgrade_level: 1
+  floor_added_to_deck: 19
+  id: CARD.BOOST_AWAY
+- current_upgrade_level: 1
+  enchantment:
+    amount: 2
+    id: ENCHANTMENT.SWIFT
+  floor_added_to_deck: 19
+  id: CARD.SMOKESTACK
+- floor_added_to_deck: 20
+  id: CARD.CLAW
+- current_upgrade_level: 1
+  floor_added_to_deck: 30
+  id: CARD.AUTOMATION
+- current_upgrade_level: 1
+  floor_added_to_deck: 31
+  id: CARD.SCRAPE
+- current_upgrade_level: 1
+  floor_added_to_deck: 42
+  id: CARD.OVERCLOCK
+- floor_added_to_deck: 46
+  id: CARD.TURBO
+relics:
+- floor_added_to_deck: 1
+  id: RELIC.CRACKED_CORE
+- floor_added_to_deck: 1
+  id: RELIC.NEOWS_TORMENT
+- floor_added_to_deck: 9
+  id: RELIC.STRIKE_DUMMY
+- floor_added_to_deck: 10
+  id: RELIC.LANTERN
+- floor_added_to_deck: 14
+  id: RELIC.TUNING_FORK
+  props:
+    ints:
+    - name: SkillsPlayed
+      value: 8
+- floor_added_to_deck: 18
+  id: RELIC.PAELS_CLAW
+- floor_added_to_deck: 25
+  id: RELIC.PEN_NIB
+  props:
+    ints:
+    - name: AttacksPlayed
+      value: 5
+- floor_added_to_deck: 26
+  id: RELIC.SPARKLING_ROUGE
+- floor_added_to_deck: 28
+  id: RELIC.WAR_PAINT
+- floor_added_to_deck: 31
+  id: RELIC.BAG_OF_PREPARATION
+- floor_added_to_deck: 34
+  id: RELIC.THROWING_AXE
+- floor_added_to_deck: 36
+  id: RELIC.HISTORY_COURSE
+- floor_added_to_deck: 41
+  id: RELIC.VAMBRACE
+- floor_added_to_deck: 42
+  id: RELIC.BRONZE_SCALES
+- floor_added_to_deck: 44
+  id: RELIC.REPTILE_TRINKET
+- floor_added_to_deck: 46
+  id: RELIC.ORNAMENTAL_FAN
+potions: []
+current_hp: 66
+max_hp: 75
+gold: 61
+max_potion_slot_count: 2
+max_energy: 3
+base_orb_slot_count: 3

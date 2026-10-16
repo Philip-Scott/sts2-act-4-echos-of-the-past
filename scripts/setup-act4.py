@@ -228,8 +228,12 @@ def deck_from_history(history, name):
 def capture(args):
     account = account_root(args.data_root, args.account)
     records = victory_records(account, args.source_slot)
+    if args.character:
+        records = [(source, history) for source, history in records
+                   if history["players"][0]["character"] == args.character]
     if len(records) < args.count:
-        raise ValueError(f"Only {len(records)} distinct single-player victories are available.")
+        character = f" for {args.character}" if args.character else ""
+        raise ValueError(f"Only {len(records)} distinct single-player victories{character} are available.")
     output = Path(args.output).resolve()
     destinations = [output / f"deck-{index}.yml" for index in range(1, args.count + 1)]
     if any(path.exists() for path in destinations):
@@ -949,6 +953,7 @@ def main():
     capture_parser.add_argument("--count", type=int, default=3)
     capture_parser.add_argument("--source-slot", type=int, choices=(1, 2, 3), default=1)
     capture_parser.add_argument("--output", default=str(ROOT / "decks"))
+    capture_parser.add_argument("--character", help="Only sample victories for this native CHARACTER.* model ID.")
     load_parser = commands.add_parser("load", help="Compose, back up, overwrite, and launch a local Act 4 run.")
     load_parser.add_argument("--player", nargs="+", required=True, metavar="DECK.yml")
     load_parser.add_argument("--corrupted", nargs="+", required=True, metavar="DECK.yml")

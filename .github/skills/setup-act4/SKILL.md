@@ -39,9 +39,16 @@ session. Check its ready receipt before reporting success.
 
 ## Capture more builds
 
+The checked-in decks cover all five characters: `deck-1.yml` is Necrobinder,
+`deck-2.yml` is Silent, `deck-3.yml` is Ironclad, `deck-4.yml` is Defect, and
+`deck-5.yml` is Regent.
+
 ```sh
 python3 scripts/setup-act4.py capture --count 3 --source-slot 1 --output decks/new
 ```
+
+Use `--character CHARACTER.DEFECT` with `--count 1` to capture a victory for a
+specific character without sampling unrelated builds.
 
 The script samples distinct single-player victories from both source-slot trees.
 It exports loadout data only. Private histories, paths, seeds, and hashes stay in

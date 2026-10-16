@@ -205,13 +205,15 @@ adding an untested protocol or reusing cached save templates.
 
 ## Reusable builds
 
-The checked-in examples are three randomly selected single-player victories:
+The checked-in examples cover all five characters with single-player victories:
 
 | File | Character | Ascension | Cards | Relics |
 | --- | --- | --- | --- | --- |
 | `decks/deck-1.yml` | Necrobinder | 5 | 27 | 15 |
 | `decks/deck-2.yml` | Silent | 5 | 32 | 13 |
 | `decks/deck-3.yml` | Ironclad | 6 | 77 | 25 |
+| `decks/deck-4.yml` | Defect | 5 | 24 | 16 |
+| `decks/deck-5.yml` | Regent | 6 | 25 | 15 |
 
 A file can fill either role, including multiple roles in the same matchup.
 `cards`, `relics`, and `potions` contain native serialized entries. Preserve their
@@ -277,6 +279,13 @@ The normal deck-reset failsafe clears them too.
 python3 scripts/setup-act4.py capture --count 3 --source-slot 1 --output decks/new
 ```
 
+To capture a missing character without sampling unrelated builds:
+
+```sh
+python3 scripts/setup-act4.py capture --count 1 --source-slot 1 \
+  --character CHARACTER.DEFECT --output decks/new-defect
+```
+
 Capture reads both vanilla and modded history, excludes losses, abandoned runs,
 and multiplayer records, and deduplicates by seed/start time before sampling.
 It never overwrites existing YAML files. Only build data goes into the YAML;
@@ -284,8 +293,8 @@ account identities and original histories remain in the ignored capture director
 
 History does not record base energy or base orb slots. Captured YAML marks those
 fields `null` until reviewed. Check character defaults and permanent changes;
-combat-only energy relics must not increase `max_energy` a second time. The three
-checked-in vanilla builds use 3 base energy and 0 base orb slots.
+combat-only energy relics must not increase `max_energy` a second time. All five
+checked-in builds use 3 base energy. Defect uses 3 base orb slots; the others use 0.
 
 ## Native template and verification
 

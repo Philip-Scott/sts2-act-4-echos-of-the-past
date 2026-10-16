@@ -123,11 +123,52 @@ class DeckTests(unittest.TestCase):
                 act4.compose_save(original, [deck()], [deck()], MODELS)
 
     def test_checked_in_decks_have_no_history_or_account_metadata(self):
+        characters = set()
         for path in (act4.ROOT / "decks").glob("*.yml"):
             build = act4.read_deck(path)
+            characters.add(build["character"])
             self.assertEqual(set(build), act4.FIELDS)
             self.assertNotIn("seed", build)
             self.assertNotIn("id", build)
+        self.assertTrue({"CHARACTER.IRONCLAD", "CHARACTER.SILENT", "CHARACTER.REGENT",
+                         "CHARACTER.NECROBINDER", "CHARACTER.DEFECT"} <= characters)
+
+    def test_capture_filters_character_before_sampling_and_preserves_native_entries(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            build = deck()
+            player = {"character": build["character"], "deck": build["cards"],
+                      "relics": build["relics"], "potions": build["potions"],
+                      "max_potion_slot_count": build["max_potion_slot_count"]}
+            stats = {"current_hp": 31, "max_hp": 80, "current_gold": 123}
+            history = {"seed": "private", "start_time": 123, "ascension": 5,
+                       "players": [player], "map_point_history": [[{"player_stats": [stats]}]]}
+            source = root / "victory.run"
+            source.write_text(json.dumps(history))
+            other = copy.deepcopy(history)
+            other["players"][0]["character"] = "CHARACTER.SILENT"
+            args = SimpleNamespace(data_root=root, account=None, source_slot=1, count=1,
+                                   character="CHARACTER.IRONCLAD", output=root / "decks")
+            artifact = root / "capture"
+            artifact.mkdir()
+            with patch.object(act4, "account_root", return_value=root), \
+                    patch.object(act4, "victory_records", return_value=[(source, history), (source, other)]), \
+                    patch.object(act4, "artifact_directory", return_value=artifact), \
+                    patch.object(act4.random, "SystemRandom") as random:
+                random.return_value.sample.return_value = [(source, history)]
+                act4.capture(args)
+                random.return_value.sample.assert_called_once_with([(source, history)], 1)
+                captured = act4.read_deck(args.output / "deck-1.yml", resources=False)
+                self.assertEqual(captured["character"], args.character)
+                for field in ("cards", "relics", "potions"):
+                    self.assertEqual(captured[field], build[field])
+                self.assertIsNone(captured["max_energy"])
+                self.assertIsNone(captured["base_orb_slot_count"])
+                self.assertEqual(source.read_text(), (artifact / "victory-1.run").read_text())
+                args.character = "CHARACTER.DEFECT"
+                with self.assertRaisesRegex(ValueError, "0 distinct single-player victories for CHARACTER.DEFECT"):
+                    act4.capture(args)
+                random.return_value.sample.assert_called_once()
 
 
 class ProfileTests(unittest.TestCase):
