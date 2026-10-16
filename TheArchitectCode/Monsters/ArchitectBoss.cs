@@ -46,6 +46,7 @@ public sealed class ArchitectBoss : CustomMonsterModel
     {
         var visuals = ModelDb.Monster<VanillaArchitect>().CreateVisuals();
         visuals.Modulate = new Color(0.83f, 0.72f, 1f);
+        visuals.GetNode<Marker2D>("%IntentPos").Position += new Vector2(0, 120);
         return visuals;
     }
 

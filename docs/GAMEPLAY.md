@@ -109,7 +109,7 @@ use the native multiplayer synchronization. Candidates have equal weights within
 | Discipline | Deus Ex Machina | Upon pickup, enchant 3 random eligible deck cards with Sown. |
 | Discipline | Violet Lotus | Upon pickup, enchant 2 random deck cards with Wrath and 2 other cards with Calm. |
 | Transcendence | Nuremberg Egg | The 12th card played each combat is replayed twice, then the original Exhausts. Its counter hides after the replay sequence and returns next combat. |
-| Transcendence | Ritual Dagger | Start combat with 1 Ritual and 3 Vulnerable. |
+| Transcendence | Forgotten Ritual | Start combat with 1 Ritual and 3 Vulnerable. |
 | Transcendence | Deva Form | After the first mid-combat reshuffle, gain 1 additional Energy at the start of each subsequent turn. Does not stack. |
 | Transcendence | Handheld Mirror | Acquire a copy of 3 random relics. |
 
