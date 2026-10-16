@@ -2,6 +2,15 @@ namespace TheArchitect.TheArchitectCode.UI;
 
 internal static class CorruptedPartyLayoutGeometry
 {
+    // Gap between telegraphed hand cards. Negative values overlap cards like the
+    // native hand so a full ten-card hand fits the panel without scrolling.
+    internal static int HandSeparation(int count, float cardWidth, float available, int gap = 8)
+    {
+        if (count <= 1)
+            return gap;
+        return (int)Math.Floor(Math.Min(gap, (available - count * cardWidth) / (count - 1)));
+    }
+
     internal readonly record struct Bounds(float X, float Y, float Width, float Height)
     {
         internal float Right => X + Width;

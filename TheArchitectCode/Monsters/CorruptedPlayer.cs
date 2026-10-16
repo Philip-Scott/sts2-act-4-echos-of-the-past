@@ -97,6 +97,7 @@ public sealed class CorruptedPlayer : CustomMonsterModel
         var body = visuals.GetNode<Node2D>("%Visuals");
         body.Scale = new Vector2(-body.Scale.X, body.Scale.Y);
         CorruptedPlayerCorruption.Attach(visuals);
+        CorruptedPlayerCorruption.ApplyBodyScale(visuals, Character);
         return visuals;
     }
 
@@ -120,6 +121,10 @@ public sealed class CorruptedPlayer : CustomMonsterModel
             ShowNativeState();
             NativeDownfallSupport.RefreshVisuals(Native);
         }
+        // Applied before BeforeCombatStart so start-of-combat buff effects resolve natively.
+        var context = new ThrowingPlayerChoiceContext();
+        foreach (var buff in CorruptedPlayerBuffs.For(Character, Creature.CombatState!.RunState.AscensionLevel))
+            await PowerCmd.Apply(context, ModelDb.GetById<PowerModel>(buff).ToMutable(), Creature, 1, Creature, null);
     }
 
     protected override MonsterMoveStateMachine GenerateMoveStateMachine()

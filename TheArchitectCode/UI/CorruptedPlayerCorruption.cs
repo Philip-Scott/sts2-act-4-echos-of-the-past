@@ -1,6 +1,8 @@
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.Characters;
 
 namespace TheArchitect.TheArchitectCode.UI;
 
@@ -180,11 +182,31 @@ public partial class CorruptedPlayerCorruption : Node
         material == null || material is ShaderMaterial { Shader: { } shader } &&
         shader.GetShaderUniformList().Any(uniform => uniform.AsGodotDictionary()["name"].AsString() == "h");
 
+    private const string BodyScaleMeta = "CorruptedBodyScale";
+
+    // The Regent's crown is taller than other characters, which pushes the hand
+    // preview into the relic bar; shrink the whole visual so bounds and intent follow.
+    internal static float BodyScale(CharacterModel character) => character is Regent ? 0.85f : 1f;
+
+    internal static float BodyScaleOf(NCreatureVisuals visuals) =>
+        visuals.HasMeta(BodyScaleMeta) ? visuals.GetMeta(BodyScaleMeta).AsSingle() : 1f;
+
+    internal static void ApplyBodyScale(NCreatureVisuals visuals, CharacterModel character)
+    {
+        var scale = BodyScale(character);
+        if (Mathf.IsEqualApprox(scale, 1f))
+            return;
+        visuals.SetMeta(BodyScaleMeta, scale);
+        visuals.DefaultScale = scale;
+        visuals.Scale = Vector2.One * scale;
+    }
+
     [HarmonyPatch(typeof(NCreatureVisuals), nameof(NCreatureVisuals.SetScaleAndHue))]
     internal static class CorruptedVisualHuePatch
     {
-        private static void Prefix(NCreatureVisuals __instance, ref float hue)
+        private static void Prefix(NCreatureVisuals __instance, ref float scale, ref float hue)
         {
+            scale *= BodyScaleOf(__instance);
             if (!Mathf.IsZeroApprox(hue) &&
                 __instance.GetNodeOrNull<CorruptedPlayerCorruption>("BoundEcho") != null &&
                 !SupportsNativeHue(__instance.SpineBody?.GetNormalMaterial()))

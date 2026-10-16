@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#dec08a"/><stop offset=".45" stop-color="#ac8354"/><stop offset="1" stop-color="#655447"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#8d7760"/><stop offset=".5" stop-color="#665a51"/><stop offset="1" stop-color="#353d46"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#d9d39e"/><stop offset=".45" stop-color="#d49455"/><stop offset="1" stop-color="#775343"/>
+    </linearGradient>
+  </defs>
+  <g stroke="#29262c" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M47 179 L61 160 L103 156 L126 148 L183 160 L207 181 L213 216 C171 237 81 238 39 217Z" fill="url(#panel)"/>
+    <path d="M47 187 L81 181 L107 195 L145 183 L176 196 L203 188 M82 183 L75 218 M143 185 L142 226" fill="none" stroke="#8d826c" stroke-width="3"/>
+    <path d="M56 163 L39 69 L87 103 L128 19 L166 99 L216 62 L196 170Z" fill="url(#panel)"/>
+    <path d="M128 20 L161 99 L147 131 L117 135 L97 101Z" fill="url(#glass)" stroke-width="5"/>
+    <path d="M128 32 L122 94 L107 111 L104 99Z" fill="#f0c58a" stroke="none"/>
+    <path d="M47 81 L65 153 L84 159 L76 110Z M207 76 L187 155 L167 160 L179 110Z" fill="url(#brass)" stroke-width="4"/>
+    <path d="M128 18 L141 45 L134 56 L128 43 L116 65 L109 58Z" fill="url(#brass)" stroke-width="4"/>
+    <path d="M93 104 L107 119 L109 142 M163 102 L150 120 L150 145" fill="none" stroke="#b5925e" stroke-width="7"/>
+    <path d="M55 147 C92 161 155 167 198 145 L194 181 C151 203 92 197 59 178Z" fill="url(#brass)" stroke-width="6"/>
+    <path d="M63 154 C99 168 154 173 191 154" fill="none" stroke="#e4c796" stroke-width="3"/>
+    <path d="M65 171 L89 180 L99 175 L104 190 L80 185Z M156 176 L169 178 L188 169 L185 183 L162 190Z" fill="#557b73" stroke="none"/>
+    <path d="M111 166 L127 157 L144 168 L140 189 L123 194 L109 183Z" fill="#3c474c" stroke-width="4"/>
+    <path d="M126 162 L133 173 L126 185 L119 174Z" fill="#a9dcd0" stroke="none"/>
+    <path d="M127 76 L132 97 L146 106 L130 113 L124 131 L119 112 L106 104 L121 98Z" fill="#f3dfa0" stroke="none"/>
+    <path d="M174 87 L181 104 L172 116 M80 127 L82 142 M149 60 L143 79 L150 90" fill="none" stroke="#a15c4e" stroke-width="4"/>
+    <path d="M66 168 L67 169 M184 164 L185 164 M107 197 L108 197 M154 200 L155 200" fill="none" stroke="#ebd09c" stroke-width="5"/>
+  </g>
+</svg>

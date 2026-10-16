@@ -56,6 +56,20 @@ Corrupted Players provide the party-size scaling. The Architect's HP and shared
 per-turn damage cap use the native final-act boss multiplayer scaling tier
 (base value times player count times 1.3). Solo damage caps remain 300, or 200
 at Ascension 8 and above.
+Each Corrupted Player also carries a corruption buff for its character:
+
+| Character | Buff | Effect |
+| --- | --- | --- |
+| Ironclad | Singeing Ichor | At the end of its turn, gains 1 Strength and heals 7 HP. |
+| Silent | Ring of the Viper | At the start of its turn, draws 1 additional card and gains 1 Artifact. |
+| Regent | Tarnished Crown | Gains 3 Stars at the start of combat and 2 Stars at the end of its turn. |
+| Necrobinder | Fractured Urn | Summons 17 at the start of combat and 5 at the start of its turn. |
+| Defect | Overvolted Matrix | Channels Lightning, Frost and Dark at the start of combat; gains 1 Focus at the start of its turn. |
+
+At Ascension 9 (Deadly Enemies) and above, every Corrupted Player also has
+**Echo Shard**: it gains 1 additional energy at the start of its turn. Modded
+characters receive only Echo Shard. The buffs appear as powers on the
+Corrupted Player, each with its own relic-style icon.
 The compact map fits its four or five nodes without scrolling, using neutral-ink
 icons and an original Architect boss silhouette. Rest and Shop share the
 supplied tower-approach illustration; the boss fight retains the

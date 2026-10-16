@@ -4,6 +4,18 @@ internal static class CorruptedEnemyUiTests
 {
     internal static void Run(Action<string, Action> test, Action<bool, string> check)
     {
+        test("corrupted hand: a full ten-card hand overlaps to fit the panel without scrolling", () =>
+        {
+            const float card = 120f, panel = 680f;
+            check(CorruptedPartyLayoutGeometry.HandSeparation(5, card, panel) == 8, "five cards keep the normal gap");
+            for (var count = 6; count <= 10; count++)
+            {
+                var gap = CorruptedPartyLayoutGeometry.HandSeparation(count, card, panel);
+                check(gap < 8 && count * card + (count - 1) * gap <= panel, $"{count} cards fit ({gap})");
+            }
+            check(CorruptedPartyLayoutGeometry.HandSeparation(0, card, panel) == 8, "empty hand");
+        });
+
         foreach (var count in new[] { 2, 3, 4 })
         {
             test($"corrupted enemy layout: {count} bodies have distinct staggered positions", () =>

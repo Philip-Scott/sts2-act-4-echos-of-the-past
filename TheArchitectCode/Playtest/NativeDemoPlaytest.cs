@@ -528,12 +528,32 @@ internal static class NativeDemoPlaytest
         JsonSerializationUtility.GetTypeInfo<SerializableRunRngSet>());
     internal static string AllRng(Player player) => RngSnapshot(player) +
         JsonSerializer.Serialize(player.PlayerRng.ToSerializable(), new JsonSerializerOptions { IncludeFields = true });
-    internal static Task PlayerTurn(Player player, int turn, int timeoutSeconds = 60) => WaitFor(() =>
-        player.PlayerCombatState is { Phase: PlayerTurnPhase.Play } state && state.TurnNumber == turn &&
-        CombatManager.Instance.IsPartOfPlayerTurn(player) && !CombatManager.Instance.IsStarting &&
-        player.Creature.CombatState is { CurrentSide: CombatSide.Player } combat &&
-        NativeCorruptedPlayer.In(combat).All(actor => actor.State.Phase == PlayerTurnPhase.None && actor.HandPrepared),
-        timeoutSeconds);
+    internal static async Task PlayerTurn(Player player, int turn, int timeoutSeconds = 60)
+    {
+        try
+        {
+            await WaitFor(() =>
+                player.PlayerCombatState is { Phase: PlayerTurnPhase.Play } state && state.TurnNumber == turn &&
+                CombatManager.Instance.IsPartOfPlayerTurn(player) && !CombatManager.Instance.IsStarting &&
+                player.Creature.CombatState is { CurrentSide: CombatSide.Player } combat &&
+                NativeCorruptedPlayer.In(combat).All(actor => actor.State.Phase == PlayerTurnPhase.None && actor.HandPrepared),
+                timeoutSeconds);
+        }
+        catch (TimeoutException)
+        {
+            var combat = player.Creature.CombatState;
+            MainFile.Logger.Error($"PlayerTurn {turn} timeout: phase={player.PlayerCombatState?.Phase} " +
+                $"turn={player.PlayerCombatState?.TurnNumber} side={combat?.CurrentSide} " +
+                $"partOfTurn={CombatManager.Instance.IsPartOfPlayerTurn(player)} starting={CombatManager.Instance.IsStarting} " +
+                $"inProgress={CombatManager.Instance.IsInProgress} " +
+                $"hand={player.PlayerCombatState?.Hand.Cards.Count} draw={player.PlayerCombatState?.DrawPile.Cards.Count} " +
+                $"energy={player.PlayerCombatState?.Energy} executorPaused={RunManager.Instance.ActionExecutor.IsPaused} " +
+                $"running={RunManager.Instance.ActionExecutor.CurrentlyRunningAction} " +
+                $"actors=[{string.Join(",", combat == null ? [] : NativeCorruptedPlayer.In(combat).Select(actor => $"{actor.State.Phase}/{actor.HandPrepared}"))}] " +
+                $"enemies=[{string.Join(",", combat?.Enemies.Select(enemy => $"{enemy.ModelId.Entry}:{enemy.CurrentHp}") ?? [])}]");
+            throw;
+        }
+    }
     private static void Require(bool condition, string description)
     {
         if (!condition)

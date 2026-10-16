@@ -128,16 +128,11 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         _draw = AddPileButton("Draw", () => _nativeState!.DrawPile);
         _discard = AddPileButton("Discard", () => _nativeState!.DiscardPile);
         _exhaust = AddPileButton("Exhaust", () => _nativeState!.ExhaustPile);
-        var previous = AddToolbarButton("‹", "Scroll hand left");
-        var next = AddToolbarButton("›", "Scroll hand right");
-        previous.Pressed += () => _scroll.ScrollHorizontal -= 100;
-        next.Pressed += () => _scroll.ScrollHorizontal += 100;
-        toolbar.AddChild(previous);
-        toolbar.AddChild(next);
         _scroll = new ScrollContainer
         {
             Name = "HandScroll",
-            HorizontalScrollMode = ScrollContainer.ScrollMode.Auto,
+            // Hands are capped at ten cards and HandSeparation always fits them.
+            HorizontalScrollMode = ScrollContainer.ScrollMode.ShowNever,
             VerticalScrollMode = ScrollContainer.ScrollMode.Disabled,
             FollowFocus = true,
             CustomMinimumSize = new Vector2(0, CardFaceSize.Y)
@@ -195,7 +190,6 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
                 UpdateCardText(_enlarged!, _inspected.Entry);
             return;
         }
-        int scroll = _scroll.ScrollHorizontal;
         ClearPreview();
         _cells.Clear();
         foreach (var child in _row.GetChildren())
@@ -207,18 +201,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             _row.AddChild(new Label { Text = "No cards", CustomMinimumSize = CardFaceSize });
         foreach (var card in cards)
             AddCard(card);
-        _scroll.ScrollHorizontal = scroll;
+        ApplyHandSpacing();
     }
-
-    private static Button AddToolbarButton(string text, string tooltip) => new()
-    {
-        Text = text,
-        TooltipText = tooltip,
-        Flat = true,
-        CustomMinimumSize = new Vector2(32, 32),
-        SizeFlagsVertical = SizeFlags.ShrinkCenter,
-        FocusMode = FocusModeEnum.All
-    };
 
     private MegaLabel AddPileButton(string name, Func<CardPile> getPile)
     {
@@ -618,6 +602,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         LayoutUpdateCount++;
         CustomMinimumSize = new Vector2(width, 248);
         Size = new Vector2(width, 248);
+        ApplyHandSpacing();
         if (_partyDisplay)
         {
             Scale = Vector2.One * CorruptedPartyLayoutGeometry.Scale(spacing, Size.X, anchor.Scale.X);
@@ -629,6 +614,15 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             Mathf.Clamp(above.Y - displaySize.Y + (_nativeDisplay ? 24f : -24f), topMargin,
                 Mathf.Max(topMargin, viewport.Y - displaySize.Y - 12f)));
         _layoutInputs = inputs with { PanelSize = Size };
+    }
+
+    private void ApplyHandSpacing()
+    {
+        var width = Mathf.Max(Size.X, CustomMinimumSize.X);
+        if (width <= 0f)
+            width = 680f;
+        _row.AddThemeConstantOverride("separation",
+            CorruptedPartyLayoutGeometry.HandSeparation(_cells.Count, CardFaceSize.X, width));
     }
 
     private static float PartyTopMargin()

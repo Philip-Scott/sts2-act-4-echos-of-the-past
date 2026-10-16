@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Corrupted Players now carry a character buff: Singeing Ichor (Ironclad),
+  Ring of the Viper (Silent), Tarnished Crown (Regent), Fractured Urn
+  (Necrobinder) and Overvolted Matrix (Defect).
+- At Ascension 9 and above, Corrupted Players also gain Echo Shard: +1 energy
+  at the start of each turn.
+- Corrupted Player hand previews overlap cards so up to 10 fit without
+  scrolling; the scroll arrows are removed.
+- The corrupted Regent renders slightly smaller so his hand preview clears the
+  relic bar.
+- Custom power icons now load their own art instead of the missing-icon
+  placeholder.
+
 ## 1.3.0 Changes
 
 Released October 12, 2026 at 2:19 p.m. PDT.

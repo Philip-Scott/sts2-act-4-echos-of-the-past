@@ -88,6 +88,12 @@ Architect boss combat. Each member has 2x saved maximum HP, or 2.5x at A8+, roun
 up, without native multiplayer HP scaling. Native terminal outcomes, snapshot deduplication and atomic
 replacement remain in the existing lifecycle/persistence implementation.
 
+`CorruptedPlayer.AfterAddedToRoom` applies the corruption buff powers chosen by
+`CorruptedPlayerBuffs.For` (one per vanilla character, plus Echo Shard at A9+).
+The powers in `Powers/CorruptionBuffPowers.cs` act through the private actor
+player. Extra draw and energy use `ModifyHandDraw`/`ModifyMaxEnergy`, so the
+telegraphed hand and energy already include them.
+
 ## NPC policy and display
 
 - Play the first currently playable supported card from left to right, then

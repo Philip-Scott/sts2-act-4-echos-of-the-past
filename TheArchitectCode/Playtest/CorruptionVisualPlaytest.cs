@@ -343,7 +343,8 @@ internal static class CorruptionVisualPlaytest
         var spine = visuals.SpineBody
             ?? throw new InvalidOperationException("Hue material probe requires native Spine visuals.");
         var original = spine.GetNormalMaterial();
-        var scale = visuals.DefaultScale;
+        var factor = CorruptedPlayerCorruption.BodyScaleOf(visuals);
+        var scale = visuals.DefaultScale / factor;
         using var canvas = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.PremultAlpha };
         using var customShader = new Shader
         {
@@ -364,8 +365,8 @@ internal static class CorruptionVisualPlaytest
                 spine.SetNormalMaterial(material);
                 visuals.SetScaleAndHue(0.87f, 0.12f);
                 Require(spine.GetNormalMaterial() == material &&
-                    Mathf.IsEqualApprox(visuals.DefaultScale, 0.87f) &&
-                    visuals.Scale.IsEqualApprox(Vector2.One * 0.87f),
+                    Mathf.IsEqualApprox(visuals.DefaultScale, 0.87f * factor) &&
+                    visuals.Scale.IsEqualApprox(Vector2.One * 0.87f * factor),
                     $"native scale/hue preserves {material.GetType().Name} and still applies scale");
             }
             var actualHue = hue.GetShaderParameter("h").AsSingle();
