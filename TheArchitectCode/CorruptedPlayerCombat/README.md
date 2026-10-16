@@ -110,7 +110,8 @@ The telegraph shows only the current native hand, with larger cards and no
 background panel or themed scroll-area overlay. A half-size native character
 energy orb and three-quarter-size draw, discard and exhaust icons sit below the
 hand, using the player's HUD artwork, count badges and typography. Energy shows
-current/maximum resources. A native star counter sits beside energy, independently
+only the current amount in larger, auto-sized text, without a maximum-energy denominator.
+A native star counter sits beside energy, independently
 bound to that actor's private player and using native visibility rules.
 Each pile opens the native read-only pile browser,
 which keeps draw order hidden and reflects live pile contents.
@@ -122,7 +123,9 @@ its own HUD, and later refreshes cannot recreate a defeated member's counters.
 An empty hand stays empty in the preview; neither the draw pile nor the discard
 pile is presented as playable cards. Native cards enlarge on hover or keyboard/
 controller focus and dismiss when the pointer or focus leaves. Clicking does not
-pin a preview, so there is no Clear button.
+pin a preview, so there is no Clear button. Enlarged previews align with the
+hovered card's top edge, move below the top bar and relic inventory, and stay
+within the screen instead of extending upward from the hand.
 Hand strips use the native combat HUD's non-relative canvas ordering, not a
 positive Z override. Enlarged cards and their keyword/generated-card tips stay
 inside `NCombatUi`, below run-level and game-level screens. Native

@@ -6,7 +6,7 @@ Meet The Watcher and choose an Ancient gift before fighting the Architect.
 On later visits, you first fight a Corrupted Player that uses your previous deck.
 Play solo or with a party of 2-4 players.
 
-Version 1.2.1 is available on
+Version 1.3.0 is available on
 [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3799307965).
 
 ## Gameplay and compatibility
@@ -129,6 +129,15 @@ Both scripts accept the same options. Use `--help` for the shell script or
 You can also use `dotnet build` or `dotnet publish`. Both install the mod in the game
 by default. For development, use `scripts/build.sh --mods-path artifacts/mods`.
 Install only with the game closed.
+
+### Act 4 playtests
+
+Use `python3 scripts/setup-act4.py load --player decks/deck-1.yml --corrupted
+decks/deck-2.yml decks/deck-3.yml --replace` to prepare modded Slot 2.
+Builds are reusable YAML files, not fixed matchups. The Python script backs up
+the target, edits a native save template, and launches at The Watcher.
+It also supports independent player/opponent counts in the existing unsaved
+fake-multiplayer mode. See [the playtest guide](docs/ACT4_PLAYTESTS.md).
 
 ### Building in Docker
 

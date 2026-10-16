@@ -21,6 +21,7 @@ public sealed partial class ArchitectRun
                     return;
                 var state = JsonSerializer.Deserialize<ArchitectRun>(json) ??
                     throw new JsonException("Architect run state is null.");
+                state.ValidatePlaytestOpponents();
                 if (state.StartingHostNetId is { } startingHost)
                     state.BindNetworkOrigin(run.Players.Select(player => player.NetId).ToArray(), startingHost);
                 if (state.Origin is { } origin)

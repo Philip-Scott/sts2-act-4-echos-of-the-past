@@ -1,15 +1,63 @@
-# Publishing 1.2.1 - Act 4: Echos of the Past
+# Publishing 1.3.0 - Act 4: Echos of the Past
 
-Steam Workshop 1.2.1 is published. GitHub Release publication still requires approval.
-Preparation does not publish, tag, or commit anything.
-This updates the existing Workshop item **3799307965**. The internal mod ID and
+Version 1.3.0 is published on Steam Workshop. The author confirmed a successful
+final playtest and approved publication on October 12, 2026. Steam accepted the
+update at **2:19:21 p.m. PDT**. No commit, push, tag, or GitHub Release was made;
+GitHub publication still requires separate approval.
+This updated the existing Workshop item **3799307965**. The internal mod ID and
 runtime filenames remain `TheArchitect`; do not create a second Workshop item.
+
+## Published 1.3.0
+
+The published build uses committed source `d160a3c` plus the staged 1.3.0 release
+metadata. It includes the separate Corrupted Player Elite, boss-only successor
+capture, increased Corrupted Player HP, map artwork fixes, preview text changes,
+and the new fight soundtrack and final-strike music handoff. Uncommitted playtest
+code and tooling are excluded.
+
+The bundle is `artifacts/releases/steam-v1.3.0-d160a3c/v1.3.0/`. The upload used
+`artifacts/releases/steam-v1.3.0-d160a3c/v1.3.0-steam-content-only/`.
+Its upload inputs contain only the three runtime files in `content/`, `mod_id.txt`,
+and `workshop.json` with `changeNote`. It also retains the upload log, before/after
+listing snapshots, published changelog, and `publication-receipt.json`.
+Do not rerun the uploader without approval for another update.
+Do not upload the image-bearing review workspace.
+Preparation records in the bundle retain the source commit, metadata patch,
+and checksums. Preserve earlier release bundles unchanged.
+The uploaded runtime files exactly match the author's tested
+`~/TheArchitect-v1.3.0-d160a3c.zip`. The published change note matches the
+submitted note. Before/after snapshots confirm that the title, description,
+thumbnail, and all five screenshots are unchanged.
+The earlier `artifacts/releases/v1.3.0/` and `v1.3.0-steam-content-only/`
+candidates use `33c7025` and do not include the new soundtrack.
+
+The build used an isolated export of `d160a3c` with only `TheArchitect.json`,
+`TheArchitect.csproj`, `CHANGELOG.md`, `release/INSTALL.md`,
+`release/RELEASE_NOTES.md`, `release/workshop.json`, and this handoff overlaid.
+The content-only uploader changed no listing metadata, dependencies, or images.
+
+On October 12, 2026, the mod author confirmed receiving permission from RYS to
+use "The Heart OST but it's Metal" in this mod. The author will add credits to
+the Steam description. The confirmation is retained in
+`artifacts/releases/steam-v1.3.0-d160a3c/music-permission.json`.
+The original preparation records predate this confirmation and publication;
+they remain unchanged as build evidence. Use the publication receipt for the
+final release status.
+
+The gameplay source passed isolated native Elite-loss scenarios for solo and
+simulated parties of 2-4, plus solo/party Architect wins and losses. These checks
+predate the 1.3.0 Release package and do not constitute real networked co-op testing.
+HP regression suites passed after the multiplier change. The author reported
+the final candidate playtest successful before approving publication. The test
+scope was not specified, so real networked co-op remains unverified.
+The reported window-resize crash was not established as a mod fault or fixed;
+do not advertise a resize-crash fix.
 
 ## Published 1.2.1
 
 The author approved publication on **2026-10-07**. Steam accepted the update at
-**10:35:08 p.m. PDT**. The published change note exactly matches
-`release/workshop.json`. Before/after listing snapshots confirm that the title,
+**10:35:08 p.m. PDT**. The published change note is retained in the 1.2.1
+content-only workspace. Before/after listing snapshots confirm that the title,
 description, thumbnail, and screenshot gallery are unchanged.
 
 The published build uses committed source `89bb0d2` plus the staged 1.2.1 release
@@ -110,10 +158,10 @@ content-only upload. No promotional images were uploaded with 1.1.0.
 - Review source and artwork provenance and choose a repository license.
   No license has been assigned by this preparation. Confirm rights to redistribute
   all shipped assets; this is a release decision, not inferred from files being present.
-- Review the changes since 1.2.0 and the local release metadata before choosing
+- Review the changes since 1.2.1 and the local release metadata before choosing
   the release commit. Do not publish a package from unreviewed working-tree changes.
 - Review the known limitations in `release/INSTALL.md` and `RELEASE_NOTES.md`.
-  Crash-safe result transactions remain tracked in #12; do not describe 1.2.1
+  Crash-safe result transactions remain tracked in #12; do not describe 1.3.0
   as universally card-compatible or crash-proof.
 
 ## Build and stage
@@ -148,11 +196,14 @@ Python runs on the host; only compilation runs in the existing
 inside the build image. Podman output must remain under the repository so it is
 visible in the container mount.
 
-Output under `artifacts/releases/v1.2.1/`:
+The default command outputs to `artifacts/releases/v1.3.0/` and will refuse the
+existing candidate. For a refresh, build from an isolated source export, then
+retain the resulting bundle under a new parent directory. The current refreshed
+bundle is under `artifacts/releases/steam-v1.3.0-d160a3c/v1.3.0/`:
 
 | File/directory | Use |
 | --- | --- |
-| `TheArchitect-v1.2.1.zip` | Manual install; only this mod's three runtime files plus install instructions |
+| `TheArchitect-v1.3.0.zip` | Manual install; only this mod's three runtime files plus install instructions |
 | `SHA256SUMS` | SHA-256 hashes of the staged files |
 | `workshop/` | Existing-item update workspace; preserves Steam description and visibility |
 | `media/` | Thumbnail, banner and gameplay screenshots |
@@ -228,8 +279,9 @@ a listing identifier, not a credential.
 ## GitHub Release
 
 After approval, commit the reviewed release changes and tag that exact commit
-`v1.2.1`. Create a GitHub Release from the tag, use `release/RELEASE_NOTES.md`
+`v1.3.0`. Create a GitHub Release from the tag, use `release/RELEASE_NOTES.md`
 as the description, and attach the ZIP, `SHA256SUMS`, and install instructions.
-The archive is a working-tree build: rebuild from the approved commit if anything
-has changed since staging. Link the Workshop item in the announcement. Keep a
+The archive uses the source commit and release overlay recorded in
+`PREPARATION.json`: rebuild from the approved commit if anything has changed
+since staging. Link the Workshop item in the announcement. Keep a
 backup of the previous release and modded lineage saves for rollback.

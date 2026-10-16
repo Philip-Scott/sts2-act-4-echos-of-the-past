@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 1.3.0 Changes
 
+Released October 12, 2026 at 2:19 p.m. PDT.
+
+- Corrupted Players now appear in a separate Elite fight between the Shop and
+  the Architect, only when saved opponents exist. Winning grants normal Elite
+  rewards and returns to the map before a fresh Architect combat.
 - Increased Corrupted Player HP to 2.5 times saved maximum HP at Ascension 0-7
   and 3.1 times at Ascension 8+, rounded up with no additional multiplayer scaling.
 - Losing the Corrupted Player Elite now shows the normal game-over screen and
@@ -9,6 +14,14 @@
   Architect boss capture player decks and play the corruption ending.
 - Fixed Act 4 map icons losing their interior details. Shop and campfire icons
   now retain light and dark contrast instead of appearing as solid silhouettes.
+- Updated the Watcher's map portrait and hover outline.
+- Clarified empty and unavailable Corrupted Deck preview messages.
+- Replaced the Architect soundtrack with RYS's "The Heart OST but it's Metal".
+  Each boss fight starts at the intro and loops during combat.
+- Corrupted Players use their own section of the soundtrack. After victory,
+  the track plays through its ending once, continuing across rewards and the map.
+- Restored the game's run-ending music after the Architect's final strike,
+  without changing the recorded win or loss.
 
 ## 1.2.1 Changes
 

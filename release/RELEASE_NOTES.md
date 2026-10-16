@@ -1,40 +1,44 @@
-# Act 4: Echos of the Past 1.2.1
+# Act 4: Echos of the Past 1.3.0
 
 **Your past is the final boss.**
 
-This update from **1.2.0** fixes multiplayer Continue previews and adds a way to
-remove broken saved opponents. Published on Steam Workshop on October 7, 2026.
+This update from **1.2.1** separates the Corrupted Players from the Architect boss,
+increases their HP, updates Act 4 map artwork, and adds new fight music.
+Published to Steam Workshop on October 12, 2026 at 2:19 p.m. PDT.
 
 ## What's new
 
-- Fixed a black screen when resuming multiplayer and a related cleanup error
-  when starting a new multiplayer run.
-- Multiplayer Continue now previews every saved party member's opponent before
-  anyone else rejoins, including runs before Act 4. Selected opponents still
-  come from the run's frozen decks, not a newer party history.
-- Added a ten-right-click recovery shortcut to the Corrupted Deck buttons.
-  It clears only the relevant solo or host-owned party opponent and its backups.
+- Corrupted Players now have their own Elite fight between the Shop and the
+  Architect. The node appears only when saved opponents exist. Winning grants
+  normal Elite rewards and returns to the map before a fresh Architect combat.
+- Losing the Elite ends the run normally without capturing player decks or
+  replacing saved opponents. Only wins or losses against the Architect boss
+  capture the next opponents and play the corruption ending.
+- Corrupted Player HP is now 2.5 times saved maximum HP at Ascension 0-7 and
+  3.1 times at Ascension 8+, rounded up, with no extra multiplayer multiplier.
+  The Architect's HP scaling is unchanged.
+- Shop and campfire map icons retain their interior light and dark details.
+- The Watcher has a new map portrait and hover outline.
+- Empty and unavailable Corrupted Deck previews use clearer messages.
+- The Architect now fights to RYS's "The Heart OST but it's Metal". Each fight
+  starts at the intro and loops during combat.
+- Corrupted Players use a separate section of the soundtrack. After victory,
+  it plays through its ending once across rewards and the map. Entering the
+  Architect fight starts the boss intro instead.
+- The game's run-ending music plays after the Architect's final strike.
+  The recorded win or loss remains unchanged.
 
-## Recovering a broken opponent
-
-Right-click "View Corrupted Deck" or "View Corrupted Decks" 10 times in a row.
-Exhaust effects start on the fourth click; the tenth burns away the button.
-Other input or leaving the screen cancels an incomplete sequence. In co-op,
-only the host can reset; unready first.
-
-The solo button clears the active profile's saved opponent. The co-op button
-clears only that host's exact party. Continue-menu resets also clear the
-opponent saved inside the ongoing run, without deleting the run or changing
-the players' decks. Continue to fight the Architect directly.
-A co-op Continue reset closes the lobby; reopen it and have everyone rejoin
-to receive the corrected save. Errors are shown instead of reporting a
-successful reset.
+The recording is arranged and performed by RYS, with original music by
+Clark Aboud. The mod author confirmed permission from RYS to use the recording
+in this mod on October 12, 2026, and will add credits to the Steam description.
+See `TheArchitect/audio/CREDITS.txt` in the source repository.
 
 The internal ID, runtime filenames and installation folder remain `TheArchitect`.
 Update the existing installation; do not install this as a second mod.
-Existing saves remain compatible. The content-only Workshop update
-preserves the Steam-edited description, title, visibility, thumbnail, and
-screenshot gallery.
+Keep your saved opponent lineages. Back up ongoing runs before updating, and use
+matching versions across the entire party. The content-only Workshop update
+left the Steam-edited description, title, visibility, thumbnail, and screenshot
+gallery unchanged.
 
 ## Compatibility and limitations
 
@@ -52,6 +56,6 @@ audited. Lineages are local, not Steam Cloud data. Host migration is unsupported
 Avoid force-closing during the result transition; full crash-transaction recovery
 is still tracked in issue #12.
 
-Use `TheArchitect-v1.2.1.zip` for manual installation, not GitHub's source archives.
+Use `TheArchitect-v1.3.0.zip` for manual installation, not GitHub's source archives.
 Extract its `TheArchitect` folder into the game's `mods` folder with the game
 closed. See `INSTALL.md` for details and `SHA256SUMS` for file hashes.

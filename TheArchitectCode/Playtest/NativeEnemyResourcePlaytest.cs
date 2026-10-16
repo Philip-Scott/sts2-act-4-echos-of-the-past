@@ -18,6 +18,17 @@ namespace TheArchitect.TheArchitectCode.Playtest;
 
 internal static class NativeEnemyResourcePlaytest
 {
+    internal static void AssertPreviewPlacement(Control preview, Control source)
+    {
+        var viewport = preview.GetViewportRect();
+        var bounds = preview.GetGlobalRect();
+        var sourceBounds = source.GetGlobalTransform() * new Rect2(Vector2.Zero, source.Size);
+        var lowestTop = viewport.End.Y - bounds.Size.Y - 12f;
+        if (!viewport.Encloses(bounds) || bounds.Position.Y < 99f ||
+            bounds.Position.Y < Math.Min(sourceBounds.Position.Y, lowestTop) - 1f)
+            throw new InvalidOperationException("Enemy card previews must align downward from the hovered card, below the top bar and inside the viewport.");
+    }
+
     internal static async Task VerifyScreenLayering(NGame game, IReadOnlyList<Player> humans,
         IReadOnlyList<CorruptedPlayerTelegraph> panels)
     {
@@ -104,6 +115,40 @@ internal static class NativeEnemyResourcePlaytest
     {
         if (!NativeDemoSafety.Enabled)
             throw new InvalidOperationException("Enemy resource probes require isolated native playtests.");
+        var energyLabels = panels.Select(panel => panel.FindChildren("*", recursive: true, owned: false)
+            .OfType<NEnergyCounter>().Single().GetNode<MegaLabel>("Label")).ToArray();
+        var initialEnergy = actors.Select(player => player.PlayerCombatState!.Energy).ToArray();
+        try
+        {
+            foreach (var amount in new[] { 3, 0, 12 })
+            {
+                for (var index = 0; index < actors.Count; index++)
+                    actors[index].PlayerCombatState!.Energy = amount == 0 ? 0 : amount + index;
+                await game.AwaitProcessFrame();
+                await game.AwaitProcessFrame();
+                for (var index = 0; index < actors.Count; index++)
+                {
+                    var state = actors[index].PlayerCombatState!;
+                    var label = energyLabels[index];
+                    if (label.Text != state.Energy.ToString())
+                        throw new InvalidOperationException($"Enemy {index} must show only its current energy.");
+                    if (amount == 3 && index == 0)
+                    {
+                        var singleNumberSize = label.GetThemeFontSize("font_size");
+                        label.SetTextAutoSize($"{state.Energy}/{state.MaxEnergy}");
+                        var fractionSize = label.GetThemeFontSize("font_size");
+                        label.SetTextAutoSize(state.Energy.ToString());
+                        if (singleNumberSize <= fractionSize)
+                            throw new InvalidOperationException("Single-number energy must be larger than the fraction.");
+                    }
+                }
+            }
+        }
+        finally
+        {
+            for (var index = 0; index < actors.Count; index++)
+                actors[index].PlayerCombatState!.Energy = initialEnergy[index];
+        }
         var counters = panels.Select(panel => panel.FindChildren("*", recursive: true, owned: false)
             .OfType<NStarCounter>().Single()).ToArray();
         var initial = actors.Select(player => player.PlayerCombatState!.Stars).ToArray();
@@ -176,6 +221,9 @@ internal static class NativeEnemyResourcePlaytest
                 .Single(node => node.Name == "CorruptedPlayerCardPreview" && node.IsVisibleInTree());
             if (!game.GetViewport().GetVisibleRect().Encloses(preview.GetGlobalRect()))
                 throw new InvalidOperationException("Full-size enemy cards must remain inspectable with a full relic bar.");
+            AssertPreviewPlacement(preview, face);
+            if (preview.GetGlobalRect().Position.Y < bottom + 11f)
+                throw new InvalidOperationException("Enemy card previews must stay below the wrapped relic inventory.");
             await NativeDemoPlaytest.Capture($"party-{panels.Count}-full-relics-preview");
             face.ReleaseFocus();
         }

@@ -1,4 +1,5 @@
 using Godot;
+using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -15,6 +16,7 @@ using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Nodes.Screens;
 using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
 using MegaCrit.Sts2.addons.mega_text;
+using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using TheArchitect.TheArchitectCode.Monsters;
 
 namespace TheArchitect.TheArchitectCode.UI;
@@ -108,7 +110,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             Name = "Energy",
             CustomMinimumSize = new Vector2(72, 64),
             MouseFilter = MouseFilterEnum.Stop,
-            TooltipText = "Current / maximum energy; not a future damage forecast.\n" +
+            TooltipText = "Current energy; not a future damage forecast.\n" +
                 "Plays left to right, reconsidering after each card. Choices select the first valid option.\n" +
                 "Attack intent: any Attack in your CURRENT hand when the Corrupted Player checks, regardless of cost.\n" +
                 "Installed modded cards use their own effects. Ally-only cards need a living corrupted teammate."
@@ -337,6 +339,18 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
 
     private void OnStarsChanged(int oldStars, int newStars) => UpdateStarVisibility();
 
+    [HarmonyPatch(typeof(NEnergyCounter), "RefreshLabel")]
+    private static class CurrentEnergyLabelPatch
+    {
+        private static void Postfix(Player ____player, MegaLabel ____label)
+        {
+            if (!NativeCorruptedPlayer.TryGet(____player, out _))
+                return;
+            ____label.MaxFontSize = 72;
+            ____label.SetTextAutoSize(____player.PlayerCombatState!.Energy.ToString());
+        }
+    }
+
     private void UnsubscribeStars()
     {
         if (_nativeState != null)
@@ -548,11 +562,10 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         if (_preview == null || _enlarged == null || _inspected == null)
             return;
         var viewport = GetViewportRect().Size;
-        var source = _partyDisplay
-            ? _inspected.Face.GetGlobalTransform() * new Rect2(Vector2.Zero, _inspected.Face.Size)
-            : _inspected.Face.GetGlobalRect();
+        var source = _inspected.Face.GetGlobalTransform() * new Rect2(Vector2.Zero, _inspected.Face.Size);
+        float top = Mathf.Clamp(PartyTopMargin(), 12f, Mathf.Max(12f, viewport.Y - 24f));
         float scale = Mathf.Min(1f, Mathf.Min((viewport.X - 24f) / NCard.defaultSize.X,
-            (viewport.Y - 24f) / NCard.defaultSize.Y));
+            (viewport.Y - top - 12f) / NCard.defaultSize.Y));
         _enlarged.Scale = Vector2.One * Mathf.Max(0.1f, scale);
         _preview.Size = _enlarged.GetCurrentSize();
         float x = source.End.X + 12f;
@@ -560,8 +573,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             x = source.Position.X - _preview.Size.X - 12f;
         _preview.GlobalPosition = new Vector2(
             Mathf.Clamp(x, 12f, Mathf.Max(12f, viewport.X - _preview.Size.X - 12f)),
-            Mathf.Clamp(source.GetCenter().Y - _preview.Size.Y / 2f, 12f,
-                Mathf.Max(12f, viewport.Y - _preview.Size.Y - 12f)));
+            Mathf.Clamp(source.Position.Y, top,
+                Mathf.Max(top, viewport.Y - _preview.Size.Y - 12f)));
         _enlarged.Position = _preview.Size / 2f;
         if (GodotObject.IsInstanceValid(_tips))
             _tips!.SetAlignment(_preview, TipAlignment());

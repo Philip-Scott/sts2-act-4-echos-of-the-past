@@ -77,7 +77,7 @@ internal sealed record NativePartyHistory(string Seed, NativePartyHistory.Member
         }
     }
 
-    private static void AssertLoadout(Player player, SerializablePlayer expected)
+    internal static void AssertLoadout(Player player, SerializablePlayer expected)
     {
         var actual = player.ToSerializable();
         if (actual.CharacterId != expected.CharacterId || actual.CurrentHp != expected.CurrentHp ||
@@ -91,7 +91,7 @@ internal sealed record NativePartyHistory(string Seed, NativePartyHistory.Member
                 File.WriteAllText(Path.Combine(NativeDemoSafety.RuntimePath,
                     $"player-{player.NetId}-{entry.Item1}.json"),
                     JsonSerializer.Serialize(entry.Item2, JsonSerializationUtility.GetTypeInfo<SerializablePlayer>()));
-            throw new InvalidDataException("The restored party loadout does not match its victory history.");
+            throw new InvalidDataException("The restored loadout does not match its serialized input.");
         }
     }
 

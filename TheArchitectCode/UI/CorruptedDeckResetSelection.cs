@@ -12,6 +12,7 @@ internal sealed record CorruptedDeckResetSelection(string Json, FrozenCorruptedP
         var root = string.IsNullOrEmpty(json) ? new JsonObject() :
             JsonNode.Parse(json) as JsonObject ?? throw new JsonException("Architect run state is not an object.");
         root[nameof(ArchitectRun.EntrySnapshot)] = null;
+        root[nameof(ArchitectRun.PlaytestOpponents)] = null;
 
         // Discard decks before deserializing. The failsafe must work even when their contents are invalid.
         foreach (var key in new[] { nameof(ArchitectRun.Origin), nameof(ArchitectRun.PendingParty), nameof(ArchitectRun.EntryParty) })

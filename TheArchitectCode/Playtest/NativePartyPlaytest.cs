@@ -507,6 +507,9 @@ internal static class NativePartyPlaytest
                     Require(previews.GetChildren().OfType<Control>().Any(node =>
                         node.IsVisibleInTree() && node.GetChildren().OfType<NCard>().Any(preview => preview.Model == model)),
                         $"{panels.Length}: member {index} mouse hover opens the full card");
+                    var enlarged = previews.GetChildren().OfType<Control>().Single(node =>
+                        node.IsVisibleInTree() && node.GetChildren().OfType<NCard>().Any(preview => preview.Model == model));
+                    NativeEnemyResourcePlaytest.AssertPreviewPlacement(enlarged, card);
                 }
             }
             await NativeDemoPlaytest.Capture($"party-{panels.Length}-member-{index}-hover");

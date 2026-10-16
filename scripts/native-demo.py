@@ -39,6 +39,37 @@ def tool(name):
     return str(Path(found).resolve())
 
 
+def resolve_xvfb():
+    configured = os.environ.get("ARCHITECT_XVFB")
+    if configured:
+        return tool(configured)
+    if shutil.which("Xvfb"):
+        return tool("Xvfb")
+    candidate = ROOT / "artifacts/tools/xvfb/usr/bin/Xvfb"
+    return tool(str(candidate) if candidate.is_file() else "Xvfb")
+
+
+def private_preflight():
+    xvfb = resolve_xvfb()
+    for name in ("bwrap", "xauth", "xdpyinfo", "xdotool", "magick"):
+        tool(name)
+    required_file("/usr/share/glvnd/egl_vendor.d/50_mesa.json")
+    return xvfb
+
+
+def mods_input(game):
+    mods = Path(os.environ.get("ARCHITECT_MODS_INPUT", ROOT / "artifacts/mods")).expanduser().resolve()
+    base = mods if "ARCHITECT_MODS_INPUT" in os.environ else game / "mods"
+    for name, directory in (("TheArchitect", mods), ("BaseLib", base)):
+        for suffix in ("dll", "json", "pck"):
+            path = directory / name / f"{name}.{suffix}"
+            if not path.is_file():
+                raise ValueError(f"Missing {path}. Build TheArchitect first; an ARCHITECT_MODS_INPUT "
+                                 "override must include BaseLib.dll, BaseLib.json and BaseLib.pck "
+                                 "under BaseLib/ (no installed-runtime fallback).")
+    return mods, base / "BaseLib"
+
+
 def hashes(directory):
     return {str(p.relative_to(directory)): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in sorted(directory.rglob("*")) if p.is_file()}
@@ -252,13 +283,26 @@ def sandbox_command(game, run, xvfb, render_threads=4, shared_display=None, rend
 
 
 def launch(args):
+    save_template = getattr(args, "save_template", None)
+    save_input = getattr(args, "save_input", None)
+    if save_template or save_input:
+        expected_scenario = "save-template" if save_template else "save-input"
+        if (save_template and save_input or args.scenario != expected_scenario or
+                args.layout_only or getattr(args, "party_history", None)):
+            raise ValueError("Save fixtures cannot be combined with other scenarios.")
+    if args.scenario in ("save-template", "save-input") and not (save_template or save_input):
+        raise ValueError("Save fixtures require an input path.")
+    if save_template and args.shared_visible:
+        raise ValueError("Template export requires a private display.")
+    if save_input and args.shared_visible and not args.manual:
+        raise ValueError("Visible save fixtures require --manual.")
     party_history_path = getattr(args, "party_history", None)
     if party_history_path is not None and (
             not args.manual or not args.shared_visible or args.scenario not in MANUAL_PARTIES[:4]):
         raise ValueError("--party-history requires --manual --shared-visible and --party-1/2/3/4.")
     if args.scenario in ("enchantment-art", "stance-tooltips", "stance-vfx", "watcher-audio", "watcher-background") and args.shared_visible:
         raise ValueError(f"--{args.scenario} requires a private display; omit --shared-visible.")
-    if args.manual and (not args.shared_visible or args.scenario not in MANUAL_PARTIES + DOWNFALL_INSPECTIONS):
+    if args.manual and (not args.shared_visible or args.scenario not in MANUAL_PARTIES + DOWNFALL_INSPECTIONS + ("save-input",)):
         raise ValueError("--manual requires --shared-visible and --party-1/2/3/4, --downfall-party or --downfall-matchup.")
     if args.scenario in DOWNFALL_INSPECTIONS and not args.manual:
         raise ValueError(f"--{args.scenario} requires --manual and --shared-visible.")
@@ -279,7 +323,7 @@ def launch(args):
         tool("pactl")
     party_history = load_party_history(party_history_path, int(args.scenario[-1])) if party_history_path is not None else None
     game = required_file(Path(args.game) / "SlayTheSpire2").parent
-    requires_snapshot = args.scenario not in DOWNFALL_SCENARIOS + DOWNFALL_INSPECTIONS + ("ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "watcher-audio", "watcher-background", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx", "encounters")
+    requires_snapshot = args.scenario not in DOWNFALL_SCENARIOS + DOWNFALL_INSPECTIONS + ("save-template", "save-input", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "watcher-audio", "watcher-background", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx", "encounters")
     if requires_snapshot and not os.environ.get("ARCHITECT_SNAPSHOT_INPUT"):
         raise ValueError("Set ARCHITECT_SNAPSHOT_INPUT to the captured snapshot to copy (never modified).")
     snapshot = required_file(os.environ["ARCHITECT_SNAPSHOT_INPUT"]) if (
@@ -301,13 +345,12 @@ def launch(args):
             raise ValueError("--render-device must name an available /dev/dri/renderD* GPU render node.")
         if args.cache_from:
             raise ValueError("--cache-from currently supports private software displays only; omit it for shared-visible.")
-    xvfb = None if args.shared_visible else tool(os.environ.get("ARCHITECT_XVFB", "Xvfb"))
-    for name in (("bwrap", "xdpyinfo") if args.shared_visible else
-                 ("bwrap", "xauth", "xdpyinfo", "xdotool", "magick")):
-        tool(name)
-    required_file("/usr/share/glvnd/egl_vendor.d/50_mesa.json")
-    mods = Path(os.environ.get("ARCHITECT_MODS_INPUT", ROOT / "artifacts/mods")).resolve()
-    required_file(mods / "TheArchitect/TheArchitect.dll")
+    xvfb = None if args.shared_visible else private_preflight()
+    if args.shared_visible:
+        for name in ("bwrap", "xdpyinfo"):
+            tool(name)
+        required_file("/usr/share/glvnd/egl_vendor.d/50_mesa.json")
+    mods, base_input = mods_input(game)
     if args.scenario in DOWNFALL_SCENARIOS + DOWNFALL_INSPECTIONS:
         for suffix in ("dll", "json", "pck"):
             required_file(mods / f"Downfall/Downfall.{suffix}")
@@ -335,7 +378,7 @@ def launch(args):
             base = run / "mods/BaseLib"
             base.mkdir(exist_ok=True)
             for suffix in ("dll", "json", "pck"):
-                shutil.copyfile(required_file(game / f"mods/BaseLib/BaseLib.{suffix}"),
+                shutil.copyfile(required_file(base_input / f"BaseLib.{suffix}"),
                                 base / f"BaseLib.{suffix}")
         for mod in ("BaseLib", "TheArchitect"):
             for suffix in ("dll", "json", "pck"):
@@ -362,6 +405,13 @@ def launch(args):
             metadata["run_save_sha256"] = hashlib.sha256((run / "run-input.json").read_bytes()).hexdigest()
         if party_history is not None:
             metadata.update(copy_party_history(run, party_history))
+        for name, source in (("save-template", save_template), ("save-input", save_input)):
+            if source:
+                content = required_file(source).read_bytes()
+                if not isinstance(json.loads(content), dict):
+                    raise ValueError(f"{name} must contain a JSON object.")
+                (run / f"{name}.json").write_bytes(content)
+                metadata[name + "_sha256"] = hashlib.sha256(content).hexdigest()
         metadata.update(mods=hashes(run / "mods"),
                         snapshot_sha256=hashlib.sha256((run / "snapshot-input.json").read_bytes()).hexdigest()
                         if snapshot is not None else None,
@@ -667,6 +717,8 @@ def main():
                      help="Leave a shared-visible --party-1/2/3/4, --downfall-party or --downfall-matchup fight open with GUI input enabled.")
     run.add_argument("--party-history", metavar="PATH",
                      help="Copy single-player victory loadouts from this JSON config for --manual --shared-visible --party-1/2/3/4.")
+    run.add_argument("--save-template", metavar="PATH", help="Export a native template from a seed/Ascension request.")
+    run.add_argument("--save-input", metavar="PATH", help="Load a Python-prepared save as an isolated local fixture.")
     run.add_argument("--layout-only", action="store_true",
                      help="Check a --party-2/3/4 inspection layout and card hover, then exit without playing turns.")
     run.add_argument("--downfall-keywords", action="store_true",
@@ -696,6 +748,10 @@ def main():
             command.add_argument("key")
     args = parser.parse_args()
     if args.action == "run":
+        if args.save_template or args.save_input:
+            if args.scenario != "default":
+                parser.error("Save inputs cannot be combined with another scenario.")
+            args.scenario = "save-template" if args.save_template else "save-input"
         if not re.fullmatch(r"[a-zA-Z0-9_-]{1,40}", args.label):
             parser.error("--label must be 1-40 letters, digits, underscores or hyphens.")
         return launch(args)

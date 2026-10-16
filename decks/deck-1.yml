@@ -1,0 +1,131 @@
+schema: 1
+name: Necrobinder victory
+character: CHARACTER.NECROBINDER
+ascension: 5
+cards:
+- current_upgrade_level: 1
+  floor_added_to_deck: 1
+  id: CARD.DEFEND_NECROBINDER
+- floor_added_to_deck: 1
+  id: CARD.BODYGUARD
+- floor_added_to_deck: 1
+  id: CARD.UNLEASH
+- floor_added_to_deck: 1
+  id: CARD.ASCENDERS_BANE
+- floor_added_to_deck: 1
+  id: CARD.PATTER
+- floor_added_to_deck: 1
+  id: CARD.PHOTON_CUT
+- current_upgrade_level: 1
+  enchantment:
+    amount: 1
+    id: ENCHANTMENT.CORRUPTED
+  floor_added_to_deck: 2
+  id: CARD.REAP
+- current_upgrade_level: 1
+  floor_added_to_deck: 3
+  id: CARD.LETHALITY
+- current_upgrade_level: 1
+  floor_added_to_deck: 3
+  id: CARD.DEFY
+- current_upgrade_level: 1
+  floor_added_to_deck: 4
+  id: CARD.BORROWED_TIME
+- floor_added_to_deck: 7
+  id: CARD.WISP
+- current_upgrade_level: 1
+  floor_added_to_deck: 9
+  id: CARD.PULL_AGGRO
+- current_upgrade_level: 1
+  floor_added_to_deck: 13
+  id: CARD.FEAR
+- current_upgrade_level: 1
+  floor_added_to_deck: 15
+  id: CARD.PUTREFY
+- current_upgrade_level: 1
+  floor_added_to_deck: 17
+  id: CARD.UNDEATH
+- current_upgrade_level: 1
+  floor_added_to_deck: 18
+  id: CARD.BRIGHTEST_FLAME
+- current_upgrade_level: 1
+  floor_added_to_deck: 19
+  id: CARD.DELAY
+- current_upgrade_level: 1
+  floor_added_to_deck: 19
+  id: CARD.SPUR
+- current_upgrade_level: 1
+  floor_added_to_deck: 21
+  id: CARD.REANIMATE
+- current_upgrade_level: 1
+  floor_added_to_deck: 22
+  id: CARD.DREDGE
+- current_upgrade_level: 1
+  floor_added_to_deck: 24
+  id: CARD.GRAVE_WARDEN
+- current_upgrade_level: 1
+  floor_added_to_deck: 31
+  id: CARD.INVOKE
+- current_upgrade_level: 1
+  floor_added_to_deck: 33
+  id: CARD.REANIMATE
+- current_upgrade_level: 1
+  floor_added_to_deck: 39
+  id: CARD.DEBILITATE
+- current_upgrade_level: 1
+  floor_added_to_deck: 40
+  id: CARD.DANSE_MACABRE
+- current_upgrade_level: 1
+  floor_added_to_deck: 44
+  id: CARD.DEMESNE
+- current_upgrade_level: 1
+  floor_added_to_deck: 45
+  id: CARD.ENFEEBLING_TOUCH
+relics:
+- floor_added_to_deck: 1
+  id: RELIC.BOUND_PHYLACTERY
+- floor_added_to_deck: 1
+  id: RELIC.KALEIDOSCOPE
+- floor_added_to_deck: 6
+  id: RELIC.HAND_DRILL
+- floor_added_to_deck: 7
+  id: RELIC.VENERABLE_TEA_SET
+  props:
+    bools:
+    - name: GainEnergyInNextCombat
+      value: false
+- floor_added_to_deck: 9
+  id: RELIC.TOXIC_EGG
+- floor_added_to_deck: 10
+  id: RELIC.WHITE_BEAST_STATUE
+- floor_added_to_deck: 12
+  id: RELIC.HAPPY_FLOWER
+  props:
+    ints:
+    - name: TurnsSeen
+      value: 2
+- floor_added_to_deck: 15
+  id: RELIC.BAG_OF_PREPARATION
+- floor_added_to_deck: 18
+  id: RELIC.STORYBOOK
+- floor_added_to_deck: 26
+  id: RELIC.BLOOD_VIAL
+- floor_added_to_deck: 27
+  id: RELIC.GORGET
+- floor_added_to_deck: 29
+  id: RELIC.GREMLIN_HORN
+- floor_added_to_deck: 34
+  id: RELIC.EMPTY_CAGE
+- floor_added_to_deck: 41
+  id: RELIC.FESTIVE_POPPER
+- floor_added_to_deck: 42
+  id: RELIC.WAR_PAINT
+potions:
+- id: POTION.LUCKY_TONIC
+  slot_index: 0
+current_hp: 47
+max_hp: 57
+gold: 59
+max_potion_slot_count: 2
+max_energy: 3
+base_orb_slot_count: 0

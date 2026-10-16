@@ -8,6 +8,7 @@ public sealed partial class ArchitectRun
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public bool Entered { get; set; }
     public CorruptedPlayerEnvelope? EntrySnapshot { get; set; }
+    public CorruptedPlayerSnapshot[]? PlaytestOpponents { get; set; }
     public ulong? StartingHostNetId { get; set; }
     public ulong[]? OriginalNetworkIds { get; set; }
     public FrozenCorruptedParty? Origin { get; set; }
@@ -18,7 +19,7 @@ public sealed partial class ArchitectRun
 
     [JsonIgnore]
     public IReadOnlyList<CorruptedPlayerSnapshot> EncounterSnapshots =>
-        EntryParty is { } party
+        PlaytestOpponents is { } opponents ? opponents : EntryParty is { } party
             ? party.Lineage?.Members.Select(member => member.Snapshot).ToArray() ?? []
             : EntrySnapshot?.Snapshot is { } snapshot ? [snapshot] : [];
 
@@ -29,12 +30,30 @@ public sealed partial class ArchitectRun
 
     public ulong? EncounterCounterpartNetId(int index)
     {
+        if (PlaytestOpponents != null)
+            return null;
         if (EntryParty == null)
             return null;
         var lineage = EntryParty.Lineage ??
             throw new InvalidOperationException("A First Visit has no Corrupted Player counterpart.");
         var profile = lineage.Members[index].ProfileUuid;
         return EntryParty.Participants.Single(participant => participant.ProfileUuid == profile).NetId;
+    }
+
+    public void ValidatePlaytestOpponents()
+    {
+        if (PlaytestOpponents is not { } opponents)
+            return;
+        if (!Entered || opponents.Length is < 1 or > 4 || EntrySnapshot != null ||
+            EntryParty != null || PendingParty != null || Origin != null || StartingHostNetId != null ||
+            OriginalNetworkIds != null)
+            throw new JsonException("Invalid local playtest opponents or conflicting multiplayer lineage.");
+        foreach (var snapshot in opponents)
+        {
+            if (snapshot == null)
+                throw new JsonException("A playtest opponent is null.");
+            snapshot.Validate();
+        }
     }
 
     public void BindNetworkOrigin(ulong[] participants, ulong host)

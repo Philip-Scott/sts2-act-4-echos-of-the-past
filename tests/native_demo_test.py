@@ -32,6 +32,24 @@ def party_history_fixture(root, count):
 
 
 class PartyHistoryTests(unittest.TestCase):
+    def test_cli_save_fixture_supports_existing_manual_display(self):
+        for flag, scenario, extra in (("--save-template", "save-template", []),
+                                      ("--save-input", "save-input", ["--manual", "--shared-visible"])):
+            with self.subTest(flag=flag), patch.object(demo.sys, "argv",
+                    ["native-demo.py", "run", "/game", flag, "/input.json", *extra]), \
+                    patch.object(demo, "launch", return_value=0) as launch:
+                self.assertEqual(demo.main(), 0)
+                self.assertEqual(launch.call_args.args[0].scenario, scenario)
+
+    def test_save_fixture_rejects_conflicting_scenarios_before_launch(self):
+        for template, saved, scenario in (("/input", "/input", "save-template"),
+                                          ("/input", None, "party-2"), (None, "/input", "party-2")):
+            with self.subTest(template=template, saved=saved), patch.object(demo, "required_file") as required:
+                with self.assertRaisesRegex(ValueError, "cannot be combined"):
+                    demo.launch(SimpleNamespace(save_template=template, save_input=saved,
+                                                scenario=scenario, layout_only=False))
+                required.assert_not_called()
+
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory(dir=demo.ROOT)
         self.addCleanup(self.directory.cleanup)
@@ -159,6 +177,45 @@ class PartyHistoryTests(unittest.TestCase):
 
 
 class NativeDemoTests(unittest.TestCase):
+    def test_xvfb_resolution_uses_override_then_path_then_repo_tool(self):
+        with tempfile.TemporaryDirectory(dir=demo.ROOT) as directory:
+            root = Path(directory)
+            candidate = root / "artifacts/tools/xvfb/usr/bin/Xvfb"
+            candidate.parent.mkdir(parents=True)
+            candidate.touch()
+            with patch.object(demo, "ROOT", root), \
+                 patch.object(demo, "tool", side_effect=lambda name: name) as tool, \
+                 patch.object(demo.shutil, "which", return_value=None), \
+                 patch.dict(demo.os.environ, {"ARCHITECT_XVFB": ""}):
+                self.assertEqual(demo.resolve_xvfb(), str(candidate))
+                with patch.dict(demo.os.environ, {"ARCHITECT_XVFB": "/chosen/Xvfb"}):
+                    self.assertEqual(demo.resolve_xvfb(), "/chosen/Xvfb")
+                with patch.object(demo.shutil, "which", return_value="/usr/bin/Xvfb"):
+                    self.assertEqual(demo.resolve_xvfb(), "Xvfb")
+                tool.assert_called_with("Xvfb")
+
+    def test_override_requires_complete_baselib_before_creating_run(self):
+        with tempfile.TemporaryDirectory(dir=demo.ROOT) as directory:
+            root = Path(directory)
+            mods = root / "mods"
+            game = root / "game"
+            for folder, name in ((mods / "TheArchitect", "TheArchitect"),
+                                 (game / "mods/BaseLib", "BaseLib")):
+                folder.mkdir(parents=True)
+                for suffix in ("dll", "json", "pck"):
+                    (folder / f"{name}.{suffix}").touch()
+            with patch.dict(demo.os.environ, {"ARCHITECT_MODS_INPUT": str(mods)}), \
+                 patch.object(demo.tempfile, "mkdtemp") as create:
+                with self.assertRaisesRegex(ValueError, "override must include BaseLib"):
+                    demo.mods_input(game)
+                create.assert_not_called()
+            with patch.dict(demo.os.environ):
+                demo.os.environ.pop("ARCHITECT_MODS_INPUT", None)
+                with patch.object(demo, "ROOT", root):
+                    (root / "artifacts").mkdir()
+                    (root / "artifacts/mods").symlink_to(mods, target_is_directory=True)
+                    self.assertEqual(demo.mods_input(game), (mods, game / "mods/BaseLib"))
+
     def test_downfall_matchup_requires_visible_manual_mode(self):
         with patch.object(demo, "required_file") as required:
             with self.assertRaisesRegex(ValueError, "--downfall-matchup requires"):

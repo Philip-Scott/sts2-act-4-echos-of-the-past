@@ -7,8 +7,9 @@ Original composer: Clark Aboud. Game: Slay the Spire by MegaCrit.
 https://www.youtube.com/watch?v=ZziTuFU49EQ
 https://rys-music.com
 
-Music and recording rights remain with their respective creators. Supplying
-this recording does not establish permission for public redistribution.
+Music and recording rights remain with their respective creators. On October 12,
+2026, the mod author confirmed receiving permission from RYS to use this recording
+in this mod. The author will also add credits to the Steam description.
 
 Packaged file: heart_metal_cover.ogg, stereo Ogg Vorbis, 44,100 Hz.
 Each new Architect fight starts at sample 0.

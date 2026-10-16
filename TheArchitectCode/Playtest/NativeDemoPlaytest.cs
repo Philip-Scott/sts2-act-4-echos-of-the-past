@@ -81,6 +81,16 @@ internal static class NativeDemoPlaytest
             game.AddChild(new NativeDemoObserver());
         }
         await Task.Delay(2000);
+        if (CommandLineHelper.HasArg("architect-native-save-template"))
+        {
+            await ArchitectSavePlaytest.ExportTemplate(game);
+            return;
+        }
+        if (CommandLineHelper.HasArg("architect-native-save-input"))
+        {
+            await ArchitectSavePlaytest.LoadFixture(game);
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-native-watcher-background"))
         {
             await WatcherBackgroundPlaytest.Run(game);
@@ -400,8 +410,8 @@ internal static class NativeDemoPlaytest
         var energy = energySlot.GetChildren().OfType<NEnergyCounter>().Single();
         Require(energy.SceneFilePath == actor.Player.Character.EnergyCounterPath &&
             energy.Scale.IsEqualApprox(Vector2.One * 0.5f) &&
-            energy.GetNode<Label>("Label").Text == $"{actor.State.Energy}/{actor.State.MaxEnergy}",
-            "half-size native character energy orb displays current and maximum enemy energy");
+            energy.GetNode<Label>("Label").Text == actor.State.Energy.ToString(),
+            "half-size native character energy orb displays only current enemy energy");
         var face = telegraph.FindChild("CorruptedPlayerCard", true, false) as Button;
         Require((face != null) == (actor.State.Hand.Cards.Count > 0), "only hand cards appear in the telegraph");
         if (face != null)
@@ -418,6 +428,9 @@ internal static class NativeDemoPlaytest
             face.EmitSignal(Control.SignalName.MouseEntered);
             await game.AwaitProcessFrame();
             Require(HasPreview(), "hovering a Corrupted Player card shows its enlarged preview");
+            NativeEnemyResourcePlaytest.AssertPreviewPlacement(
+                hoverContainer.GetChildren().OfType<Control>().Single(control =>
+                    control.Name == "CorruptedPlayerCardPreview" && control.Visible), face);
             await Capture("corrupted-player-hover");
             face.EmitSignal(Button.SignalName.Pressed);
             face.EmitSignal(Control.SignalName.MouseExited);

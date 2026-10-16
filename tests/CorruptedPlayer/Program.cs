@@ -13,6 +13,7 @@ LobbyPreviewTests.Run(Test);
 ContinueRunPreviewTests.Run(Test);
 CorruptedDeckResetSelectionTests.Run(Test);
 CorruptedDeckResetGestureTests.Run(Test);
+PlaytestOpponentTests.Run(Test);
 
 void Test(string name, Action action)
 {

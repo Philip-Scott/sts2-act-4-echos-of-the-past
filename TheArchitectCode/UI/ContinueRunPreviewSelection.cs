@@ -14,6 +14,13 @@ internal sealed record ContinueRunPreviewSelection(CorruptedPlayerSnapshot[] Sna
             return new([], "NOT_SELECTED");
         var state = JsonSerializer.Deserialize<ArchitectRun>(json) ??
             throw new JsonException("Architect run state is null.");
+        state.ValidatePlaytestOpponents();
+        if (state.PlaytestOpponents is { } opponents)
+        {
+            if (players.Count != 1)
+                throw new JsonException("Local playtest opponents cannot be continued as a co-op save.");
+            return Selected(opponents);
+        }
         if (players.Count > 1)
         {
             var party = state.EntryParty ?? state.PendingParty;

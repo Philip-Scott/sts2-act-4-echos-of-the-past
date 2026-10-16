@@ -1,0 +1,139 @@
+schema: 1
+name: Silent victory
+character: CHARACTER.SILENT
+ascension: 5
+cards:
+- floor_added_to_deck: 1
+  id: CARD.STRIKE_SILENT
+- current_upgrade_level: 1
+  floor_added_to_deck: 1
+  id: CARD.DEFEND_SILENT
+- floor_added_to_deck: 1
+  id: CARD.DEFEND_SILENT
+- current_upgrade_level: 1
+  floor_added_to_deck: 1
+  id: CARD.DEFEND_SILENT
+- floor_added_to_deck: 1
+  id: CARD.NEUTRALIZE
+- floor_added_to_deck: 1
+  id: CARD.SURVIVOR
+- floor_added_to_deck: 1
+  id: CARD.ASCENDERS_BANE
+- floor_added_to_deck: 1
+  id: CARD.NEOWS_FURY
+- floor_added_to_deck: 2
+  id: CARD.FLICK_FLACK
+- floor_added_to_deck: 3
+  id: CARD.PREDATOR
+- floor_added_to_deck: 5
+  id: CARD.ABRASIVE
+- current_upgrade_level: 1
+  floor_added_to_deck: 11
+  id: CARD.WELL_LAID_PLANS
+- current_upgrade_level: 1
+  floor_added_to_deck: 13
+  id: CARD.NOXIOUS_FUMES
+- floor_added_to_deck: 15
+  id: CARD.DEADLY_POISON
+- current_upgrade_level: 1
+  floor_added_to_deck: 17
+  id: CARD.MALAISE
+- current_upgrade_level: 1
+  floor_added_to_deck: 20
+  id: CARD.DAGGER_THROW
+- floor_added_to_deck: 20
+  id: CARD.EXPOSE
+- current_upgrade_level: 1
+  floor_added_to_deck: 21
+  id: CARD.BURST
+- current_upgrade_level: 1
+  floor_added_to_deck: 22
+  id: CARD.PIERCING_WAIL
+- floor_added_to_deck: 25
+  id: CARD.PHANTOM_BLADES
+- floor_added_to_deck: 28
+  id: CARD.ULTIMATE_DEFEND
+- floor_added_to_deck: 29
+  id: CARD.INFINITE_BLADES
+- current_upgrade_level: 1
+  floor_added_to_deck: 30
+  id: CARD.PREPARED
+- floor_added_to_deck: 31
+  id: CARD.REFLEX
+- current_upgrade_level: 1
+  floor_added_to_deck: 33
+  id: CARD.TOOLS_OF_THE_TRADE
+- current_upgrade_level: 1
+  enchantment:
+    amount: 1
+    id: ENCHANTMENT.GLAM
+  floor_added_to_deck: 35
+  id: CARD.DEADLY_POISON
+- floor_added_to_deck: 36
+  id: CARD.POUNCE
+- enchantment:
+    amount: 1
+    id: ENCHANTMENT.GLAM
+  floor_added_to_deck: 38
+  id: CARD.FOOTWORK
+- current_upgrade_level: 1
+  enchantment:
+    amount: 1
+    id: ENCHANTMENT.GLAM
+  floor_added_to_deck: 39
+  id: CARD.FOOTWORK
+- current_upgrade_level: 1
+  enchantment:
+    amount: 1
+    id: ENCHANTMENT.GLAM
+  floor_added_to_deck: 43
+  id: CARD.DODGE_AND_ROLL
+- enchantment:
+    amount: 1
+    id: ENCHANTMENT.GLAM
+  floor_added_to_deck: 45
+  id: CARD.BLADE_OF_INK
+- current_upgrade_level: 1
+  enchantment:
+    amount: 1
+    id: ENCHANTMENT.GLAM
+  floor_added_to_deck: 46
+  id: CARD.BUBBLE_BUBBLE
+relics:
+- floor_added_to_deck: 1
+  id: RELIC.RING_OF_THE_SNAKE
+- floor_added_to_deck: 1
+  id: RELIC.NEOWS_TORMENT
+- floor_added_to_deck: 9
+  id: RELIC.VAMBRACE
+- floor_added_to_deck: 10
+  id: RELIC.POTION_BELT
+- floor_added_to_deck: 15
+  id: RELIC.TWISTED_FUNNEL
+- floor_added_to_deck: 18
+  id: RELIC.PAELS_EYE
+- floor_added_to_deck: 23
+  id: RELIC.GORGET
+- floor_added_to_deck: 26
+  id: RELIC.WAR_PAINT
+- floor_added_to_deck: 30
+  id: RELIC.VAJRA
+- floor_added_to_deck: 34
+  id: RELIC.GLITTER
+- floor_added_to_deck: 37
+  id: RELIC.FAKE_VENERABLE_TEA_SET
+  props:
+    bools:
+    - name: GainEnergyInNextCombat
+      value: false
+- floor_added_to_deck: 37
+  id: RELIC.FAKE_LEES_WAFFLE
+- floor_added_to_deck: 41
+  id: RELIC.RAINBOW_RING
+potions: []
+current_hp: 34
+max_hp: 70
+gold: 125
+max_potion_slot_count: 4
+max_energy: 3
+base_orb_slot_count: 0
