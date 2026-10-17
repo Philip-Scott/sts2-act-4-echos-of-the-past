@@ -38,6 +38,14 @@ internal static class CorruptedPartyLayoutGeometry
             count == 2 ? 200f - 80f * index : 200f - 220f * row);
     }
 
+    // The 248px panel's cards and pile toolbar fill its top 228px.
+    internal const float ContentFraction = 228f / 248f;
+    internal const float HealthBarGap = 6f;
+
+    // Panel top that rests the hand and pile toolbar just above a health bar.
+    internal static float TopAboveHealthBar(float barTop, float displayedHeight) =>
+        barTop - displayedHeight * ContentFraction - HealthBarGap;
+
     internal static float Scale(float spacing, float width, float anchorScale) =>
         Math.Clamp((spacing - 16f) / (width * anchorScale), 0.1f, 0.55f);
 

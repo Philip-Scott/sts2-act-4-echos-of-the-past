@@ -87,7 +87,7 @@ internal static class NativeMechanicsPlaytest
         CardCmd.Enchant<Sharp>(previewSharp, 4);
         Prepare(Card<Inflame>(), previewStrike, previewTwin, previewArea, previewRandom, previewSharp);
         var game = NGame.Instance!;
-        var telegraph = actor.Body.GetCreatureNode()!.GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph");
+        var telegraph = CorruptedPlayerTelegraph.Of(actor.Body.GetCreatureNode()!);
         Button PreviewFace(CardModel card) => telegraph.FindChildren("CorruptedPlayerCard", "Button", true, false)
             .OfType<Button>().Single(face => face.GetChildren().OfType<NCard>().Any(node => node.Model == card));
         async Task PreviewDamage(CardModel card, int expected)

@@ -230,8 +230,7 @@ internal static class NativePartyPlaytest
         if (layeringOnly)
         {
             await NativeEnemyResourcePlaytest.VerifyScreenLayering(game, players,
-                enemies.Select(enemy => enemy.GetCreatureNode()!
-                    .GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph")).ToArray());
+                enemies.Select(enemy => CorruptedPlayerTelegraph.Of(enemy.GetCreatureNode()!)).ToArray());
             await game.ReturnToMainMenu();
             return;
         }
@@ -324,8 +323,7 @@ internal static class NativePartyPlaytest
             combat.RemoveCard(random);
         }
         await NativeDemoPlaytest.Capture($"party-{count}-opening");
-        var panels = enemies.Select(enemy => enemy.GetCreatureNode()!
-            .GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph")).ToArray();
+        var panels = enemies.Select(enemy => CorruptedPlayerTelegraph.Of(enemy.GetCreatureNode()!)).ToArray();
         var bindings = enemies.SelectMany(enemy => enemy.GetCreatureNode()!.Visuals
             .FindChildren("BoundEcho*", recursive: true, owned: false).OfType<CorruptedPlayerBinding>()).ToArray();
         Require(bindings.Length == count * 2, $"{count}: every body has two binding layers");

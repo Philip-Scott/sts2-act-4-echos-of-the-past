@@ -113,7 +113,8 @@ telegraphed hand and energy already include them.
   consecutive extra turns is an explicit error, not an endless loop.
 
 The telegraph shows only the current native hand, with larger cards and no
-background panel or themed scroll-area overlay. A half-size native character
+background panel or themed scroll-area overlay. The hand and its pile toolbar rest just above
+the Corrupted Player's health bar, centered on it. A half-size native character
 energy orb and three-quarter-size draw, discard and exhaust icons sit below the
 hand, using the player's HUD artwork, count badges and typography. Energy shows
 only the current amount in larger, auto-sized text, without a maximum-energy denominator.
@@ -157,7 +158,10 @@ Single-player keeps the saved character's name (for example, "Corrupted Ironclad
 Party previews are compact, with full-size hover inspection. Multiplayer enemies
 use staggered positions; their hand strips stay below the wrapped relic inventory
 and share collision resolution. Three or four Corrupted Players use a two-row
-enemy layout. Single-player positioning is unchanged.
+enemy layout. Single-player positioning is unchanged. Hands live in a shared
+`CorruptedPlayerTelegraphs` container after the creature containers, so a hand
+drawn over another creature still wins mouse hover; only one enlarged card is
+open at a time across all hands.
 This is a state preview, **not an exact future-damage forecast**.
 
 The actual native `NOrbManager` renders slots, passive/evoke effects and native

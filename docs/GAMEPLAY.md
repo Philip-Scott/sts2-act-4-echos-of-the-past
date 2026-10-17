@@ -56,6 +56,9 @@ Corrupted Players provide the party-size scaling. The Architect's HP and shared
 per-turn damage cap use the native final-act boss multiplayer scaling tier
 (base value times player count times 1.3). Solo damage caps remain 300, or 200
 at Ascension 8 and above.
+Card block from Corrupted Players keeps native multiplayer enemy block scaling;
+in Act 4 it uses the final-act Elite tier (player count times 1.2 for three or
+more players).
 Each Corrupted Player also carries a corruption buff for its character:
 
 | Character | Buff | Effect |

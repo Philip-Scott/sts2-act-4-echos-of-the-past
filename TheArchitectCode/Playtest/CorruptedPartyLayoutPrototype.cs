@@ -21,7 +21,7 @@ internal static class CorruptedPartyLayoutPrototype
         if (!NativeDemoSafety.Enabled)
             throw new InvalidOperationException("Layout prototypes require disposable native storage.");
         var nodes = enemies.Select(enemy => enemy.GetCreatureNode()!).ToArray();
-        var panels = nodes.Select(node => node.GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph")).ToArray();
+        var panels = nodes.Select(node => CorruptedPlayerTelegraph.Of(node)).ToArray();
         var scales = nodes.Select(node => node.Visuals.Scale).ToArray();
         for (var index = 0; index < nodes.Length; index++)
         {

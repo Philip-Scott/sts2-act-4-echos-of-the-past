@@ -84,7 +84,7 @@ internal static class NativeSavedRunPlaytest
     {
         var combat = player.Creature.CombatState!;
         var context = new ThrowingPlayerChoiceContext();
-        var telegraph = actor.Body.GetCreatureNode()!.GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph");
+        var telegraph = CorruptedPlayerTelegraph.Of(actor.Body.GetCreatureNode()!);
         var counter = telegraph.FindChild("Energy", true, false).GetChildren().OfType<NEnergyCounter>().Single();
         if (reactiveDamage)
         {

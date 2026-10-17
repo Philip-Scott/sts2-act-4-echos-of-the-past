@@ -387,7 +387,7 @@ internal static class NativeDemoPlaytest
     {
         await game.AwaitProcessFrame();
         AssertCorruptedPlayerHandPosition(actor);
-        var telegraph = actor.Body.GetCreatureNode()!.GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph");
+        var telegraph = CorruptedPlayerTelegraph.Of(actor.Body.GetCreatureNode()!);
         Require((Control)telegraph is not PanelContainer, "Corrupted Player hand has no background panel");
         Require(telegraph.GetNode<ScrollContainer>("HandScroll").GetThemeStylebox("panel") is StyleBoxEmpty,
             "hand scroll area has no inherited translucent overlay");
@@ -489,7 +489,7 @@ internal static class NativeDemoPlaytest
     private static void AssertCorruptedPlayerHandPosition(NativeCorruptedPlayer actor)
     {
         var node = actor.Body.GetCreatureNode()!;
-        var telegraph = node.GetNode<CorruptedPlayerTelegraph>("CorruptedPlayerTelegraph");
+        var telegraph = CorruptedPlayerTelegraph.Of(node);
         var expectedX = Mathf.Clamp(node.Visuals.IntentPosition.GlobalPosition.X - telegraph.Size.X / 2f,
             16f, Mathf.Max(16f, telegraph.GetViewportRect().Size.X - telegraph.Size.X - 16f));
         Require(Mathf.IsEqualApprox(telegraph.GlobalPosition.X, expectedX),

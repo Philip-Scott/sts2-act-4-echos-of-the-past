@@ -12,6 +12,13 @@
 - Corrupted Player hands now animate like the player's hand: cards are drawn
   from their draw pile one at a time, kept cards slide into place, discards fly
   to their discard pile and exhausted cards burn away.
+- Corrupted Player hands, energy and piles now sit just above each Corrupted
+  Player's health bar instead of above its head.
+- Fixed Corrupted Players stopping mid-fight in three- and four-player runs:
+  native enemy block scaling had no Act 4 tier and threw every time they
+  gained block.
+- Corrupted Player hand cards drawn over another creature now still respond to
+  hover, and only one enlarged card is shown at a time.
 - The corrupted Regent renders slightly smaller so his hand preview clears the
   relic bar.
 - Custom power icons now load their own art instead of the missing-icon

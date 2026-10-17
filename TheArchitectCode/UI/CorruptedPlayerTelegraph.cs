@@ -54,6 +54,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     private bool _refreshQueued;
     private Action _refreshPlan = null!;
     private readonly List<CardCell> _cells = [];
+    private static CorruptedPlayerTelegraph? _previewOwner;
     private CardCell? _inspected;
     private Control? _preview;
     private NCard? _enlarged;
@@ -93,9 +94,39 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             _partyDisplay = creature.CombatState?.Enemies.Count(enemy => enemy.Monster is CorruptedPlayer) > 1,
             _refreshPlan = refreshPlan
         };
-        anchor.AddChild(panel);
+        Host(anchor).AddChild(panel);
+        Attached.AddOrUpdate(anchor, panel);
         return panel;
     }
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<NCreature, CorruptedPlayerTelegraph>
+        Attached = new();
+
+    internal static CorruptedPlayerTelegraph Of(NCreature anchor) =>
+        Attached.TryGetValue(anchor, out var panel) && GodotObject.IsInstanceValid(panel)
+            ? panel
+            : throw new InvalidOperationException($"{anchor.Name} has no Corrupted Player telegraph.");
+
+    // GUI picking follows tree order, so hands must come after every creature body; as anchor children,
+    // a later creature's hitbox or orbs would take hover from a hand drawn above it.
+    private static Node Host(NCreature anchor)
+    {
+        var container = anchor.GetParent();
+        var parent = container?.GetParent();
+        if (container == null || parent == null)
+            return anchor;
+        if (parent.GetNodeOrNull<Control>(HostName) is { } host)
+            return host;
+        host = new Control { Name = HostName, MouseFilter = MouseFilterEnum.Ignore };
+        parent.AddChild(host);
+        var last = parent.GetChildren().OfType<Node>()
+            .Where(child => child != host && child.GetChildren().OfType<NCreature>().Any())
+            .Max(child => child.GetIndex());
+        parent.MoveChild(host, last + 1);
+        return host;
+    }
+
+    private const string HostName = "CorruptedPlayerTelegraphs";
 
     public override void _Ready()
     {
@@ -556,10 +587,14 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             NHoverTipSet.shouldBlockHoverTips || NCombatRoom.Instance?.Ui is not { } combatUi)
             return;
         ClearPreview();
+        // One enlarged card at a time across every party hand.
+        if (_previewOwner != this && GodotObject.IsInstanceValid(_previewOwner))
+            _previewOwner!.ClearPreview();
         _enlarged = NCard.Create(cell.Entry.Card);
         if (_enlarged == null)
             return;
         _inspected = cell;
+        _previewOwner = this;
         _preview = new Control { Name = "CorruptedPlayerCardPreview", MouseFilter = MouseFilterEnum.Ignore };
         combatUi.AddChild(_preview);
         _enlarged.SetForceUnpoweredPreview(true);
@@ -586,8 +621,12 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         {
             NHoverTipSet.Remove(_preview!);
             _preview!.Hide();
+            // Leave the tree now so a same-frame replacement keeps the preview name.
+            _preview.GetParent()?.RemoveChild(_preview);
             _preview.QueueFree();
         }
+        if (_previewOwner == this)
+            _previewOwner = null;
         _preview = null;
         _enlarged = null;
         _tips = null;
@@ -629,6 +668,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             (_nativeDisplay && (_creature.CombatState == null || CombatManager.Instance.IsOverOrEnding)))
         {
             Stop();
+            if (!GodotObject.IsInstanceValid(_anchor))
+                QueueFree();
             return;
         }
         if (_creature.IsDead)
@@ -638,6 +679,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             DisposeHand();
             return;
         }
+        Visible = _anchor.IsVisibleInTree();
         UpdateLayout();
         _hand?.Process(delta, IsVisibleInTree());
         if (!IsVisibleInTree() || !CanInspect || NHoverTipSet.shouldBlockHoverTips)
@@ -649,7 +691,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     private void UpdateLayout()
     {
         var viewport = GetViewportRect().Size;
-        var above = _anchor.Visuals.IntentPosition.GlobalPosition;
+        var above = CorruptedPartyTelegraphLayout.HealthBarTop(_anchor);
         var anchor = _anchor.GetGlobalTransform();
         var spacing = _partyLayout?.Spacing(_anchor) ?? float.PositiveInfinity;
         var width = Mathf.Min(680f, Mathf.Max(220f, viewport.X - 32f));
@@ -662,15 +704,16 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         CustomMinimumSize = new Vector2(width, 248);
         Size = new Vector2(width, 248);
         ApplyHandSpacing();
-        if (_partyDisplay)
-        {
-            Scale = Vector2.One * CorruptedPartyLayoutGeometry.Scale(spacing, Size.X, anchor.Scale.X);
-        }
-        var displaySize = _partyDisplay ? (GetGlobalTransform() * new Rect2(Vector2.Zero, Size)).Size : Size;
+        var parentScale = GetParent() is CanvasItem parent ? Mathf.Abs(parent.GetGlobalTransform().Scale.X) : 1f;
+        var anchorScale = Mathf.Abs(anchor.Scale.X) / Mathf.Max(parentScale, 0.0001f);
+        Scale = Vector2.One * (_partyDisplay
+            ? CorruptedPartyLayoutGeometry.Scale(spacing, Size.X, Mathf.Abs(anchor.Scale.X)) * anchorScale
+            : anchorScale);
+        var displaySize = (GetGlobalTransform() * new Rect2(Vector2.Zero, Size)).Size;
         var topMargin = _partyDisplay ? 100f : 12f;
         GlobalPosition = _partyDisplay ? partyPosition : new Vector2(
             Mathf.Clamp(above.X - displaySize.X / 2f, 16f, Mathf.Max(16f, viewport.X - displaySize.X - 16f)),
-            Mathf.Clamp(above.Y - displaySize.Y + (_nativeDisplay ? 24f : -24f), topMargin,
+            Mathf.Clamp(CorruptedPartyLayoutGeometry.TopAboveHealthBar(above.Y, displaySize.Y), topMargin,
                 Mathf.Max(topMargin, viewport.Y - displaySize.Y - 12f)));
         _layoutInputs = inputs with { PanelSize = Size };
     }

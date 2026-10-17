@@ -76,3 +76,19 @@ viewport changes. Release subscriptions and references when panels stop/exit.
 **Acceptance:** idle panels perform no layout rebuilds; movement, viewport
 changes, deaths, room cleanup, compact party panels, and hover placement remain
 correct.
+
+## 6. Measured four-player frame cost
+
+**Measured:** a temporary probe in a visible four-player Act 4 fixture (1920x1080,
+`gl_compatibility`) recorded the following:
+
+- Mod CPU time is small. All telegraph `_Process` calls together took about
+  0.1 ms per frame, and the corruption compositor took about 0.1 ms.
+- Hiding the four hands reduced draw calls from about 3,700 to 1,200 and canvas
+  items from about 6,700 to 2,700. FPS rose from the high 50s to 60.
+- Disabling the corruption CanvasGroup shaders removed only about 600 draw calls.
+- The largest drops, to 30–36 FPS, happened while the Act 4 block-scaling
+  exception repeated on every combat-state refresh. That exception is now fixed.
+
+**Remaining:** if FPS is still low, the native `NCard` nodes in the hands are the
+next target, for example by caching each idle hand as a texture.

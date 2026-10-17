@@ -55,6 +55,18 @@ internal sealed class CorruptedPartyTelegraphLayout
         _frame = ulong.MaxValue;
     }
 
+    // Top-center of the creature's native health bar, falling back to its intent position.
+    internal static Vector2 HealthBarTop(NCreature node)
+    {
+        if (node.GetNodeOrNull<Control>("%HealthBar") is { } display &&
+            display.GetNodeOrNull<Control>("%HealthBar") is { } bar)
+        {
+            var rect = bar.GetGlobalRect();
+            return new Vector2(rect.Position.X + rect.Size.X / 2f, rect.Position.Y);
+        }
+        return node.Visuals.IntentPosition.GlobalPosition;
+    }
+
     internal float Spacing(NCreature anchor)
     {
         var frame = Engine.GetProcessFrames();
@@ -84,7 +96,7 @@ internal sealed class CorruptedPartyTelegraphLayout
                     continue;
                 }
                 var position = new Vector2(node.Visuals.IntentPosition.GlobalPosition.X, node.Position.Y);
-                var intent = node.Visuals.IntentPosition.GlobalPosition;
+                var intent = HealthBarTop(node);
                 var transform = node.GetGlobalTransform();
                 changed |= position != member.Position || intent != member.Intent || transform != member.Transform;
                 member.Position = position;
@@ -119,7 +131,8 @@ internal sealed class CorruptedPartyTelegraphLayout
                 var displayed = size * member.Transform.Scale * scale;
                 return new CorruptedPartyLayoutGeometry.Bounds(
                     member.Intent.X - displayed.X / 2f,
-                    Math.Min(member.Intent.Y - displayed.Y + 24f, viewport.Y - displayed.Y - 12f),
+                    Math.Min(CorruptedPartyLayoutGeometry.TopAboveHealthBar(member.Intent.Y, displayed.Y),
+                        viewport.Y - displayed.Y - 12f),
                     displayed.X, displayed.Y);
             }).ToArray();
             var placed = CorruptedPartyLayoutGeometry.Place(desired, viewport.X, viewport.Y, topMargin);

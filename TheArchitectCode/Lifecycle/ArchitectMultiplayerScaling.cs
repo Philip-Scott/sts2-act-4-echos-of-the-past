@@ -1,3 +1,4 @@
+using HarmonyLib;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Encounters;
 using MegaCrit.Sts2.Core.Models.Singleton;
@@ -16,4 +17,12 @@ internal static class ArchitectMultiplayerScaling
         actIndex == 3 && (encounter is ArchitectEncounter or CorruptedPlayerEncounter ||
             encounter is TheArchitectEventEncounter && ArchitectEnding.IsActive(RunManager.Instance.DebugOnlyGetState()))
             ? 2 : actIndex;
+
+    // Native callers such as enemy block scaling (3+ players) pass the raw act index.
+    [HarmonyPatch(typeof(MultiplayerScalingModel), nameof(MultiplayerScalingModel.GetMultiplayerScaling))]
+    internal static class ActFourPatch
+    {
+        private static void Prefix(EncounterModel? encounter, ref int actIndex) =>
+            actIndex = GetActIndex(encounter, actIndex);
+    }
 }

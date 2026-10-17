@@ -172,7 +172,7 @@ internal static class CorruptionVisualPlaytest
         // Native revive fades NCreatureVisuals, not its original Spine materials.
         var originalAlpha = node.Visuals.Modulate;
         var ui = new[] { node.GetNode<CanvasItem>("%HealthBar"), node.IntentContainer,
-            Find<CanvasItem>(node, "CorruptedPlayerTelegraph"), node.OrbManager! };
+            CorruptedPlayerTelegraph.Of(node), node.OrbManager! };
         var uiColors = ui.Select(item => item.Modulate).ToArray();
         foreach (var alpha in new[] { 0.5f, 0f, 1f })
         {
@@ -477,7 +477,7 @@ internal static class CorruptionVisualPlaytest
             $"{label}: independent binding layers bracket, and are not sampled inside, the body group");
         Require(!group.IsAncestorOf(node.Hitbox) && !group.IsAncestorOf(node.GetNode("%HealthBar")) &&
             !group.IsAncestorOf(node.IntentContainer) && node.OrbManager != null &&
-            !group.IsAncestorOf(node.OrbManager) && !group.IsAncestorOf(Find<Node>(node, "CorruptedPlayerTelegraph")) &&
+            !group.IsAncestorOf(node.OrbManager) && !group.IsAncestorOf(CorruptedPlayerTelegraph.Of(node)) &&
             !group.IsAncestorOf(node.Visuals.GetNode("%Bounds")),
             $"{label}: hitbox, bounds, health, intents, orbs and card telegraph stay outside body group");
         Require(node.HasSpineAnimation && original.Scale.X < 0 &&

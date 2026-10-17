@@ -67,7 +67,11 @@ internal static class NativeEnemyResourcePlaytest
                     face.EmitSignal(Control.SignalName.MouseEntered);
                     await game.AwaitProcessFrame();
                     if (!HasPreview())
-                        throw new InvalidOperationException("Combat hover must create an enlarged card.");
+                        throw new InvalidOperationException(
+                            $"Combat hover must create an enlarged card (panel {panels.ToList().IndexOf(panel)}, " +
+                            $"screen {Array.IndexOf(openScreens, open)}, visible {panel.IsVisibleInTree()}, " +
+                            $"combat screen {ActiveScreenContext.Instance.IsCurrent(room)}, " +
+                            $"tips blocked {NHoverTipSet.shouldBlockHoverTips}).");
                     var preview = room.Ui.GetChildren().OfType<Control>()
                         .Single(node => node.Name == "CorruptedPlayerCardPreview" && node.IsVisibleInTree());
                     if (preview.ZIndex != 0 || preview.GetChildren().OfType<NHoverTipSet>()

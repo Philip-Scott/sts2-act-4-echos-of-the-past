@@ -57,6 +57,16 @@ internal static class CorruptedEnemyUiTests
             check(CorruptedPartyLayoutGeometry.HandSeparation(0, card, panel) == 8, "empty hand");
         });
 
+        test("corrupted hand: the hand and piles rest just above the health bar", () =>
+        {
+            foreach (var height in new[] { 248f, 136.4f })
+            {
+                var top = CorruptedPartyLayoutGeometry.TopAboveHealthBar(500f, height);
+                var contentBottom = top + height * CorruptedPartyLayoutGeometry.ContentFraction;
+                check(contentBottom < 500f && contentBottom > 490f, $"{height}px panel content ends at {contentBottom}");
+            }
+        });
+
         foreach (var count in new[] { 2, 3, 4 })
         {
             test($"corrupted enemy layout: {count} bodies have distinct staggered positions", () =>
