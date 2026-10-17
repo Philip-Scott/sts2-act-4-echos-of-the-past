@@ -166,6 +166,64 @@ internal static class MultiplayerPersistenceTests
         var directory = Path.Combine("artifacts", "multiplayer-persistence-tests", Guid.NewGuid().ToString("N"));
         try
         {
+            foreach (var count in new[] { 2, 3, 4 })
+            foreach (var outcome in new[] { "ArchitectWin", "ArchitectLoss" })
+            {
+                test($"{count}-player {outcome} saves the complete shared successor on every profile and survives a new host", () =>
+                {
+                    var profiles = new[] { host, client, other, Guid.Parse("40000000-0000-0000-0000-000000000000") }
+                        .Take(count).ToArray();
+                    var shared = party with
+                    {
+                        Participants = profiles.Select((profile, index) => new SuccessorParticipant((ulong)(index + 1) * 10, profile)).ToArray(),
+                        GroupKey = SuccessorGroup.Key(profiles)
+                    };
+                    var terminal = profiles.Select((profile, index) => new CorruptedPartyMember(profile, Snapshot(80 + index))).ToArray();
+                    CorruptedPartyEnvelope? expected = null;
+                    foreach (var profile in profiles)
+                    {
+                        var localDirectory = Path.Combine(directory, $"{count}-{outcome}", profile.ToString("N"));
+                        Directory.CreateDirectory(localDirectory);
+                        var solo = Path.Combine(localDirectory, "corrupted_player_snapshot.json");
+                        File.WriteAllText(solo, "preserve solo");
+                        if (profile == host)
+                            CorruptedPartyStore.Commit(localDirectory, profile, shared with { RunId = "old-local-run" }, outcome, terminal);
+                        Check(CorruptedPartyStore.Commit(localDirectory, profile, shared, outcome, terminal) == 1);
+                        Check(CorruptedPartyStore.Commit(localDirectory, profile, shared, outcome, terminal) == 1);
+                        var saved = CorruptedPartyStore.Load(localDirectory, profile, profiles.Reverse().ToArray())!;
+                        saved.Validate(profile, profiles);
+                        Check(saved.TerminalRunId == shared.RunId && saved.Outcome == outcome && saved.Members.Length == count);
+                        expected ??= saved;
+                        Check(JsonSerializer.Serialize(saved with { HostProfileUuid = host }) == JsonSerializer.Serialize(expected));
+                        Check(File.ReadAllText(solo) == "preserve solo");
+                    }
+                    var newHostDirectory = Path.Combine(directory, $"{count}-{outcome}", client.ToString("N"));
+                    var newHostLineage = CorruptedPartyStore.Load(newHostDirectory, client, profiles)!;
+                    var next = shared with
+                    {
+                        RunId = "new-host-run", HostNetId = 20, HostProfileUuid = client, Lineage = newHostLineage
+                    };
+                    next.Validate(shared.Participants.Select(player => player.NetId).ToArray(), 20);
+                    foreach (var profile in profiles)
+                    {
+                        var localDirectory = Path.Combine(directory, $"{count}-{outcome}", profile.ToString("N"));
+                        Check(CorruptedPartyStore.Commit(localDirectory, profile, next, "ArchitectWin", terminal) == 2);
+                        Check(CorruptedPartyStore.Load(localDirectory, profile, profiles)!.TerminalRunId == next.RunId);
+                    }
+                });
+            }
+            test("client successor revision follows the frozen host lineage rather than unrelated local history", () =>
+            {
+                var localDirectory = Path.Combine(directory, "divergent-client");
+                Check(CorruptedPartyStore.Commit(localDirectory, client, frozen with
+                {
+                    RunId = "old-client-run", Lineage = lineage with { Revision = 40 }
+                }, "ArchitectWin", members) == 41);
+                Check(CorruptedPartyStore.Commit(localDirectory, client, frozen, "ArchitectLoss", members) == 2);
+                Check(CorruptedPartyStore.Commit(localDirectory, client, frozen, "ArchitectLoss", members) == 2);
+                var saved = CorruptedPartyStore.Load(localDirectory, client, [host, client])!;
+                Check(saved.Revision == 2 && saved.Outcome == "ArchitectLoss" && saved.HostProfileUuid == client);
+            });
             test("profiles without snapshots persist identity and reuse legacy envelope identity", () =>
             {
                 var path = Path.Combine(directory, "new-profile", "identity.json");
@@ -182,15 +240,15 @@ internal static class MultiplayerPersistenceTests
                 Check(CorruptedPartyStore.Commit(directory, host, party, "ArchitectLoss", members) == 1);
                 var saved = CorruptedPartyStore.Load(directory, host, [client, host])!;
                 Check(saved.Members.Length == 2 && saved.TerminalRunId == party.RunId && saved.Outcome == "ArchitectLoss");
-                var nextRun = party with { RunId = "run-2" };
+                var nextRun = party with { RunId = "run-2", Lineage = saved };
                 Check(CorruptedPartyStore.Commit(directory, host, nextRun, "ArchitectWin", members) == 2);
                 Check(CorruptedPartyStore.Load(directory, host, [host, client])!.Outcome == "ArchitectWin");
             });
-            test("different hosts and changed membership never reuse another lineage", () =>
+            test("changed membership never reuses another lineage and nonparticipants cannot write", () =>
             {
                 Check(CorruptedPartyStore.Load(directory, client, [host, client]) == null);
                 Check(CorruptedPartyStore.Load(directory, host, [host, other]) == null);
-                Reject(() => CorruptedPartyStore.Commit(directory, client, party, "ArchitectWin", members));
+                Reject(() => CorruptedPartyStore.Commit(directory, other, party, "ArchitectWin", members));
                 Check(CorruptedPartyStore.Load(directory, client, [host, client]) == null);
             });
             test("partial terminal parties and capture corruption cannot replace the prior complete party", () =>

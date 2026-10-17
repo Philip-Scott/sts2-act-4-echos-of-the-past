@@ -44,10 +44,11 @@ it and have the party rejoin to receive the corrected save.
 
 Whether you win or lose against the Architect, the mod saves your build as your
 next opponent. The mod stores saves on your computer and does not sync them through Steam Cloud.
-Co-op saves belong to the host. Changing the host or a participant starts a
-separate history. Keep the same character and content mods enabled.
+Every co-op participant saves the complete party locally, so anyone can host the
+next run with the same opponents. Changing a participant starts a separate history.
+Keep the same character and content mods enabled.
 If the game cannot load a saved card model or synchronize the party, the mod
-blocks entry and reports an error. The mod does not support host migration.
+blocks entry and reports an error. Changing hosts during an ongoing run is not supported.
 
 Installed modded cards use the game's card engine. Cards that need human input
 or character data missing from the saved build may need compatibility work.

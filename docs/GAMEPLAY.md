@@ -20,7 +20,7 @@ Ancient → Rest Site → Shop → optional Elite → boss route. The Elite appe
 when the run has saved corrupted opponents. The first visit fights only the Architect;
 later visits first fight a corrupted version of the previous completed character.
 In multiplayer, repeat visits fight the **entire last saved party** for the same
-host and group membership. All Corrupted Players enter the Elite together.
+group membership, even with a different host next time. All Corrupted Players enter the Elite together.
 Defeating every member ends that combat, grants normal Elite rewards, and returns
 the party to the map. The Architect starts a separate boss combat.
 If the player, or the entire co-op party, dies in the Elite fight, the normal
@@ -67,7 +67,7 @@ Each Corrupted Player also carries a corruption buff for its character:
 | Silent | Ring of the Viper | At the start of its turn, draws 1 additional card and gains 1 Artifact. |
 | Regent | Tarnished Crown | Gains 3 Stars at the start of combat and 2 Stars at the end of its turn. |
 | Necrobinder | Fractured Urn | Summons 17 at the start of combat and 5 at the start of its turn. |
-| Defect | Overvolted Matrix | Channels Lightning, Frost and Dark at the start of combat; gains 1 Focus at the start of its turn. |
+| Defect | Overvolted Matrix | Channels Lightning, Frost and Dark at the start of combat; gains 1 Focus at the end of its turn. |
 
 At Ascension 9 (Deadly Enemies) and above, every Corrupted Player also has
 **Echo Shard**: it gains 1 additional energy at the start of its turn. Modded
@@ -422,16 +422,19 @@ Corrupted Players are stored locally in the active **modded** profile's
 They are not synchronized through Steam Cloud. Keep the same character/content
 mods enabled for the next visit; in single-player, an unavailable character produces a First Visit.
 
-Multiplayer lineages are separate, host-owned files under
-`TheArchitect/multiplayer/<host-profile-uuid>/<group-key>.json`. A group is an
+Every multiplayer participant stores a separate local copy under
+`TheArchitect/multiplayer/<local-profile-uuid>/<group-key>.json`. A group is an
 order-independent set of persistent profile identities; changing a participant
-or host starts a separate lineage. Both Architect wins and losses replace the
-complete saved party atomically, including participants who died. Clients never
-replace their own single-player snapshots with the host's party.
+starts a separate lineage, but changing hosts between runs does not.
+Both Architect wins and losses replace the complete saved party atomically on
+every participant's computer, including participants who died. All copies advance
+from the shared encounter's revision, regardless of prior local history.
+Existing host saves remain compatible. Clients never replace their own
+single-player snapshots with the party.
 Act 4 waits for every original participant to validate the host's frozen party,
 and saves/rejoins retain that same selection. Missing content or failed
 synchronization blocks entry with an error rather than loading a partial party.
-Host migration is not supported.
+Changing hosts during an ongoing run is not supported.
 
 ## Saved-deck previews
 

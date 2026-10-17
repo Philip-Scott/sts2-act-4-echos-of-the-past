@@ -48,6 +48,10 @@ internal static class CorruptedPlayerBuffTests
                 root = root.Parent;
             check(root != null, "Cannot locate the project sources.");
             var source = File.ReadAllText(Path.Combine(root!.FullName, "TheArchitectCode/Powers/CorruptionBuffPowers.cs"));
+            var matrix = source.Split("public sealed class OvervoltedMatrixPower", StringSplitOptions.None)[1]
+                .Split("public sealed class EchoShardPower", StringSplitOptions.None)[0];
+            check(matrix.Contains("Task AfterSideTurnEnd(") && !matrix.Contains("Task AfterSideTurnStart("),
+                "Overvolted Matrix must gain Focus after end-of-turn Orbs, not at turn start.");
             var classIds = Regex.Matches(source, @"public sealed class (\w+Power)\b")
                 .Select(match => "THEARCHITECT-" + Regex.Replace(match.Groups[1].Value, "(?<!^)([A-Z])", "_$1").ToUpperInvariant())
                 .ToHashSet();
@@ -63,6 +67,10 @@ internal static class CorruptedPlayerBuffTests
             foreach (var buff in buffs)
                 foreach (var key in new[] { "title", "description", "smartDescription" })
                     check(json.RootElement.TryGetProperty($"{buff.Entry}.{key}", out _), $"{buff.Entry}.{key}");
+            foreach (var key in new[] { "description", "smartDescription" })
+                check(json.RootElement.GetProperty($"{CorruptedPlayerBuffs.OvervoltedMatrix.Entry}.{key}")
+                    .GetString()!.Contains("At the end of its turn, gain"),
+                    $"Overvolted Matrix {key} must describe end-of-turn Focus gain.");
             foreach (var buff in buffs)
             {
                 var file = buff.Entry["THEARCHITECT-".Length..].ToLowerInvariant() + ".png";

@@ -78,9 +78,9 @@ public static class CorruptedPartyStore
         string outcome, CorruptedPartyMember[] members)
     {
         frozen.Validate(frozen.Participants.Select(player => player.NetId).ToArray(), frozen.HostNetId);
-        if (localProfile != frozen.HostProfileUuid)
-            throw new InvalidOperationException("Only the original host profile may write this successor lineage.");
         var profiles = frozen.Participants.Select(player => player.ProfileUuid).ToArray();
+        if (!profiles.Contains(localProfile))
+            throw new InvalidOperationException("Only an original participant may write this successor lineage.");
         var prior = Load(directory, localProfile, profiles);
         if (prior?.TerminalRunId == frozen.RunId)
             return prior.Revision;
@@ -88,7 +88,8 @@ public static class CorruptedPartyStore
         {
             HostProfileUuid = localProfile,
             GroupKey = frozen.GroupKey,
-            Revision = checked((prior?.Revision ?? 0) + 1),
+            // Every peer advances the shared encounter, not its potentially different local history.
+            Revision = checked((frozen.Lineage?.Revision ?? 0) + 1),
             TerminalRunId = frozen.RunId,
             Outcome = outcome,
             Members = members.OrderBy(member => member.ProfileUuid).ToArray()

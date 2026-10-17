@@ -140,13 +140,13 @@ public sealed class OvervoltedMatrixPower : CorruptionBuffPower
         });
     }
 
-    public override async Task AfterSideTurnStart(CombatSide side, IReadOnlyList<Creature> participants,
-        ICombatState combatState)
+    public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side,
+        IEnumerable<Creature> participants)
     {
         if (!IsOwnTurn(participants))
             return;
         Flash();
-        await PowerCmd.Apply<FocusPower>(new ThrowingPlayerChoiceContext(), Owner,
+        await PowerCmd.Apply<FocusPower>(choiceContext, Owner,
             DynamicVars["FocusPower"].BaseValue, Owner, null);
     }
 }

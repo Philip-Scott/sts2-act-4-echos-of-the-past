@@ -29,7 +29,7 @@ The Watcher's offer category for repetition, scaling, and relic duplication.
 _Avoid_: Bargain slot, guaranteed drawback
 
 **First Visit**:
-An Architect Act entered when no compatible Corrupted Player Snapshot exists for the active profile or host-owned Successor Lineage, so the Corrupted Player is skipped.
+An Architect Act entered when no compatible Corrupted Player Snapshot exists for the active profile or Successor Group, so the Corrupted Player is skipped.
 _Avoid_: First attempt, first run, empty lineage
 
 **Repeat Visit**:
@@ -45,7 +45,7 @@ The mod-owned result of the Act 4 fights, either Architect Win for defeating the
 _Avoid_: Run result, Act 3 result
 
 **Successor Lineage**:
-The latest atomic set of Corrupted Player Snapshots recorded for one owner and one exact group membership after a terminal Architect encounter.
+The latest complete set of Corrupted Player Snapshots recorded for one exact group membership after a terminal Architect encounter. Every participant retains a copy, so changing the host between runs preserves the group's lineage.
 _Avoid_: History, archive
 
 **Successor Group**:
@@ -53,7 +53,7 @@ An order-independent set of participants identified by their persistent profile 
 _Avoid_: Lobby, party slot order
 
 **Lineage Owner**:
-The profile that hosted a multiplayer run and exclusively persists and advances that run's Successor Lineage. Different hosts maintain separate lineages for the same Successor Group.
+A participant profile that retains its own copy of a Successor Group's lineage. The host selects its copy for the next run, and every participant advances their copy from that shared encounter.
 _Avoid_: Party owner, server
 
 **Corrupted Player**:

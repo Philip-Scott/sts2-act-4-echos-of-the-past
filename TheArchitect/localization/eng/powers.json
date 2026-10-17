@@ -24,8 +24,8 @@
   "THEARCHITECT-FRACTURED_URN_POWER.description": "At the start of combat, [gold]Summon[/gold] [blue]{StartOfCombat}[/blue]. At the start of its turn, [gold]Summon[/gold] [blue]{StartOfTurn}[/blue].",
   "THEARCHITECT-FRACTURED_URN_POWER.smartDescription": "At the start of combat, [gold]Summon[/gold] [blue]{StartOfCombat}[/blue]. At the start of its turn, [gold]Summon[/gold] [blue]{StartOfTurn}[/blue].",
   "THEARCHITECT-OVERVOLTED_MATRIX_POWER.title": "Overvolted Matrix",
-  "THEARCHITECT-OVERVOLTED_MATRIX_POWER.description": "At the start of combat, [gold]Channel[/gold] [blue]1[/blue] [gold]Lightning[/gold], [gold]Frost[/gold], and [gold]Dark[/gold]. At the start of its turn, gain [blue]{FocusPower}[/blue] [gold]Focus[/gold].",
-  "THEARCHITECT-OVERVOLTED_MATRIX_POWER.smartDescription": "At the start of combat, [gold]Channel[/gold] [blue]1[/blue] [gold]Lightning[/gold], [gold]Frost[/gold], and [gold]Dark[/gold]. At the start of its turn, gain [blue]{FocusPower}[/blue] [gold]Focus[/gold].",
+  "THEARCHITECT-OVERVOLTED_MATRIX_POWER.description": "At the start of combat, [gold]Channel[/gold] [blue]1[/blue] [gold]Lightning[/gold], [gold]Frost[/gold], and [gold]Dark[/gold]. At the end of its turn, gain [blue]{FocusPower}[/blue] [gold]Focus[/gold].",
+  "THEARCHITECT-OVERVOLTED_MATRIX_POWER.smartDescription": "At the start of combat, [gold]Channel[/gold] [blue]1[/blue] [gold]Lightning[/gold], [gold]Frost[/gold], and [gold]Dark[/gold]. At the end of its turn, gain [blue]{FocusPower}[/blue] [gold]Focus[/gold].",
   "THEARCHITECT-ECHO_SHARD_POWER.title": "Echo Shard",
   "THEARCHITECT-ECHO_SHARD_POWER.description": "At the start of its turn, gain {Energy:energyIcons()}.",
   "THEARCHITECT-ECHO_SHARD_POWER.smartDescription": "At the start of its turn, gain {Energy:energyIcons()}."
