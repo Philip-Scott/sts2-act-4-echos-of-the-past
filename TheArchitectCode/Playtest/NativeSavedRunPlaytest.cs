@@ -85,7 +85,8 @@ internal static class NativeSavedRunPlaytest
         var combat = player.Creature.CombatState!;
         var context = new ThrowingPlayerChoiceContext();
         var telegraph = CorruptedPlayerTelegraph.Of(actor.Body.GetCreatureNode()!);
-        var counter = telegraph.FindChild("Energy", true, false).GetChildren().OfType<NEnergyCounter>().Single();
+        var counter = telegraph.StatusIcon("Energy")
+            ?? throw new InvalidOperationException("The Corrupted Player must show its energy icon.");
         if (reactiveDamage)
         {
             player.PlayerCombatState!.Energy = 99;
@@ -105,12 +106,12 @@ internal static class NativeSavedRunPlaytest
         }
         if (!actor.Cleaned || combat.Enemies.Any(creature => creature.Monster is ArchitectBoss) ||
             (GodotObject.IsInstanceValid(counter) && counter.IsInsideTree()))
-            throw new InvalidOperationException("Elite completion must detach the native energy counter without spawning the Architect.");
+            throw new InvalidOperationException("Elite completion must detach the energy icon without spawning the Architect.");
         if (GodotObject.IsInstanceValid(telegraph))
         {
             actor.Show(telegraph);
-            if (telegraph.Visible || telegraph.FindChild("Energy", true, false).GetChildren().OfType<NEnergyCounter>().Any())
-                throw new InvalidOperationException("A stopped hand preview must not recreate its native energy counter.");
+            if (telegraph.Visible || telegraph.StatusIcon("Energy") != null)
+                throw new InvalidOperationException("A stopped hand preview must not recreate its energy icon.");
         }
         await ArchitectPlaytest.EnterBossAfterElite(player.RunState);
         actor.State.Energy++;

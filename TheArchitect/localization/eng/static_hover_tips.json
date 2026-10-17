@@ -1,4 +1,16 @@
 {
   "THEARCHITECT-SCRY.title": "Scry",
-  "THEARCHITECT-SCRY.description": "Look at that many cards from the top of your draw pile. Discard any number of them, keeping the remaining cards in their original order."
+  "THEARCHITECT-SCRY.description": "Look at that many cards from the top of your draw pile. Discard any number of them, keeping the remaining cards in their original order.",
+  "THEARCHITECT-CORRUPTED_ENERGY.title": "Energy",
+  "THEARCHITECT-CORRUPTED_ENERGY.description": "The Corrupted Player's current energy. This is not a forecast of future damage.",
+  "THEARCHITECT-CORRUPTED_PLAN.title": "Corrupted Player Plan",
+  "THEARCHITECT-CORRUPTED_PLAN.description": "Plays its hand left to right, reconsidering after each card. Choices select the first valid option.\n\nIts Attack intent appears while its current hand holds any Attack, regardless of cost. Installed modded cards use their own effects. Ally-only cards need a living corrupted teammate.",
+  "THEARCHITECT-CORRUPTED_STARS.title": "Stars",
+  "THEARCHITECT-CORRUPTED_STARS.description": "The Corrupted Player's current stars.",
+  "THEARCHITECT-CORRUPTED_DRAW_PILE.title": "Draw Pile",
+  "THEARCHITECT-CORRUPTED_DRAW_PILE.description": "Cards the Corrupted Player will draw.\n\nClick to view its draw pile.",
+  "THEARCHITECT-CORRUPTED_DISCARD_PILE.title": "Discard Pile",
+  "THEARCHITECT-CORRUPTED_DISCARD_PILE.description": "Shuffled into the Corrupted Player's draw pile when that pile is empty.\n\nClick to view its discard pile.",
+  "THEARCHITECT-CORRUPTED_EXHAUST_PILE.title": "Exhaust Pile",
+  "THEARCHITECT-CORRUPTED_EXHAUST_PILE.description": "Cards the Corrupted Player has exhausted this combat.\n\nClick to view its exhaust pile."
 }

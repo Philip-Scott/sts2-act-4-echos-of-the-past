@@ -12,8 +12,11 @@
 - Corrupted Player hands now animate like the player's hand: cards are drawn
   from their draw pile one at a time, kept cards slide into place, discards fly
   to their discard pile and exhausted cards burn away.
-- Corrupted Player hands, energy and piles now sit just above each Corrupted
-  Player's health bar instead of above its head.
+- Corrupted Player hands now rest directly on each Corrupted Player's health
+  bar, centered over it, instead of above its head.
+- Corrupted Player energy, stars and draw, discard and exhaust piles now show
+  as compact icons ahead of its buffs below the health bar. Hover them for
+  details; click a pile to view it.
 - Fixed Corrupted Players stopping mid-fight in three- and four-player runs:
   native enemy block scaling had no Act 4 tier and threw every time they
   gained block.

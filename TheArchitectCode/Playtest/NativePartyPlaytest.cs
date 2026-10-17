@@ -409,9 +409,9 @@ internal static class NativePartyPlaytest
         Require(actors[0].Cleaned && actors.Skip(1).All(actor => !actor.Cleaned),
             $"{count}: an early death cleans only its own actor");
         Require(!HasEnergyCounter(panels[0]) && panels.Skip(1).All(HasEnergyCounter),
-            $"{count}: an early death detaches only its own native energy counter");
+            $"{count}: an early death detaches only its own energy icon");
         Require(!HasStarCounter(panels[0]) && panels.Skip(1).All(HasStarCounter),
-            $"{count}: an early death detaches only its own native star counter");
+            $"{count}: an early death detaches only its own star icon");
         Require(!combat.Enemies.Any(creature => creature.Monster is ArchitectBoss),
             $"{count}: Architect is absent while any corrupted member remains");
         await CreatureCmd.Damage(context, enemies.Skip(1), 10000, ValueProp.Unpowered | ValueProp.Unblockable,
@@ -420,9 +420,9 @@ internal static class NativePartyPlaytest
             !combat.Enemies.Any(creature => creature.Monster is CorruptedPlayer) && actors.All(actor => actor.Cleaned),
             $"{count}: the final AoE cleans every actor without spawning the Architect");
         Require(panels.All(panel => !HasEnergyCounter(panel)),
-            $"{count}: the final AoE detaches all defeated native energy counters");
+            $"{count}: the final AoE detaches all defeated energy icons");
         Require(panels.All(panel => !HasStarCounter(panel)),
-            $"{count}: the final AoE detaches all defeated native star counters");
+            $"{count}: the final AoE detaches all defeated star icons");
         await ArchitectPlaytest.EnterBossAfterElite(run);
         combat = players[0].Creature.CombatState!;
         var boss = combat.Enemies.Single(creature => creature.Monster is ArchitectBoss);
@@ -450,8 +450,7 @@ internal static class NativePartyPlaytest
     }
 
     private static bool HasEnergyCounter(CorruptedPlayerTelegraph panel) =>
-        GodotObject.IsInstanceValid(panel) &&
-        panel.FindChild("Energy", true, false).GetChildren().OfType<NEnergyCounter>().Any();
+        GodotObject.IsInstanceValid(panel) && panel.StatusIcon("Energy") is { } icon && icon.IsInsideTree();
 
     private static CorruptedPlayerSnapshot InspectionSnapshot(Player player)
     {
@@ -521,8 +520,7 @@ internal static class NativePartyPlaytest
     }
 
     private static bool HasStarCounter(CorruptedPlayerTelegraph panel) =>
-        GodotObject.IsInstanceValid(panel) &&
-        panel.FindChild("Stars", true, false).GetChildren().OfType<NStarCounter>().Any();
+        GodotObject.IsInstanceValid(panel) && panel.StatusIcon("Stars") is { } icon && icon.IsInsideTree();
 
     private static Action PrepareTargetingProbe(Player[] players, NativeCorruptedPlayer[] actors)
     {

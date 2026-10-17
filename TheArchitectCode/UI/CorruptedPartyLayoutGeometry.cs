@@ -38,13 +38,18 @@ internal static class CorruptedPartyLayoutGeometry
             count == 2 ? 200f - 80f * index : 200f - 220f * row);
     }
 
-    // The 248px panel's cards and pile toolbar fill its top 228px.
-    internal const float ContentFraction = 228f / 248f;
+    // A hand is a row of compact card faces over a reserved intent row; energy and piles
+    // sit with the powers below the health bar, so the panel bottom is the hand's bottom.
+    internal const float CardWidth = 96f;
+    internal const float CardHeight = 128f;
+    internal const float IntentGap = 2f;
+    internal const float IntentRowHeight = 22f;
+    internal const float HandHeight = CardHeight + IntentGap + IntentRowHeight;
     internal const float HealthBarGap = 6f;
 
-    // Panel top that rests the hand and pile toolbar just above a health bar.
+    // Panel top that rests the bottom-aligned hand just above a health bar.
     internal static float TopAboveHealthBar(float barTop, float displayedHeight) =>
-        barTop - displayedHeight * ContentFraction - HealthBarGap;
+        barTop - displayedHeight - HealthBarGap;
 
     internal static float Scale(float spacing, float width, float anchorScale) =>
         Math.Clamp((spacing - 16f) / (width * anchorScale), 0.1f, 0.55f);

@@ -47,23 +47,28 @@ internal static class CorruptedEnemyUiTests
 
         test("corrupted hand: a full ten-card hand overlaps to fit the panel without scrolling", () =>
         {
-            const float card = 120f, panel = 680f;
+            const float card = CorruptedPartyLayoutGeometry.CardWidth, panel = 680f;
             check(CorruptedPartyLayoutGeometry.HandSeparation(5, card, panel) == 8, "five cards keep the normal gap");
             for (var count = 6; count <= 10; count++)
             {
                 var gap = CorruptedPartyLayoutGeometry.HandSeparation(count, card, panel);
-                check(gap < 8 && count * card + (count - 1) * gap <= panel, $"{count} cards fit ({gap})");
+                check(gap <= 8 && count * card + (count - 1) * gap <= panel, $"{count} cards fit ({gap})");
             }
             check(CorruptedPartyLayoutGeometry.HandSeparation(0, card, panel) == 8, "empty hand");
         });
 
-        test("corrupted hand: the hand and piles rest just above the health bar", () =>
+        test("corrupted hand: the hand rests directly on the health bar", () =>
         {
-            foreach (var height in new[] { 248f, 136.4f })
+            check(CorruptedPartyLayoutGeometry.CardWidth == 96f &&
+                CorruptedPartyLayoutGeometry.CardHeight == 128f,
+                "Hand cards are twenty percent smaller in both dimensions.");
+            check(CorruptedPartyLayoutGeometry.HandHeight == 152f, "cards plus their reserved intent row");
+            foreach (var height in new[] { CorruptedPartyLayoutGeometry.HandHeight,
+                         CorruptedPartyLayoutGeometry.HandHeight * 0.55f })
             {
                 var top = CorruptedPartyLayoutGeometry.TopAboveHealthBar(500f, height);
-                var contentBottom = top + height * CorruptedPartyLayoutGeometry.ContentFraction;
-                check(contentBottom < 500f && contentBottom > 490f, $"{height}px panel content ends at {contentBottom}");
+                var bottom = top + height;
+                check(bottom < 500f && bottom >= 492f, $"{height}px hand ends at {bottom}");
             }
         });
 

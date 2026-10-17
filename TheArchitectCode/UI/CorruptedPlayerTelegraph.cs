@@ -1,6 +1,4 @@
 using Godot;
-using HarmonyLib;
-using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -13,7 +11,6 @@ using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.HoverTips;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
-using MegaCrit.Sts2.Core.Nodes.Screens;
 using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
 using MegaCrit.Sts2.addons.mega_text;
 using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
@@ -33,24 +30,17 @@ public sealed record CorruptedPlayerTelegraphCard(
 
 public partial class CorruptedPlayerTelegraph : VBoxContainer
 {
-    private static readonly Vector2 CardFaceSize = new(120, 160);
-    private const float MiniatureScale = 0.36f;
+    private static readonly Vector2 CardFaceSize = new(
+        CorruptedPartyLayoutGeometry.CardWidth, CorruptedPartyLayoutGeometry.CardHeight);
+    private const float MiniatureScale = 0.288f;
     private NCreature _anchor = null!;
     private Creature _creature = null!;
     private ScrollContainer _scroll = null!;
     private HBoxContainer _row = null!;
+    private HBoxContainer _toolbar = null!;
     private Label _heading = null!;
-    private HBoxContainer _resources = null!;
-    private Control _energySlot = null!;
-    private NEnergyCounter? _energy;
-    private Control _starSlot = null!;
-    private NStarCounter? _stars;
-    private MegaLabel _draw = null!;
-    private MegaLabel _discard = null!;
-    private MegaLabel _exhaust = null!;
-    private PlayerCombatState? _nativeState;
+    private CorruptedPlayerStatusIcons? _status;
     private CorruptedPlayerHandAnimator? _hand;
-    private readonly Dictionary<PileType, Control> _pileIcons = [];
     private bool _refreshQueued;
     private Action _refreshPlan = null!;
     private readonly List<CardCell> _cells = [];
@@ -63,7 +53,6 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     private bool _partyDisplay;
     private bool _stopped;
     private CombatStateTracker? _stateTracker;
-    private (int Draw, int Discard, int Exhaust)? _pileCounts;
     internal int ContentRefreshCount { get; private set; }
     private CorruptedPartyTelegraphLayout? _partyLayout;
     private readonly record struct LayoutInputs(
@@ -132,37 +121,12 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     {
         if (_partyDisplay)
             Scale = Vector2.One * 0.55f;
-        var toolbar = new HBoxContainer();
-        toolbar.AddThemeConstantOverride("separation", 8);
+        // The hand rests on the health bar; energy and piles sit with the powers beneath it.
+        Alignment = AlignmentMode.End;
+        _toolbar = new HBoxContainer();
         _heading = new Label { Text = "Corrupted Player · play →", ClipText = true, SizeFlagsHorizontal = SizeFlags.ExpandFill };
         _heading.AddThemeFontSizeOverride("font_size", 16);
-        toolbar.AddChild(_heading);
-        _resources = new HBoxContainer { Visible = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        _resources.AddThemeConstantOverride("separation", 8);
-        toolbar.AddChild(_resources);
-        _energySlot = new Control
-        {
-            Name = "Energy",
-            CustomMinimumSize = new Vector2(72, 64),
-            MouseFilter = MouseFilterEnum.Stop,
-            TooltipText = "Current energy; not a future damage forecast.\n" +
-                "Plays left to right, reconsidering after each card. Choices select the first valid option.\n" +
-                "Attack intent: any Attack in your CURRENT hand when the Corrupted Player checks, regardless of cost.\n" +
-                "Installed modded cards use their own effects. Ally-only cards need a living corrupted teammate."
-        };
-        _resources.AddChild(_energySlot);
-        _starSlot = new Control
-        {
-            Name = "Stars",
-            CustomMinimumSize = new Vector2(64, 64),
-            MouseFilter = MouseFilterEnum.Stop,
-            TooltipText = "The Corrupted Player's current stars.",
-            Visible = false
-        };
-        _resources.AddChild(_starSlot);
-        _draw = AddPileButton(PileType.Draw, () => _nativeState!.DrawPile);
-        _discard = AddPileButton(PileType.Discard, () => _nativeState!.DiscardPile);
-        _exhaust = AddPileButton(PileType.Exhaust, () => _nativeState!.ExhaustPile);
+        _toolbar.AddChild(_heading);
         _scroll = new ScrollContainer
         {
             Name = "HandScroll",
@@ -174,8 +138,9 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         };
         _scroll.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
         AddChild(_scroll);
-        AddChild(toolbar);
-        _row = new HBoxContainer();
+        AddChild(_toolbar);
+        // Center the hand over its health bar; cards still play left to right.
+        _row = new HBoxContainer { Alignment = AlignmentMode.Center, SizeFlagsHorizontal = SizeFlags.ExpandFill };
         _row.AddThemeConstantOverride("separation", 8);
         _scroll.AddChild(_row);
         _stateTracker = CombatManager.Instance.StateTracker;
@@ -244,128 +209,34 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         ApplyHandSpacing();
     }
 
-    private MegaLabel AddPileButton(PileType pile, Func<CardPile> getPile)
-    {
-        var name = pile.ToString();
-        var button = new Button
-        {
-            Name = name + "Pile",
-            Flat = true,
-            CustomMinimumSize = new Vector2(72, 64),
-            FocusMode = FocusModeEnum.All,
-            TooltipText = $"View the Corrupted Player's {name.ToLowerInvariant()} pile"
-        };
-        foreach (var style in new[] { "normal", "hover", "pressed", "disabled" })
-            button.AddThemeStyleboxOverride(style, new StyleBoxEmpty());
-
-        var visuals = new Control
-        {
-            Name = "Visuals",
-            Size = new Vector2(80, 80),
-            Scale = Vector2.One * 0.75f,
-            MouseFilter = MouseFilterEnum.Ignore
-        };
-        // Reuse the native artwork, badge and typography without registering the
-        // player's pile hotkeys or native combat UI animations on the enemy's HUD.
-        var scene = PreloadManager.Cache.GetScene($"res://scenes/combat/{name.ToLowerInvariant()}_pile.tscn")
-            .Instantiate<Control>();
-        foreach (var path in new[] { "Icon", "CountContainer" })
-        {
-            var child = scene.GetNode<Control>(path);
-            scene.RemoveChild(child);
-            visuals.AddChild(child);
-        }
-        scene.Free();
-        // Both badges sit to the right in the compact strip; the native discard
-        // badge sits to the left because that pile normally hugs the screen edge.
-        if (name != "Exhaust")
-        {
-            var badge = visuals.GetNode<Control>("CountContainer");
-            badge.SetAnchorsPreset(LayoutPreset.TopLeft);
-            badge.Position = new Vector2(48, 36);
-        }
-        IgnoreMouse(visuals);
-        button.AddChild(visuals);
-        _pileIcons[pile] = visuals.GetNode<Control>("Icon");
-        var count = visuals.GetNode<MegaLabel>("CountContainer/Count");
-        void UpdateHighlight()
-        {
-            var color = button.IsHovered() || button.HasFocus() ? new Color(1.2f, 1.2f, 1.2f) : Colors.White;
-            visuals.Modulate = color;
-        }
-        button.MouseEntered += UpdateHighlight;
-        button.MouseExited += UpdateHighlight;
-        button.FocusEntered += UpdateHighlight;
-        button.FocusExited += UpdateHighlight;
-        button.Pressed += () =>
-        {
-            if (!CanInspect)
-                return;
-            ClearPreview();
-            NCardPileScreen.ShowScreen(getPile(), []);
-        };
-        _resources.AddChild(button);
-        return count;
-    }
-
     public void SetNativePlayer(Player player)
     {
         if (_stopped)
             return;
-        var state = player.PlayerCombatState
-            ?? throw new InvalidOperationException("The Corrupted Player HUD requires an active combat state.");
+        if (player.PlayerCombatState == null)
+            throw new InvalidOperationException("The Corrupted Player HUD requires an active combat state.");
         if (!_nativeDisplay)
             _layoutInputs = null;
         _nativeDisplay = true;
-        _nativeState = state;
         if (_hand?.Uses(player) != true)
         {
             _hand?.Dispose();
             _hand = new CorruptedPlayerHandAnimator(player, CardFaceSize / 2f, MiniatureScale,
                 PileIconCenter, TakeMiniature, QueueRefresh);
         }
-        _heading.Hide();
-        _resources.Show();
-        if (_energy == null)
+        _toolbar.Hide();
+        if (_status?.Uses(player) != true)
         {
-            _energy = NEnergyCounter.Create(player)
-                ?? throw new InvalidOperationException("Could not create the Corrupted Player's native energy counter.");
-            _energySlot.AddChild(_energy);
-            _energy.PivotOffset = Vector2.Zero;
-            _energy.Position = new Vector2(4, 0);
-            _energy.Scale = Vector2.One * 0.5f;
-            IgnoreMouse(_energy);
+            _status?.Detach();
+            _status = CorruptedPlayerStatusIcons.Attach(_anchor, player, () => CanInspect, ClearPreview);
         }
-        if (_stars == null)
-        {
-            _stars = PreloadManager.Cache.GetScene("res://scenes/combat/energy_counters/star_counter.tscn")
-                .Instantiate<NStarCounter>();
-            // The native scene shares its shader resource; each actor animates its own count.
-            var icon = _stars.GetNode<Control>("Icon");
-            icon.Material = (Material)icon.Material.Duplicate();
-            _starSlot.AddChild(_stars);
-            _stars.SetAnchorsPreset(LayoutPreset.TopLeft);
-            _stars.Position = Vector2.Zero;
-            _stars.Scale = Vector2.One * 0.5f;
-            IgnoreMouse(_stars);
-            _stars.Initialize(player);
-            state.StarsChanged += OnStarsChanged;
-            UpdateStarVisibility();
-        }
-        var counts = (Draw: state.DrawPile.Cards.Count, Discard: state.DiscardPile.Cards.Count,
-            Exhaust: state.ExhaustPile.Cards.Count);
-        if (_pileCounts?.Draw != counts.Draw)
-            _draw.SetTextAutoSize(counts.Draw.ToString());
-        if (_pileCounts?.Discard != counts.Discard)
-            _discard.SetTextAutoSize(counts.Discard.ToString());
-        if (_pileCounts?.Exhaust != counts.Exhaust)
-            _exhaust.SetTextAutoSize(counts.Exhaust.ToString());
-        _pileCounts = counts;
+        _status!.Refresh();
     }
 
-    private Vector2? PileIconCenter(PileType pile) =>
-        _pileIcons.TryGetValue(pile, out var icon) && icon.IsVisibleInTree()
-            ? icon.GetGlobalTransform() * (icon.Size / 2f) : null;
+    private Vector2? PileIconCenter(PileType pile) => _status?.PileIconCenter(pile);
+
+    // Energy, Stars, DrawPile, DiscardPile or ExhaustPile, shown with the owner's powers.
+    internal Control? StatusIcon(string name) => _status?.Icon(name);
 
     private NCard? TakeMiniature(CardModel card)
     {
@@ -394,32 +265,6 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         }).CallDeferred();
     }
 
-    private void UpdateStarVisibility()
-    {
-        _starSlot.Visible = _stars?.Visible == true;
-        _layoutInputs = null;
-    }
-
-    private void OnStarsChanged(int oldStars, int newStars) => UpdateStarVisibility();
-
-    [HarmonyPatch(typeof(NEnergyCounter), "RefreshLabel")]
-    private static class CurrentEnergyLabelPatch
-    {
-        private static void Postfix(Player ____player, MegaLabel ____label)
-        {
-            if (!NativeCorruptedPlayer.TryGet(____player, out _))
-                return;
-            ____label.MaxFontSize = 72;
-            ____label.SetTextAutoSize(____player.PlayerCombatState!.Energy.ToString());
-        }
-    }
-
-    private void UnsubscribeStars()
-    {
-        if (_nativeState != null)
-            _nativeState.StarsChanged -= OnStarsChanged;
-    }
-
     internal void Stop()
     {
         if (_stopped)
@@ -427,31 +272,18 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         _stopped = true;
         ActiveScreenContext.Instance.Updated -= OnActiveScreenUpdated;
         UnsubscribeState();
-        UnsubscribeStars();
+        DetachStatus();
         ReleaseLayout();
         DisposeHand();
         SetProcess(false);
         Hide();
         ClearPreview();
-        if (GodotObject.IsInstanceValid(_energy))
-        {
-            // Hiding or QueueFree alone leaves native combat callbacks subscribed
-            // until after the owner's CombatState is gone. Exit the tree now.
-            _energySlot.RemoveChild(_energy!);
-            _energy!.QueueFree();
-        }
-        _energy = null;
-        if (GodotObject.IsInstanceValid(_stars))
-        {
-            _starSlot.RemoveChild(_stars!);
-            _stars!.QueueFree();
-        }
-        _stars = null;
     }
 
     private void AddCard(CorruptedPlayerTelegraphCard entry)
     {
         var cell = new VBoxContainer { CustomMinimumSize = CardFaceSize };
+        cell.AddThemeConstantOverride("separation", (int)CorruptedPartyLayoutGeometry.IntentGap);
         _row.AddChild(cell);
         var face = new Button
         {
@@ -462,7 +294,11 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             Flat = true
         };
         cell.AddChild(face);
-        var intents = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        var intents = new HBoxContainer
+        {
+            Alignment = BoxContainer.AlignmentMode.Center,
+            CustomMinimumSize = new Vector2(0, CorruptedPartyLayoutGeometry.IntentRowHeight)
+        };
         cell.AddChild(intents);
         var binding = new CardCell(entry, face, intents);
         _cells.Add(binding);
@@ -695,14 +531,16 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         var anchor = _anchor.GetGlobalTransform();
         var spacing = _partyLayout?.Spacing(_anchor) ?? float.PositiveInfinity;
         var width = Mathf.Min(680f, Mathf.Max(220f, viewport.X - 32f));
-        var partyPosition = _partyLayout?.Position(_anchor, new Vector2(width, 248), viewport, PartyTopMargin())
+        // Native hands reserve their intent row; the pre-native heading may add a little more.
+        var height = Mathf.Max(CorruptedPartyLayoutGeometry.HandHeight, GetCombinedMinimumSize().Y);
+        var partyPosition = _partyLayout?.Position(_anchor, new Vector2(width, height), viewport, PartyTopMargin())
             ?? Vector2.Zero;
         var inputs = new LayoutInputs(viewport, above, anchor, spacing, Size, partyPosition);
         if (_layoutInputs == inputs)
             return;
         LayoutUpdateCount++;
-        CustomMinimumSize = new Vector2(width, 248);
-        Size = new Vector2(width, 248);
+        CustomMinimumSize = new Vector2(width, 0);
+        Size = new Vector2(width, height);
         ApplyHandSpacing();
         var parentScale = GetParent() is CanvasItem parent ? Mathf.Abs(parent.GetGlobalTransform().Scale.X) : 1f;
         var anchorScale = Mathf.Abs(anchor.Scale.X) / Mathf.Max(parentScale, 0.0001f);
@@ -751,6 +589,12 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         _partyLayout = null;
     }
 
+    private void DetachStatus()
+    {
+        _status?.Detach();
+        _status = null;
+    }
+
     private void DisposeHand()
     {
         _hand?.Dispose();
@@ -769,7 +613,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     {
         ActiveScreenContext.Instance.Updated -= OnActiveScreenUpdated;
         UnsubscribeState();
-        UnsubscribeStars();
+        DetachStatus();
         ReleaseLayout();
         DisposeHand();
         ClearPreview();

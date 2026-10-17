@@ -406,21 +406,33 @@ internal static class NativeDemoPlaytest
             model.Configure(character, 80, Array.Empty<JsonElement>(), "name-check");
             Require(model.Title.GetFormattedText() == name, $"enemy name is exactly {name}");
         }
-        var energySlot = (Control)telegraph.FindChild("Energy", true, false);
-        var energy = energySlot.GetChildren().OfType<NEnergyCounter>().Single();
-        Require(energy.SceneFilePath == actor.Player.Character.EnergyCounterPath &&
-            energy.Scale.IsEqualApprox(Vector2.One * 0.5f) &&
-            energy.GetNode<Label>("Label").Text == actor.State.Energy.ToString(),
-            "half-size native character energy orb displays only current enemy energy");
+        var node = actor.Body.GetCreatureNode()!;
+        var bodyBounds = node.Visuals.GetNode<Control>("%Bounds").GetGlobalRect();
+        Require(node.Hitbox.GetGlobalRect().Encloses(bodyBounds.Grow(10f)),
+            "Corrupted Player target hitbox extends beyond the character on every side");
+        var healthBar = CorruptedPartyTelegraphLayout.HealthBarTop(node).Y;
+        var energy = telegraph.StatusIcon("Energy")
+            ?? throw new InvalidOperationException("The Corrupted Player must show its energy icon.");
+        Require(energy.GetParent() is NPowerContainer && !telegraph.IsAncestorOf(energy) &&
+            energy.GetIndex() < (energy.GetParent().GetChildren().OfType<NPower>().FirstOrDefault()?.GetIndex() ?? int.MaxValue) &&
+            energy.GetNode<TextureRect>("Icon").Texture == ResourceLoader.Load<Texture2D>(
+                actor.Player.Character.CardPool.EnergyIconPath, null, ResourceLoader.CacheMode.Reuse) &&
+            energy.GetNode<Label>("AmountLabel").Text == actor.State.Energy.ToString() &&
+            energy.GetGlobalRect().Position.Y > healthBar,
+            "compact character energy icon leads the enemy's powers below its health bar");
+        energy.EmitSignal(Control.SignalName.MouseEntered);
+        energy.EmitSignal(Control.SignalName.MouseExited);
         var face = telegraph.FindChild("CorruptedPlayerCard", true, false) as Button;
         Require((face != null) == (actor.State.Hand.Cards.Count > 0), "only hand cards appear in the telegraph");
         if (face != null)
         {
+            // Opening draws fly up from the draw pile icon and land on their faces.
+            await WaitFor(() => face.GetChildren().OfType<NCard>().Any(), 10);
             var miniature = face.GetChildren().OfType<NCard>().Single();
-            Require(face.Size.X >= 120 && face.Size.Y >= 160 &&
-                miniature.Scale.IsEqualApprox(Vector2.One * 0.36f) &&
+            Require(face.Size.IsEqualApprox(new Vector2(96, 128)) &&
+                miniature.Scale.IsEqualApprox(Vector2.One * 0.288f) &&
                 miniature.GetCurrentSize().X <= face.Size.X && miniature.GetCurrentSize().Y <= face.Size.Y,
-                "larger hand cards fit their clickable faces");
+                "smaller hand cards fit their clickable faces without retaining oversized input areas");
             var hoverContainer = MegaCrit.Sts2.Core.Nodes.Rooms.NCombatRoom.Instance!.Ui;
             bool HasPreview() => hoverContainer.GetChildren().OfType<Control>()
                 .Any(control => control.Name == "CorruptedPlayerCardPreview" && control.Visible);
@@ -457,23 +469,19 @@ internal static class NativeDemoPlaytest
             ("Exhaust", actor.State.ExhaustPile)
         })
         {
-            var button = (Button)telegraph.FindChild(name + "Pile", true, false);
-            var visuals = button.GetNode<Control>("Visuals");
-            Require(button.Text.Length == 0 &&
-                visuals.GetNode<Label>("CountContainer/Count").Text == pile.Cards.Count.ToString() &&
-                visuals.GetNode<TextureRect>("Icon").Texture != null &&
-                visuals.Scale.IsEqualApprox(Vector2.One * 0.75f) &&
+            var button = (Button)(telegraph.StatusIcon(name + "Pile")
+                ?? throw new InvalidOperationException($"The Corrupted Player must show its {name} pile icon."));
+            var icon = button.GetNode<TextureRect>("Icon");
+            Require(button.Text.Length == 0 && button.GetParent() is NPowerContainer &&
+                button.GetNode<Label>("AmountLabel").Text == pile.Cards.Count.ToString() &&
+                icon.Texture != null && icon.Size.IsEqualApprox(new Vector2(40, 40)) &&
+                button.GetGlobalRect().Position.Y > healthBar &&
                 (face == null || button.GetGlobalRect().Position.Y >= face.GetGlobalRect().End.Y),
-                $"{name} uses compact native pile artwork and count below the hand");
-            Require(visuals.GetNodeOrNull("HotkeyIcon") == null &&
-                !telegraph.FindChildren("*", "NCombatCardPile", true, false).Any(),
-                $"{name} visual reuse does not register the human player's pile hotkeys");
-            var badgeNode = visuals.GetNode<Control>("CountContainer");
-            var badge = badgeNode.GetGlobalTransform() * new Rect2(Vector2.Zero, badgeNode.Size);
-            var hitbox = button.GetGlobalTransform() * new Rect2(Vector2.Zero, button.Size);
-            Require(badge.Position.X >= hitbox.Position.X - 0.1f && badge.End.X <= hitbox.End.X + 0.1f &&
-                badge.Position.Y >= hitbox.Position.Y - 0.1f && badge.End.Y <= hitbox.End.Y + 0.1f,
-                $"{name} scaled badge {badge} fits inside its clickable area {hitbox}");
+                $"{name} is a power-sized pile icon with its count below the health bar");
+            Require(!node.FindChildren("*", "NCombatCardPile", true, false).Any(),
+                $"{name} icon does not register the human player's pile hotkeys");
+            button.EmitSignal(Control.SignalName.MouseEntered);
+            button.EmitSignal(Control.SignalName.MouseExited);
             var cards = pile.Cards.ToArray();
             button.EmitSignal(Button.SignalName.Pressed);
             await game.AwaitProcessFrame();
@@ -490,10 +498,15 @@ internal static class NativeDemoPlaytest
     {
         var node = actor.Body.GetCreatureNode()!;
         var telegraph = CorruptedPlayerTelegraph.Of(node);
-        var expectedX = Mathf.Clamp(node.Visuals.IntentPosition.GlobalPosition.X - telegraph.Size.X / 2f,
-            16f, Mathf.Max(16f, telegraph.GetViewportRect().Size.X - telegraph.Size.X - 16f));
-        Require(Mathf.IsEqualApprox(telegraph.GlobalPosition.X, expectedX),
-            "Corrupted Player hand stays anchored above its owner regardless of orb positions");
+        var bar = CorruptedPartyTelegraphLayout.HealthBarTop(node);
+        var rect = telegraph.GetGlobalTransform() * new Rect2(Vector2.Zero, telegraph.Size);
+        var expectedX = Mathf.Clamp(bar.X - rect.Size.X / 2f,
+            16f, Mathf.Max(16f, telegraph.GetViewportRect().Size.X - rect.Size.X - 16f));
+        Require(Mathf.IsEqualApprox(rect.Position.X, expectedX),
+            "Corrupted Player hand stays centered on its owner's health bar regardless of orb positions");
+        Require(rect.End.Y <= bar.Y && (rect.End.Y >= bar.Y - 2f * CorruptedPartyLayoutGeometry.HealthBarGap ||
+                Mathf.IsEqualApprox(rect.Position.Y, 12f)),
+            $"Corrupted Player hand ({rect.End.Y}) rests directly on its health bar ({bar.Y})");
     }
 
     private static async Task Finish(NGame game, RunState run, NativeCorruptedPlayer actor, long initialRevision, string outcome)

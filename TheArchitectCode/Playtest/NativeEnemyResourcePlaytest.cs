@@ -58,8 +58,7 @@ internal static class NativeEnemyResourcePlaytest
                     () => NDeckViewScreen.ShowScreen(humans[0]),
                     () => NCardPileScreen.ShowScreen(humans[0].PlayerCombatState!.DiscardPile, []),
                     () => NDeckViewScreen.ShowScreen(humans[^1]),
-                    () => panel.FindChildren("DiscardPile", recursive: true, owned: false)
-                        .OfType<Button>().Single().EmitSignal(Button.SignalName.Pressed)
+                    () => ((Button)panel.StatusIcon("DiscardPile")!).EmitSignal(Button.SignalName.Pressed)
                 ];
                 foreach (var open in openScreens)
                 {
@@ -119,8 +118,8 @@ internal static class NativeEnemyResourcePlaytest
     {
         if (!NativeDemoSafety.Enabled)
             throw new InvalidOperationException("Enemy resource probes require isolated native playtests.");
-        var energyLabels = panels.Select(panel => panel.FindChildren("*", recursive: true, owned: false)
-            .OfType<NEnergyCounter>().Single().GetNode<MegaLabel>("Label")).ToArray();
+        var energyIcons = panels.Select(panel => panel.StatusIcon("Energy")
+            ?? throw new InvalidOperationException("Every enemy must show its energy icon.")).ToArray();
         var initialEnergy = actors.Select(player => player.PlayerCombatState!.Energy).ToArray();
         try
         {
@@ -133,18 +132,11 @@ internal static class NativeEnemyResourcePlaytest
                 for (var index = 0; index < actors.Count; index++)
                 {
                     var state = actors[index].PlayerCombatState!;
-                    var label = energyLabels[index];
-                    if (label.Text != state.Energy.ToString())
+                    var icon = energyIcons[index];
+                    if (icon.GetNode<MegaLabel>("AmountLabel").Text != state.Energy.ToString())
                         throw new InvalidOperationException($"Enemy {index} must show only its current energy.");
-                    if (amount == 3 && index == 0)
-                    {
-                        var singleNumberSize = label.GetThemeFontSize("font_size");
-                        label.SetTextAutoSize($"{state.Energy}/{state.MaxEnergy}");
-                        var fractionSize = label.GetThemeFontSize("font_size");
-                        label.SetTextAutoSize(state.Energy.ToString());
-                        if (singleNumberSize <= fractionSize)
-                            throw new InvalidOperationException("Single-number energy must be larger than the fraction.");
-                    }
+                    if ((icon.GetNode<TextureRect>("Icon").Modulate == Colors.White) != (state.Energy > 0))
+                        throw new InvalidOperationException($"Enemy {index} must dim its energy icon only at zero.");
                 }
             }
         }
@@ -153,8 +145,8 @@ internal static class NativeEnemyResourcePlaytest
             for (var index = 0; index < actors.Count; index++)
                 actors[index].PlayerCombatState!.Energy = initialEnergy[index];
         }
-        var counters = panels.Select(panel => panel.FindChildren("*", recursive: true, owned: false)
-            .OfType<NStarCounter>().Single()).ToArray();
+        var counters = panels.Select(panel => panel.StatusIcon("Stars")
+            ?? throw new InvalidOperationException("Every enemy must have a star icon.")).ToArray();
         var initial = actors.Select(player => player.PlayerCombatState!.Stars).ToArray();
         try
         {
@@ -165,15 +157,13 @@ internal static class NativeEnemyResourcePlaytest
             {
                 var counter = counters[index];
                 var expected = initial[index] + 7 + index;
-                if (!counter.IsVisibleInTree() ||
-                    counter.GetNode<MegaRichTextLabel>("%CountLabel").Text != $"[center]{expected}[/center]")
-                    throw new InvalidOperationException($"Enemy {index} must display its own native star count.");
+                if (!counter.IsVisibleInTree() || counter.GetNode<MegaLabel>("AmountLabel").Text != expected.ToString())
+                    throw new InvalidOperationException($"Enemy {index} must display its own star count.");
             }
             await NativeDemoPlaytest.Capture($"party-{actors.Count}-stars");
             actors[0].PlayerCombatState!.LoseStars(actors[0].PlayerCombatState!.Stars);
-            if (!counters[0].IsVisibleInTree() ||
-                counters[0].GetNode<MegaRichTextLabel>("%CountLabel").Text != "[center]0[/center]")
-                throw new InvalidOperationException("Native stars stay visible at zero after spending.");
+            if (!counters[0].IsVisibleInTree() || counters[0].GetNode<MegaLabel>("AmountLabel").Text != "0")
+                throw new InvalidOperationException("Stars stay visible at zero after spending, like the native counter.");
             for (var index = 1; index < actors.Count; index++)
                 if (actors[index].PlayerCombatState!.Stars != initial[index] + 7 + index)
                     throw new InvalidOperationException("Spending one actor's stars must not change another actor.");

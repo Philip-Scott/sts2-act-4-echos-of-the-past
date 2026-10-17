@@ -202,7 +202,7 @@ internal sealed class CorruptedPlayerHandAnimator : IDisposable
                     continue;
                 flight.Pending = false;
                 flight.Node.Visible = true;
-                // The HUD pile sits just under the hand, so drawn cards emerge at icon size and grow
+                // The draw pile icon sits just under the hand's health bar, so drawn cards emerge at icon size and grow
                 // on the way up; generated cards grow in place, as natively.
                 var origin = flight.Source is { } source ? _pileCenter(source) : null;
                 flight.Node.GlobalPosition = origin ?? target;
