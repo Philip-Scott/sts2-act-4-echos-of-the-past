@@ -75,6 +75,25 @@ def hashes(directory):
             for p in sorted(directory.rglob("*")) if p.is_file()}
 
 
+def mod_directories(directory):
+    return [child for child in sorted(directory.iterdir())
+            if child.is_dir() and not child.name.startswith(".") and
+            any(manifest.is_file() and
+                (manifest.with_suffix(".dll").is_file() or manifest.with_suffix(".pck").is_file())
+                for manifest in child.glob("*.json"))]
+
+
+def mod_hashes(directory):
+    return {f"{mod.name}/{relative}": digest
+            for mod in mod_directories(directory) for relative, digest in hashes(mod).items()}
+
+
+def copy_mods(source, destination):
+    destination.mkdir()
+    for mod in mod_directories(source):
+        shutil.copytree(mod, destination / mod.name)
+
+
 def write_json(path, value):
     temporary = path.with_suffix(".tmp")
     temporary.write_text(json.dumps(value, indent=2) + "\n")
@@ -370,9 +389,9 @@ def launch(args):
     write_json(run / "run.json", metadata)
     process = None
     try:
-        before = hashes(mods)
-        shutil.copytree(mods, run / "mods")
-        if hashes(mods) != before or hashes(run / "mods") != before:
+        before = mod_hashes(mods)
+        copy_mods(mods, run / "mods")
+        if mod_hashes(mods) != before or hashes(run / "mods") != before:
             raise ValueError("Mods changed while copying; finish the build before launching.")
         if "ARCHITECT_MODS_INPUT" not in os.environ:
             base = run / "mods/BaseLib"

@@ -1,4 +1,34 @@
-# Publishing 1.3.0 - Act 4: Echos of the Past
+# Publishing 1.4.0 - Act 4: Echos of the Past
+
+## Published 1.4.0
+
+Version 1.4.0 is published on Steam Workshop. The author approved publication on
+October 19, 2026, and Steam accepted the update to item **3799307965** at
+**10:45 p.m. PDT**. No push, tag, or GitHub Release was made. The author
+reported a successful playtest of the release changes on October 19, 2026; the
+scope was a solo Slot 2 playtest, so real networked co-op remains unverified.
+
+The build uses committed source `d99fe5e` with only `TheArchitect.json`,
+`TheArchitect.csproj`, `CHANGELOG.md`, `release/INSTALL.md`,
+`release/RELEASE_NOTES.md`, `release/workshop.json`, and this handoff overlaid.
+Uncommitted playtest tooling in the main worktree is excluded.
+
+The bundle is `artifacts/releases/steam-v1.4.0-d99fe5e/v1.4.0/`. The
+content-only upload workspace is
+`artifacts/releases/steam-v1.4.0-d99fe5e/v1.4.0-steam-content-only/`. It contains
+only the three runtime files in `content/`, `mod_id.txt`, and `workshop.json`
+with `changeNote`, plus the upload log, before/after listing and changelog
+snapshots, and `publication-receipt.json`. The snapshots confirm that the title,
+description, thumbnail, and screenshots are unchanged. Do not rerun the uploader
+without approval for another update.
+
+The C# suites passed on the release source, with a test-only project fix recorded
+in `test-only-overlay.patch`; it is not part of the shipped build. The native preview playtest passed
+the new empty-hand checks but then failed an existing stale hover check that
+looks for the card preview under `HoverTipsContainer`; the preview has been
+attached to the combat UI since 1.2.0.
+
+## Published 1.3.0
 
 Version 1.3.0 is published on Steam Workshop. The author confirmed a successful
 final playtest and approved publication on October 12, 2026. Steam accepted the
@@ -6,8 +36,6 @@ update at **2:19:21 p.m. PDT**. No commit, push, tag, or GitHub Release was made
 GitHub publication still requires separate approval.
 This updated the existing Workshop item **3799307965**. The internal mod ID and
 runtime filenames remain `TheArchitect`; do not create a second Workshop item.
-
-## Published 1.3.0
 
 The published build uses committed source `d160a3c` plus the staged 1.3.0 release
 metadata. It includes the separate Corrupted Player Elite, boss-only successor
@@ -158,10 +186,10 @@ content-only upload. No promotional images were uploaded with 1.1.0.
 - Review source and artwork provenance and choose a repository license.
   No license has been assigned by this preparation. Confirm rights to redistribute
   all shipped assets; this is a release decision, not inferred from files being present.
-- Review the changes since 1.2.1 and the local release metadata before choosing
+- Review the changes since 1.3.0 and the local release metadata before choosing
   the release commit. Do not publish a package from unreviewed working-tree changes.
 - Review the known limitations in `release/INSTALL.md` and `RELEASE_NOTES.md`.
-  Crash-safe result transactions remain tracked in #12; do not describe 1.3.0
+  Crash-safe result transactions remain tracked in #12; do not describe 1.4.0
   as universally card-compatible or crash-proof.
 
 ## Build and stage
@@ -196,14 +224,14 @@ Python runs on the host; only compilation runs in the existing
 inside the build image. Podman output must remain under the repository so it is
 visible in the container mount.
 
-The default command outputs to `artifacts/releases/v1.3.0/` and will refuse the
+The default command outputs to `artifacts/releases/v1.4.0/` and will refuse the
 existing candidate. For a refresh, build from an isolated source export, then
 retain the resulting bundle under a new parent directory. The current refreshed
-bundle is under `artifacts/releases/steam-v1.3.0-d160a3c/v1.3.0/`:
+bundle is under `artifacts/releases/steam-v1.4.0-d99fe5e/v1.4.0/`:
 
 | File/directory | Use |
 | --- | --- |
-| `TheArchitect-v1.3.0.zip` | Manual install; only this mod's three runtime files plus install instructions |
+| `TheArchitect-v1.4.0.zip` | Manual install; only this mod's three runtime files plus install instructions |
 | `SHA256SUMS` | SHA-256 hashes of the staged files |
 | `workshop/` | Existing-item update workspace; preserves Steam description and visibility |
 | `media/` | Thumbnail, banner and gameplay screenshots |
@@ -279,7 +307,7 @@ a listing identifier, not a credential.
 ## GitHub Release
 
 After approval, commit the reviewed release changes and tag that exact commit
-`v1.3.0`. Create a GitHub Release from the tag, use `release/RELEASE_NOTES.md`
+`v1.4.0`. Create a GitHub Release from the tag, use `release/RELEASE_NOTES.md`
 as the description, and attach the ZIP, `SHA256SUMS`, and install instructions.
 The archive uses the source commit and release overlay recorded in
 `PREPARATION.json`: rebuild from the approved commit if anything has changed

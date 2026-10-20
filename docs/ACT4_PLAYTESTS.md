@@ -140,11 +140,27 @@ scripts/docker-build.sh -- --verbosity quiet
 
 `REUSE_IMAGE=true` checks for an existing local image and never builds or pulls
 one. Podman uses `--userns=keep-id --security-opt label=disable`; Docker keeps
-the numeric `--user` mapping. The game mount is read-only. The output bundle and
-container home are under `OUTPUT_DIR`, not the installed mods directory.
+the numeric `--user` mapping. The game mount is read-only. The output bundle
+is under `OUTPUT_DIR`; the container home defaults to the sibling
+`OUTPUT_DIR.container-home`. `CONTAINER_HOME` can select another cache directory
+outside the output bundle. Native launchers copy only mod directories with a
+manifest and matching DLL or PCK, including all assets inside those directories.
 Choose a new output directory for independent work. Compilation still uses this
 checkout's intermediate files, so do not build concurrently in the same checkout.
 Without `REUSE_IMAGE=true`, the helper retains its image-build step.
+
+Run both C# test projects with the same container and explicit game assembly paths:
+
+```sh
+DOCKER=podman REUSE_IMAGE=true \
+IMAGE=localhost/sts2-the-architect-build:latest \
+scripts/docker-build.sh --test --verbosity quiet
+```
+
+The test command checks for `sts2.dll`, `0Harmony.dll` and `GodotSharp.dll`
+before running either project. `STS2_DATA_DIR`, when set, is a path inside the
+container; the default is `/sts2/data_sts2_linuxbsd_x86_64`.
+It neither launches the game nor installs mods.
 
 An alternate `ARCHITECT_MODS_INPUT` must contain every required runtime mod,
 including these BaseLib files:

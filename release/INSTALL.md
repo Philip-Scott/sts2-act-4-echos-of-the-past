@@ -1,4 +1,4 @@
-# Act 4: Echos of the Past 1.3.0
+# Act 4: Echos of the Past 1.4.0
 
 Previously named The Architect. This is the same mod and Workshop item:
 the internal ID, `TheArchitect` installation folder and saved lineages are unchanged.
@@ -54,14 +54,16 @@ together with the game closed. Do not remove your saves to update the mod.
 
 Act 4 follows Act 3 automatically: The Watcher, Rest Site, Shop, then the Architect.
 When saved opponents exist, a separate Corrupted Player Elite appears between the
-Shop and the Architect. In co-op, the same host and group face their entire last
-saved party. Winning the Elite grants normal Elite rewards and returns to the map.
+Shop and the Architect. In co-op, the same group faces its entire last saved
+party, whichever member hosts. Winning the Elite grants normal Elite rewards and returns to the map.
 Losing ends the run normally without capturing decks or replacing saved opponents.
 Only wins or losses against the Architect boss record the next opponents.
 
 Corrupted Players have 3.5 times their saved maximum HP at Ascension 0-7 and
 4.1 times at Ascension 8+, rounded up. There is no additional multiplayer HP
-multiplier. The Architect starts a fresh combat after the Elite.
+multiplier. Each Corrupted Player also carries a buff for its character, and
+from Ascension 9 gains 1 extra energy each turn. The Architect starts a fresh
+combat after the Elite.
 
 Saved decks can be viewed from character select. Corrupted Player lineages are
 local to the modded profile and are **not synchronized by Steam Cloud**.
@@ -86,7 +88,7 @@ run without deleting the run or the players' decks. The fight then goes directly
 to the Architect. A co-op Continue reset closes the lobby; reopen it and have
 everyone rejoin with the corrected save.
 
-Host migration is not supported. Avoid force-closing during result transitions;
+Changing hosts during an ongoing run is not supported. Avoid force-closing during result transitions;
 crash-transaction recovery remains incomplete. Combat reloads restart encounters,
 as in the supported beta game.
 

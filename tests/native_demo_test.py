@@ -177,6 +177,35 @@ class PartyHistoryTests(unittest.TestCase):
 
 
 class NativeDemoTests(unittest.TestCase):
+    def test_mod_staging_copies_complete_mod_directories_but_not_build_caches(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "mods"
+            for name, suffix in (("TheArchitect", "dll"), ("BaseLib", "dll"), ("AssetsOnly", "pck")):
+                mod = source / name
+                (mod / "images").mkdir(parents=True)
+                for relative in (f"{name}.json", f"{name}.{suffix}", f"{name}.pdb", "images/card.png"):
+                    (mod / relative).write_text("runtime")
+            for relative in (".home/.nuget/packages/package/package.json",
+                             ".home/.nuget/packages/package/package.dll",
+                             "cache/nuget/package/package.json", "cache/nuget/package/package.dll",
+                             "build.log"):
+                path = source / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("cache")
+            expected = demo.mod_hashes(source)
+            self.assertEqual(len(expected), 12)
+            self.assertFalse(any(name.startswith((".home/", "cache/")) for name in expected))
+            destination = root / "frozen"
+            demo.copy_mods(source, destination)
+            self.assertEqual(demo.hashes(destination), expected)
+            self.assertEqual({path.name for path in destination.iterdir()},
+                             {"TheArchitect", "BaseLib", "AssetsOnly"})
+            (source / "build.log").write_text("changed cache")
+            self.assertEqual(demo.mod_hashes(source), expected)
+            (source / "TheArchitect/images/card.png").write_text("changed asset")
+            self.assertNotEqual(demo.mod_hashes(source), expected)
+
     def test_xvfb_resolution_uses_override_then_path_then_repo_tool(self):
         with tempfile.TemporaryDirectory(dir=demo.ROOT) as directory:
             root = Path(directory)
@@ -393,6 +422,8 @@ class NativeDemoTests(unittest.TestCase):
                 (mods / mod).mkdir(parents=True)
                 for suffix in ("dll", "json", "pck"):
                     (mods / mod / f"{mod}.{suffix}").write_text("original")
+            (mods / ".home").mkdir()
+            (mods / ".home/cache.json").write_text("SDK cache")
             process = Mock(returncode=0)
             process.wait.return_value = 0
             process.poll.return_value = 0
@@ -507,6 +538,9 @@ class NativeDemoTests(unittest.TestCase):
             self.assertEqual((run / "snapshot-input.json").read_text(), snapshot.read_text())
             self.assertFalse((game / "mods").exists())
             self.assertEqual(json.loads((run / "run.json").read_text())["state"], "exited")
+            self.assertFalse((run / "mods/.home").exists())
+            self.assertFalse(any(name.startswith(".home/") for name in
+                                 json.loads((run / "run.json").read_text())["mods"]))
 
     def test_controls_are_bounded_not_arbitrary_commands(self):
         with patch.object(demo.subprocess, "run") as execute:

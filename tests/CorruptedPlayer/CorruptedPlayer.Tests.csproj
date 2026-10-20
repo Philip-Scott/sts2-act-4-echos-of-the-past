@@ -7,7 +7,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/*.cs" Exclude="../../TheArchitectCode/CorruptedPlayerCombat/GameCardDescriptorFactory.cs;../../TheArchitectCode/CorruptedPlayerCombat/Native*.cs" Link="CorruptedPlayer/%(Filename)%(Extension)" />
+    <Compile Include="../../TheArchitectCode/CorruptedPlayerCombat/*.cs" Exclude="../../TheArchitectCode/CorruptedPlayerCombat/GameCardDescriptorFactory.cs;../../TheArchitectCode/CorruptedPlayerCombat/CorruptedPlayerBuffs.cs;../../TheArchitectCode/CorruptedPlayerCombat/Native*.cs" Link="CorruptedPlayer/%(Filename)%(Extension)" />
     <Compile Include="../../TheArchitectCode/Persistence/CorruptedPartySnapshot.cs" Link="Persistence/CorruptedPartySnapshot.cs" />
     <Compile Include="../../TheArchitectCode/Persistence/ArchitectRunState.cs" Link="Persistence/ArchitectRunState.cs" />
     <Compile Include="../../TheArchitectCode/Persistence/SuccessorStores.cs" Link="Persistence/SuccessorStores.cs" />

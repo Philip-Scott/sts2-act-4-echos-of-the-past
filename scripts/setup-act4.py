@@ -546,8 +546,8 @@ def write_profile(account, slot, artifact, game, prepared, *, replace=False):
 
 
 def runtime_hashes(directory):
-    return {str(path.relative_to(directory)): sha(path) for path in sorted(directory.rglob("*"))
-            if path.is_file() and path.suffix in (".dll", ".json", ".pck")}
+    return {str(path.relative_to(directory)): sha(path) for mod in NATIVE.mod_directories(directory)
+            for path in sorted(mod.rglob("*")) if path.is_file() and path.suffix in (".dll", ".json", ".pck")}
 
 
 def other_mods(entries):
@@ -585,17 +585,17 @@ def bundle_preflight(game, *, live):
 
 def freeze_bundle(game, artifact, *, live):
     mods, base = bundle_preflight(game, live=live)
-    before = hashes(mods)
+    before = NATIVE.mod_hashes(mods)
     base_before = {f"BaseLib.{suffix}": sha(base / f"BaseLib.{suffix}")
                    for suffix in ("dll", "json", "pck")}
-    shutil.copytree(mods, artifact / "mods")
+    NATIVE.copy_mods(mods, artifact / "mods")
     frozen_base = artifact / "mods/BaseLib"
     frozen_base.mkdir(exist_ok=True)
     for suffix in ("dll", "json", "pck"):
         shutil.copyfile(base / f"BaseLib.{suffix}", frozen_base / f"BaseLib.{suffix}")
     expected = dict(before)
     expected.update({f"BaseLib/{key}": value for key, value in base_before.items()})
-    if (before != hashes(mods) or any(sha(base / name) != digest for name, digest in base_before.items()) or
+    if (before != NATIVE.mod_hashes(mods) or any(sha(base / name) != digest for name, digest in base_before.items()) or
             hashes(artifact / "mods") != expected):
         raise ValueError("Mod inputs changed while freezing preparation. No profile was changed.")
 

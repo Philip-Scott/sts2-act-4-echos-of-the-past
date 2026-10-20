@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.4.0 Changes
+
+Released October 19, 2026 at 10:45 p.m. PDT.
 
 - Corrupted Players now carry a character buff: Singeing Ichor (Ironclad),
   Ring of the Viper (Silent), Tarnished Crown (Regent), Fractured Urn
@@ -16,10 +18,18 @@
   bar, centered over it, instead of above its head.
 - Corrupted Player energy, stars and draw, discard and exhaust piles now show
   as compact icons ahead of its buffs below the health bar. Hover them for
-  details; click a pile to view it. The energy icon no longer shows the
-  Corrupted Player Plan tooltip.
+  details; click a pile to view it.
+- Corrupted Players with no cards in hand no longer show a "No cards" label.
+- Corrupted Players have larger target hitboxes, making them easier to click.
 - Increased Corrupted Player HP to 3.5 times saved maximum HP at Ascension 0-7
   and 4.1 times at Ascension 8+.
+- Every co-op participant now saves the complete Corrupted Party locally, so
+  anyone in the group can host the next run against the same opponents.
+- Fixed Whistle and other stuns targeting a player in Corrupted Player fights:
+  the player now gains Stunned and cannot draw cards until the end of their
+  next turn, but can still play cards, use potions and end the turn.
+- Renamed the Ritual Dagger relic to Forgotten Ritual.
+- The Architect's intents sit lower on screen.
 - Fixed Corrupted Players stopping mid-fight in three- and four-player runs:
   native enemy block scaling had no Act 4 tier and threw every time they
   gained block.

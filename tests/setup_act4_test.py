@@ -320,6 +320,19 @@ class StartupTests(unittest.TestCase):
         self.addCleanup(self.processes.stop)
         self.prepared = act4.compose_save(template(), [deck()], [deck()], MODELS)
 
+    def test_freezing_live_bundle_omits_caches_and_keeps_mod_assets(self):
+        cache = self.mods / ".home/.nuget"
+        cache.mkdir(parents=True)
+        (cache / "package.json").write_text("SDK cache")
+        assets = self.mods / "TheArchitect/images"
+        assets.mkdir()
+        (assets / "card.png").write_text("mod asset")
+        act4.freeze_bundle(self.game, self.artifact, live=True)
+        frozen = self.artifact / "mods"
+        self.assertEqual({path.name for path in frozen.iterdir()}, {"TheArchitect", "BaseLib"})
+        self.assertEqual((frozen / "TheArchitect/images/card.png").read_text(), "mod asset")
+        self.assertFalse(any(name.startswith(".home/") for name in act4.hashes(frozen)))
+
     def prepare(self, ready=False):
         act4.freeze_bundle(self.game, self.artifact, live=True)
         act4.write_json(self.artifact / "verified.save", self.prepared)
