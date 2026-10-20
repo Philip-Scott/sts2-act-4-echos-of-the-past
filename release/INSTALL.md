@@ -59,8 +59,8 @@ saved party. Winning the Elite grants normal Elite rewards and returns to the ma
 Losing ends the run normally without capturing decks or replacing saved opponents.
 Only wins or losses against the Architect boss record the next opponents.
 
-Corrupted Players have 2.5 times their saved maximum HP at Ascension 0-7 and
-3.1 times at Ascension 8+, rounded up. There is no additional multiplayer HP
+Corrupted Players have 3.5 times their saved maximum HP at Ascension 0-7 and
+4.1 times at Ascension 8+, rounded up. There is no additional multiplayer HP
 multiplier. The Architect starts a fresh combat after the Elite.
 
 Saved decks can be viewed from character select. Corrupted Player lineages are

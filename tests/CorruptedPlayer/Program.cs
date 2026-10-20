@@ -44,9 +44,9 @@ foreach (int ascension in new[] { 0, 1, 7, 8, 9, 10 })
 {
     Test($"maximum HP scales from the original snapshot at A{ascension}", () =>
     {
-        Check(CorruptedPlayerHealth.CalculateMaxHp(80, ascension) == (ascension >= 8 ? 248 : 200));
-        Check(CorruptedPlayerHealth.CalculateMaxHp(81, ascension) == (ascension >= 8 ? 252 : 203));
-        Check(CorruptedPlayerHealth.CalculateMaxHp(1, ascension) == (ascension >= 8 ? 4 : 3));
+        Check(CorruptedPlayerHealth.CalculateMaxHp(80, ascension) == (ascension >= 8 ? 328 : 280));
+        Check(CorruptedPlayerHealth.CalculateMaxHp(81, ascension) == (ascension >= 8 ? 333 : 284));
+        Check(CorruptedPlayerHealth.CalculateMaxHp(1, ascension) == (ascension >= 8 ? 5 : 4));
     });
 }
 Test("maximum HP scaling rejects nonpositive snapshot HP", () =>

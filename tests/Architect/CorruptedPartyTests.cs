@@ -12,8 +12,8 @@ internal static class CorruptedPartyTests
                 {
                     var hp = Enumerable.Range(0, count)
                         .Select(_ => CorruptedPlayerHealth.CalculateMaxHp(81, ascension)).ToArray();
-                    check(hp.All(value => value == (ascension >= 8 ? 252 : 203)),
-                        "Each member must retain the same rounded 2.5x/3.1x snapshot HP.");
+                    check(hp.All(value => value == (ascension >= 8 ? 333 : 284)),
+                        "Each member must retain the same rounded 3.5x/4.1x snapshot HP.");
                 }
             });
         }

@@ -6,6 +6,6 @@ public static class CorruptedPlayerHealth
     {
         if (originalMaxHp <= 0)
             throw new ArgumentOutOfRangeException(nameof(originalMaxHp));
-        return checked((int)Math.Ceiling(originalMaxHp * (ascension >= 8 ? 3.1m : 2.5m)));
+        return checked((int)Math.Ceiling(originalMaxHp * (ascension >= 8 ? 4.1m : 3.5m)));
     }
 }

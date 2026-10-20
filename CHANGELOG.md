@@ -18,6 +18,8 @@
   as compact icons ahead of its buffs below the health bar. Hover them for
   details; click a pile to view it. The energy icon no longer shows the
   Corrupted Player Plan tooltip.
+- Increased Corrupted Player HP to 3.5 times saved maximum HP at Ascension 0-7
+  and 4.1 times at Ascension 8+.
 - Fixed Corrupted Players stopping mid-fight in three- and four-player runs:
   native enemy block scaling had no Act 4 tier and threw every time they
   gained block.

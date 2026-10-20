@@ -90,7 +90,7 @@ Each Corrupted Player retains its monster lifecycle listener and cleans up its
 own pets and actor state on death. The native engine ends the Elite after every
 member dies; no death hook spawns the Architect. A prevented death keeps the
 Elite running. Normal Elite rewards precede a return to the map and a separate
-Architect boss combat. Each member has 2x saved maximum HP, or 2.5x at A8+, rounded
+Architect boss combat. Each member has 3.5x saved maximum HP, or 4.1x at A8+, rounded
 up, without native multiplayer HP scaling. Native terminal outcomes, snapshot deduplication and atomic
 replacement remain in the existing lifecycle/persistence implementation.
 
