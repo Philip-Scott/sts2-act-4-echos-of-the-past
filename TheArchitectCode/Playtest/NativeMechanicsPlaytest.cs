@@ -111,14 +111,12 @@ internal static class NativeMechanicsPlaytest
         }
         telegraph.ShowPlan([], false);
         var handRow = telegraph.GetNode<ScrollContainer>("HandScroll").GetChild(0);
-        var emptyHand = handRow.GetChild(0);
         for (var refresh = 0; refresh < 10; refresh++)
             telegraph.ShowPlan([], false);
-        Require(handRow.GetChildCount() == 1 && handRow.GetChild(0) == emptyHand &&
-            !emptyHand.IsQueuedForDeletion(), "unchanged empty hands reuse their placeholder node");
+        Require(handRow.GetChildCount() == 0, "empty hands show no placeholder");
         actor.Show(telegraph);
-        Require(handRow.GetChildCount() == actor.State.Hand.Cards.Count &&
-            emptyHand.IsQueuedForDeletion(), "empty hand transitions back to the current cards");
+        Require(handRow.GetChildCount() == actor.State.Hand.Cards.Count,
+            "empty hand transitions back to the current cards");
         PreviewFace(previewStrike).EmitSignal(Control.SignalName.MouseEntered);
         var previewHand = actor.State.Hand.Cards.ToArray();
         var previewBaseValues = previewHand.Select(card => card.DynamicVars.Values.Select(v => v.BaseValue).ToArray()).ToArray();

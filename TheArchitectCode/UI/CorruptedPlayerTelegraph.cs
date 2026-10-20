@@ -42,6 +42,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     private CorruptedPlayerStatusIcons? _status;
     private CorruptedPlayerHandAnimator? _hand;
     private bool _refreshQueued;
+    private bool _handRendered;
     private Action _refreshPlan = null!;
     private readonly List<CardCell> _cells = [];
     private static CorruptedPlayerTelegraph? _previewOwner;
@@ -176,7 +177,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             return;
         ContentRefreshCount++;
         _heading.Text = limited ? "Corrupted Player · play → · plan limit" : "Corrupted Player · play →";
-        if (_row.GetChildCount() > 0 && _cells.Count == cards.Count && _cells.Select(cell =>
+        if (_handRendered && _cells.Count == cards.Count && _cells.Select(cell =>
                 (cell.Entry.InstanceId, cell.Entry.PlayOrder, cell.Entry.Unsupported))
             .SequenceEqual(cards.Select(card => (card.InstanceId, card.PlayOrder, card.Unsupported))))
         {
@@ -201,8 +202,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
             _row.RemoveChild(child);
             child.QueueFree();
         }
-        if (cards.Count == 0)
-            _row.AddChild(new Label { Text = "No cards", CustomMinimumSize = CardFaceSize });
+        _handRendered = true;
         foreach (var card in cards)
             AddCard(card);
         _hand?.DropUnclaimed();
