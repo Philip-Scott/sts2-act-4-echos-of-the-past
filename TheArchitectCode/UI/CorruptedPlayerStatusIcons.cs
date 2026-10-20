@@ -54,7 +54,7 @@ internal sealed class CorruptedPlayerStatusIcons
         var energyTexture = ResourceLoader.Load<Texture2D>(player.Character.CardPool.EnergyIconPath, null,
             ResourceLoader.CacheMode.Reuse);
         (_, _energyIcon, _energy) = AddIcon("Energy", energyTexture,
-            Tip("CORRUPTED_ENERGY"), Tip("CORRUPTED_PLAN"));
+            Tip("CORRUPTED_ENERGY"));
         (_stars, _, _starCount) = AddIcon("Stars",
             ResourceLoader.Load<Texture2D>(StarIconPath, null, ResourceLoader.CacheMode.Reuse), Tip("CORRUPTED_STARS"));
         _stars.Visible = false;

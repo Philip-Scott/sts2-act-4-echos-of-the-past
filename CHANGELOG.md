@@ -16,7 +16,8 @@
   bar, centered over it, instead of above its head.
 - Corrupted Player energy, stars and draw, discard and exhaust piles now show
   as compact icons ahead of its buffs below the health bar. Hover them for
-  details; click a pile to view it.
+  details; click a pile to view it. The energy icon no longer shows the
+  Corrupted Player Plan tooltip.
 - Fixed Corrupted Players stopping mid-fight in three- and four-player runs:
   native enemy block scaling had no Act 4 tier and threw every time they
   gained block.
