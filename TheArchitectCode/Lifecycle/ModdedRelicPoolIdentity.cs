@@ -1,45 +1,56 @@
+using System.Collections;
 using System.Reflection;
-using System.Reflection.Emit;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
 
 namespace TheArchitect.TheArchitectCode.Lifecycle;
 
-[HarmonyPatch]
+// The native modded-pool selector can inline vanilla ID generation before BaseLib's prefix patch.
+// Patch only the non-generic relic pool getter: the selector lambda is generic code shared by
+// every reference-type pool (cards, potions, ...), so patching it would also run the relic-typed
+// body for those pools and break them (e.g. card pools, descriptions and energy icons).
+[HarmonyPatch(typeof(RelicPoolModel), nameof(RelicPoolModel.AllRelics), MethodType.Getter)]
 internal static class ModdedRelicPoolIdentity
 {
-    private static MethodBase TargetMethod()
-    {
-        var selector = typeof(ModHelper).GetNestedTypes(BindingFlags.NonPublic).Single(type =>
-            type.IsGenericTypeDefinition && AccessTools.GetDeclaredMethods(type).Any(IsPoolSelector));
-        return AccessTools.GetDeclaredMethods(selector.MakeGenericType(typeof(RelicModel))).Single(IsPoolSelector);
-    }
+    private static readonly MethodInfo NativeConcat = AccessTools.Method(typeof(ModHelper),
+        nameof(ModHelper.ConcatModelsFromMods)).GetGenericMethodDefinition();
 
-    private static bool IsPoolSelector(MethodInfo method) =>
-        method.Name.Contains("<ConcatModelsFromMods>", StringComparison.Ordinal);
+    private static readonly IDictionary PoolContent = (IDictionary)AccessTools.Field(typeof(ModHelper),
+        "_moddedContentForPools").GetValue(null)!;
+
+    private static readonly FieldInfo ModelsToAdd =
+        AccessTools.Field(AccessTools.Inner(typeof(ModHelper), "ModPoolContent"), "modelsToAdd");
 
     private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
     {
-        var getId = AccessTools.Method(typeof(ModelDb), nameof(ModelDb.GetId), [typeof(Type)]);
-        var registeredId = AccessTools.Method(typeof(ModdedRelicPoolIdentity), nameof(RegisteredId));
+        var replacement = AccessTools.Method(typeof(ModdedRelicPoolIdentity), nameof(ConcatModelsFromMods));
         var replaced = false;
         foreach (var instruction in instructions)
         {
-            if (instruction.Calls(getId))
+            if (instruction.operand is MethodInfo { IsGenericMethod: true } method &&
+                method.GetGenericMethodDefinition() == NativeConcat &&
+                method.GetGenericArguments().SequenceEqual([typeof(RelicModel)]))
             {
-                instruction.opcode = OpCodes.Call;
-                instruction.operand = registeredId;
+                instruction.operand = replacement;
                 replaced = true;
             }
             yield return instruction;
         }
         if (!replaced)
-            throw new MissingMethodException("The native modded relic pool model-ID selector changed.");
+            throw new MissingMethodException("The native relic pool no longer concatenates modded relics.");
     }
 
-    // The native selector can inline vanilla ID generation before BaseLib's prefix patch.
+    internal static IEnumerable<RelicModel> ConcatModelsFromMods(IPoolModel poolModel, IEnumerable<RelicModel> pool)
+    {
+        // The native call freezes the pool's modded additions and returns the pool unchanged when there are none.
+        if (ReferenceEquals(ModHelper.ConcatModelsFromMods(poolModel, pool), pool))
+            return pool;
+        var added = (List<Type>)ModelsToAdd.GetValue(PoolContent[poolModel.GetType()])!;
+        return pool.Concat(added.Select(RegisteredRelic));
+    }
+
     // Use the registered canonical identity, including custom IDs, rather than regenerating it.
-    private static ModelId RegisteredId(Type type) =>
-        ModelDb.All.Single(model => model.GetType() == type).Id;
+    private static RelicModel RegisteredRelic(Type type) =>
+        (RelicModel)ModelDb.All.Single(model => model.GetType() == type);
 }

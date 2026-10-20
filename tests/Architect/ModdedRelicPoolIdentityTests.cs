@@ -28,6 +28,11 @@ internal static class ModdedRelicPoolIdentityTests
                 new ModelId("RELIC", "OTHER_CUSTOM_RELIC_ID")
             };
             var idField = AccessTools.Field(typeof(AbstractModel), "<Id>k__BackingField");
+            var cardPool = ModelDb.All.OfType<CardPoolModel>().First();
+            var cardPoolType = cardPool.GetType();
+            var previousCardPool = pools[cardPoolType];
+            pools.Remove(cardPoolType);
+            var card = ModelDb.All.OfType<CardModel>().First();
             var harmony = new Harmony("TheArchitect.Tests.ModdedRelicPoolIdentity");
             try
             {
@@ -38,10 +43,10 @@ internal static class ModdedRelicPoolIdentityTests
                     idField.SetValue(relics[index], registeredIds[index]);
                     ModHelper.AddModelToPool(poolType, types[index]);
                 }
-                var pool = new SharedRelicPool();
+                ModHelper.AddModelToPool(cardPoolType, card.GetType());
                 try
                 {
-                    _ = ModHelper.ConcatModelsFromMods<RelicModel>(pool, []).ToArray();
+                    _ = new SharedRelicPool().AllRelics.ToArray();
                     throw new InvalidOperationException("The unpatched selector should request a missing vanilla ID.");
                 }
                 catch (ModelNotFoundException)
@@ -50,16 +55,19 @@ internal static class ModdedRelicPoolIdentityTests
                 }
 
                 harmony.CreateClassProcessor(typeof(ModdedRelicPoolIdentity)).Patch();
+                var pool = new SharedRelicPool();
                 for (var reload = 0; reload < 2; reload++)
                 {
-                    var actual = ModHelper.ConcatModelsFromMods(pool, relics.Take(1)).ToArray();
-                    check(actual.SequenceEqual(new[] { relics[0], relics[0], relics[1] }),
-                        "Preserve the original pool and registered additions in order, including retired relics.");
-                    check(actual.Skip(1).Select(relic => relic.Id).SequenceEqual(registeredIds),
+                    var actual = pool.AllRelics.ToArray();
+                    check(actual.TakeLast(relics.Length).SequenceEqual(relics),
+                        "Append registered additions in order after the native pool, including retired relics.");
+                    check(actual.TakeLast(relics.Length).Select(relic => relic.Id).SequenceEqual(registeredIds),
                         "Use registered IDs, not a guessed mod prefix or newly registered aliases.");
                 }
                 check(originalIds.All(id => ModelDb.GetByIdOrNull<RelicModel>(id) == null),
                     "The fix must not introduce unprefixed aliases.");
+                check(ModHelper.ConcatModelsFromMods<CardModel>(cardPool, []).SequenceEqual([card]),
+                    "Modded card pool additions must keep the native generic selector.");
             }
             finally
             {
@@ -70,10 +78,16 @@ internal static class ModdedRelicPoolIdentityTests
                     idField.SetValue(relics[index], originalIds[index]);
                     models[originalIds[index]] = relics[index];
                 }
-                pools.Remove(poolType);
-                if (previousPool != null)
-                    pools[poolType] = previousPool;
+                Restore(pools, poolType, previousPool);
+                Restore(pools, cardPoolType, previousCardPool);
             }
         });
+    }
+
+    private static void Restore(IDictionary pools, Type poolType, object? previous)
+    {
+        pools.Remove(poolType);
+        if (previous != null)
+            pools[poolType] = previous;
     }
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Fixed card descriptions showing raw code text instead of calculated values
+  and energy icons when other installed mods add cards to card pools. The 1.4.0
+  modded relic pool fix now applies only to relic pools.
+
 ## 1.4.0 Changes
 
 Released October 19, 2026 at 10:45 p.m. PDT.
