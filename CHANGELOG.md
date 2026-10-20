@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Fixed card text showing raw code strings (such as calculated damage values
+  and energy icons) when other mods add cards to card pools. The 1.4.0 modded
+  relic pool fix also replaced the card and potion pool lookups and failed on
+  every mod-added card.
+
 ## 1.4.0 Changes
 
 Released October 19, 2026 at 10:45 p.m. PDT.

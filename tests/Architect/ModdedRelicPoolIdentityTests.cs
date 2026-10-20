@@ -2,6 +2,8 @@ using System.Collections;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.CardPools;
+using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Models.Exceptions;
 using MegaCrit.Sts2.Core.Models.RelicPools;
 using TheArchitect.TheArchitectCode.Lifecycle;
@@ -19,6 +21,8 @@ internal static class ModdedRelicPoolIdentityTests
             var poolType = typeof(SharedRelicPool);
             var previousPool = pools[poolType];
             pools.Remove(poolType);
+            var cardPoolType = typeof(ColorlessCardPool);
+            var previousCardPool = pools[cardPoolType];
             var types = new[] { typeof(BorrowedTomorrow), typeof(GoldenEye) };
             var relics = types.Select(type => ModelDb.GetById<RelicModel>(ModelDb.GetId(type))).ToArray();
             var originalIds = relics.Select(relic => relic.Id).ToArray();
@@ -60,10 +64,20 @@ internal static class ModdedRelicPoolIdentityTests
                 }
                 check(originalIds.All(id => ModelDb.GetByIdOrNull<RelicModel>(id) == null),
                     "The fix must not introduce unprefixed aliases.");
+
+                // The selector's code is shared by every reference-type pool; card pools must keep working.
+                pools.Remove(cardPoolType);
+                ModHelper.AddModelToPool(cardPoolType, typeof(StrikeIronclad));
+                var cards = ModHelper.ConcatModelsFromMods<CardModel>(new ColorlessCardPool(), []).ToArray();
+                check(cards.SequenceEqual(new CardModel[] { ModelDb.Card<StrikeIronclad>() }),
+                    "Card pools must resolve their modded cards through the patched selector.");
             }
             finally
             {
                 harmony.UnpatchAll(harmony.Id);
+                pools.Remove(cardPoolType);
+                if (previousCardPool != null)
+                    pools[cardPoolType] = previousCardPool;
                 for (var index = 0; index < relics.Length; index++)
                 {
                     models.Remove(registeredIds[index]);
