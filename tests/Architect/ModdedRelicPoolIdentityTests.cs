@@ -2,6 +2,8 @@ using System.Collections;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.CardPools;
+using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Models.Exceptions;
 using MegaCrit.Sts2.Core.Models.RelicPools;
 using TheArchitect.TheArchitectCode.Lifecycle;
@@ -70,6 +72,32 @@ internal static class ModdedRelicPoolIdentityTests
                     idField.SetValue(relics[index], originalIds[index]);
                     models[originalIds[index]] = relics[index];
                 }
+                pools.Remove(poolType);
+                if (previousPool != null)
+                    pools[poolType] = previousPool;
+            }
+        });
+
+        test("Modded pools: the shared selector patch keeps card pool additions typed as cards", () =>
+        {
+            var pools = (IDictionary)AccessTools.Field(typeof(ModHelper), "_moddedContentForPools").GetValue(null)!;
+            var poolType = typeof(IroncladCardPool);
+            var previousPool = pools[poolType];
+            pools.Remove(poolType);
+            var harmony = new Harmony("TheArchitect.Tests.ModdedCardPoolIdentity");
+            ModelDb.Inject(typeof(StrikeIronclad));
+            try
+            {
+                ModHelper.AddModelToPool(poolType, typeof(StrikeIronclad));
+                harmony.CreateClassProcessor(typeof(ModdedRelicPoolIdentity)).Patch();
+                // Card and relic selectors share one native body; a relic-typed replacement fails this cast.
+                CardModel[] actual = ModHelper.ConcatModelsFromMods<CardModel>(new IroncladCardPool(), []).ToArray();
+                check(actual.Length == 1 && actual[0] == ModelDb.Card<StrikeIronclad>(),
+                    "Modded card pool additions resolve to their canonical card models.");
+            }
+            finally
+            {
+                harmony.UnpatchAll(harmony.Id);
                 pools.Remove(poolType);
                 if (previousPool != null)
                     pools[poolType] = previousPool;

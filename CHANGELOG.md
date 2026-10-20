@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Fixed modded cards and potions from other content mods failing to load into
+  their pools, which could leave card text showing raw code strings (such as
+  `{CalculatedDamage:diff()}` or energy icon tags). The 1.4.0 modded relic pool
+  fix also rewrote the shared card and potion pool lookup as a relic lookup.
+
 ## 1.4.0 Changes
 
 Released October 19, 2026 at 10:45 p.m. PDT.

@@ -13,7 +13,10 @@ internal static class ModdedRelicPoolIdentity
     {
         var selector = typeof(ModHelper).GetNestedTypes(BindingFlags.NonPublic).Single(type =>
             type.IsGenericTypeDefinition && AccessTools.GetDeclaredMethods(type).Any(IsPoolSelector));
-        return AccessTools.GetDeclaredMethods(selector.MakeGenericType(typeof(RelicModel))).Single(IsPoolSelector);
+        // Reference-type instantiations share one native body, so this patch also replaces the card and
+        // potion pool selectors. Harmony bakes the patched instantiation's GetById<T> into the replacement:
+        // RelicModel made every modded card or potion fail its cast, so patch the type every model satisfies.
+        return AccessTools.GetDeclaredMethods(selector.MakeGenericType(typeof(AbstractModel))).Single(IsPoolSelector);
     }
 
     private static bool IsPoolSelector(MethodInfo method) =>
