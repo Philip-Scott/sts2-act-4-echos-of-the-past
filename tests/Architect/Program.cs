@@ -208,6 +208,7 @@ foreach (var hasCorruptedPlayers in new[] { true, false })
 
 UnwrittenBonusTests.Run(Test);
 WatcherRelicTests.Run(Test);
+ModdedRelicPoolIdentityTests.Run(Test, Check);
 WatcherAudioTests.Run(Test);
 HistoryIconTests.Run(Test);
 ArchitectMusicTests.Run(Test);
@@ -217,6 +218,7 @@ NativeDownfallApiTests.Run(Test, Check);
 CorruptedPartyTests.Run(Test, Check);
 CorruptedEnemyUiTests.Run(Test, Check);
 InvincibleCounterTests.Run(Test, Check);
+PlayerStunnedTests.Run(Test, Check);
 CorruptedPlayerBuffTests.Run(Test, Check);
 
 Test("Watcher: all fifteen current and legacy relics declare the native description pool", () =>

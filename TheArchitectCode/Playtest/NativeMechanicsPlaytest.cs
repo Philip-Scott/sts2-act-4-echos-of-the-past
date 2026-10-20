@@ -9,6 +9,7 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Models.Powers;
+using MegaCrit.Sts2.Core.Models.Potions;
 using MegaCrit.Sts2.Core.Models.Enchantments;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards;
@@ -20,6 +21,7 @@ using MegaCrit.Sts2.Core.Saves.Runs;
 using MegaCrit.Sts2.addons.mega_text;
 using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using TheArchitect.TheArchitectCode.Lifecycle;
+using TheArchitect.TheArchitectCode.Powers;
 using TheArchitect.TheArchitectCode.UI;
 
 namespace TheArchitect.TheArchitectCode.Playtest;
@@ -256,6 +258,33 @@ internal static class NativeMechanicsPlaytest
         actor.Body.RemoveAllPowersInternalExcept();
         human.Creature.RemoveAllPowersInternalExcept();
         await NativeModdedCardPlaytest.Run(human, actor, Prepare, Turn);
+
+        human.Creature.LoseBlockInternal(human.Creature.Block);
+        var whistle = Card<Whistle>();
+        Prepare(whistle, Card<StrikeIronclad>(), Card<Wound>(), Card<Wound>(), Card<Wound>());
+        var beforeWhistleHp = human.Creature.CurrentHp;
+        await Turn();
+        Require(beforeWhistleHp - human.Creature.CurrentHp == 39 && whistle.Pile == actor.State.ExhaustPile,
+            "native Whistle damages and stuns a human without aborting subsequent card plays");
+        Require(human.Creature.HasPower<PlayerStunnedPower>() && human.PlayerCombatState!.Hand.Cards.Count == 0 &&
+            !CombatManager.Instance.PlayerActionsDisabled,
+            "stunned human enters the normal playable phase with no opening draw and actions enabled");
+        var drawCount = human.PlayerCombatState!.DrawPile.Cards.Count;
+        await CardPileCmd.Draw(context, 2, human, fromHandDraw: false);
+        Require(human.PlayerCombatState.Hand.Cards.Count == 0 &&
+            human.PlayerCombatState.DrawPile.Cards.Count == drawCount,
+            "stun also prevents effect draws without consuming the draw pile");
+        var potion = await PotionCmd.TryToProcure<BlockPotion>(human);
+        Require(potion.success, "stun probe can procure a Block Potion");
+        var beforePotionBlock = human.Creature.Block;
+        await potion.potion.OnUseWrapper(context, human.Creature);
+        Require(human.Creature.Block > beforePotionBlock && human.Creature.HasPower<PlayerStunnedPower>(),
+            "a stunned human can use a native potion without clearing the stun");
+        Prepare(Card<Wound>(), Card<Wound>(), Card<Wound>(), Card<Wound>(), Card<Wound>());
+        await Turn();
+        Require(!human.Creature.HasPower<PlayerStunnedPower>() && human.PlayerCombatState.Hand.Cards.Count > 0,
+            "stunned human can end its turn and draws normally on the following turn");
+
         if (previewsOnly)
         {
             MainFile.Logger.Info("NATIVE CARD PREVIEWS PASSED");

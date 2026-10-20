@@ -1,0 +1,22 @@
+schema: 1
+name: Whistle stun test player
+character: CHARACTER.IRONCLAD
+ascension: 0
+cards:
+- id: CARD.STRIKE_IRONCLAD
+- id: CARD.WHISTLE
+- id: CARD.DEFEND_IRONCLAD
+- id: CARD.SHRUG_IT_OFF
+- id: CARD.ANGER
+relics: []
+potions:
+- id: POTION.BLOCK_POTION
+  slot_index: 0
+- id: POTION.WEAK_POTION
+  slot_index: 1
+current_hp: 300
+max_hp: 300
+gold: 0
+max_potion_slot_count: 2
+max_energy: 3
+base_orb_slot_count: 0

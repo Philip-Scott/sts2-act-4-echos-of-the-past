@@ -1,4 +1,7 @@
 {
+  "THEARCHITECT-PLAYER_STUNNED_POWER.title": "Stunned",
+  "THEARCHITECT-PLAYER_STUNNED_POWER.description": "Cannot draw cards until the end of your turn.",
+  "THEARCHITECT-PLAYER_STUNNED_POWER.smartDescription": "Cannot draw cards until the end of your turn.",
   "THEARCHITECT-ARCHITECT_BEAT_OF_DEATH_POWER.title": "Beat of Death",
   "THEARCHITECT-ARCHITECT_BEAT_OF_DEATH_POWER.description": "Whenever you play a card, take [blue]{Amount}[/blue] damage.",
   "THEARCHITECT-ARCHITECT_BEAT_OF_DEATH_POWER.smartDescription": "Whenever you play a card, take [blue]{Amount}[/blue] damage.",

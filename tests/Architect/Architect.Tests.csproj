@@ -15,6 +15,7 @@
     <Compile Include="../../TheArchitectCode/ArchitectModels.Watcher.cs" />
     <Compile Include="../../TheArchitectCode/Powers/ArchitectInvinciblePower.cs" Link="ArchitectInvinciblePower.cs" />
     <Compile Include="../../TheArchitectCode/Powers/ArchitectBeatOfDeathPower.cs" Link="ArchitectBeatOfDeathPower.cs" />
+    <Compile Include="../../TheArchitectCode/Powers/PlayerStunnedPower.cs" Link="PlayerStunnedPower.cs" />
     <Compile Include="../../TheArchitectCode/Powers/*Stance*.cs" />
     <Compile Include="../../TheArchitectCode/Audio/WatcherAudio.cs" />
     <Compile Include="../../TheArchitectCode/Audio/WatcherStanceAudio.cs" />
@@ -27,6 +28,7 @@
     <Compile Include="../../TheArchitectCode/Playtest/ArchitectHistorySetup.cs" Link="ArchitectHistorySetup.cs" />
     <Compile Include="../../TheArchitectCode/Lifecycle/ArchitectHistoryIcons.cs" Link="ArchitectHistoryIcons.cs" />
     <Compile Include="../../TheArchitectCode/Lifecycle/ArchitectMusic.cs" Link="ArchitectMusic.cs" />
+    <Compile Include="../../TheArchitectCode/Lifecycle/ModdedRelicPoolIdentity.cs" Link="ModdedRelicPoolIdentity.cs" />
     <Compile Include="../../TheArchitectCode/UI/CorruptedPartyLayoutGeometry.cs" Link="CorruptedPartyLayoutGeometry.cs" />
     <Compile Include="../../TheArchitectCode/UI/CorruptedHandMotion.cs" Link="CorruptedHandMotion.cs" />
     <Compile Include="../../TheArchitectCode/UI/WatcherStance*.cs" />

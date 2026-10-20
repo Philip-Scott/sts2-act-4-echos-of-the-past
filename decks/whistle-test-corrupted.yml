@@ -1,0 +1,18 @@
+schema: 1
+name: Corrupted Whistle and Strike test
+character: CHARACTER.IRONCLAD
+ascension: 0
+cards:
+- id: CARD.WHISTLE
+- id: CARD.STRIKE_IRONCLAD
+- id: CARD.WOUND
+- id: CARD.WOUND
+- id: CARD.WOUND
+relics: []
+potions: []
+current_hp: 80
+max_hp: 80
+gold: 0
+max_potion_slot_count: 2
+max_energy: 3
+base_orb_slot_count: 0

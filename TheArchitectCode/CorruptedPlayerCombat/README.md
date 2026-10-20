@@ -80,6 +80,12 @@ the human side resumes, preparing their own hands because no human turn
 intervenes. An extra turn belongs only to that Corrupted Player and its pets,
 not the rest of the Corrupted Party. Powers and card-local mutations persist between turns.
 
+Whistle and other default stun commands targeting a human in this encounter apply
+a Stunned debuff instead of invoking the monster-only move replacement. The human
+cannot draw cards until the end of their next turn, including the opening hand,
+but can still play retained or generated cards, use potions and end the turn.
+Stuns targeting monsters keep their native behavior.
+
 Each Corrupted Player retains its monster lifecycle listener and cleans up its
 own pets and actor state on death. The native engine ends the Elite after every
 member dies; no death hook spawns the Architect. A prevented death keeps the

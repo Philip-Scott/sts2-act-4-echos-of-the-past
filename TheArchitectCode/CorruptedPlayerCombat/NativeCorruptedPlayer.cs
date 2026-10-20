@@ -15,6 +15,7 @@ using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
 using MegaCrit.Sts2.Core.Unlocks;
 using TheArchitect.TheArchitectCode.Monsters;
+using TheArchitect.TheArchitectCode.Powers;
 using TheArchitect.TheArchitectCode.UI;
 
 namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
@@ -428,6 +429,22 @@ public sealed class NativeCorruptedPlayer
         $"hand=[{string.Join(",", State.Hand.Cards.Select(c => $"{c.Id.Entry}+{c.CurrentUpgradeLevel}"))}] " +
         $"draw={State.DrawPile.Cards.Count} discard={State.DiscardPile.Cards.Count} exhaust={State.ExhaustPile.Cards.Count} " +
         $"orbs={State.OrbQueue.Orbs.Count} shuffle={Player.RunState.Rng.Shuffle.ToSerializable().counter}");
+}
+
+[HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Stun), [typeof(Creature), typeof(string)])]
+internal static class NativeCorruptedPlayerStunPatch
+{
+    private static bool Prefix(Creature creature, ref Task __result)
+    {
+        if (!NativeCombatCallSites.IsPartyPlayer(creature) ||
+            creature.CombatState is not { } combat || !NativeCorruptedPlayer.In(combat).Any())
+            return true;
+        // Native stun replaces a monster's move and throws for human targets.
+        __result = creature.IsAlive
+            ? PlayerStunnedPower.ApplyTo(creature)
+            : Task.CompletedTask;
+        return false;
+    }
 }
 
 [HarmonyPatch(typeof(Hook), nameof(Hook.ShouldPlay))]
