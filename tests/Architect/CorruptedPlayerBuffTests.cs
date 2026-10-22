@@ -1,13 +1,69 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using HarmonyLib;
+using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Characters;
+using MegaCrit.Sts2.Core.Models.Monsters;
+using MegaCrit.Sts2.Core.Models.Powers;
 using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
+using TheArchitect.TheArchitectCode.Powers;
 
 internal static class CorruptedPlayerBuffTests
 {
     internal static void Run(Action<string, Action> test, Action<bool, string> check)
     {
+        foreach (var count in new[] { 1, 2, 3, 4 })
+        {
+            test($"Ring of the Viper: {count} Silents each gain exactly 1 Artifact per application", () =>
+            {
+                var combat = new CombatState();
+                for (var index = 0; index < count; index++)
+                {
+                    var player = (Player)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(Player));
+                    AccessTools.Field(typeof(Player), "<Creature>k__BackingField")
+                        .SetValue(player, new Creature(player, 100, 100));
+                    combat.AddPlayer(player);
+                }
+                var artifact = ModelDb.Power<ArtifactPower>();
+                var normalEnemy = new Creature(new TenHpMonster().ToMutable(), CombatSide.Enemy, null);
+                check(artifact.GetScaledAmountForMultiplayer(combat, normalEnemy, 1, normalEnemy, null) == count,
+                    "Reproduce native Artifact scaling before applying the patch.");
+                var harmony = new Harmony("TheArchitect.Tests.RingOfTheViper");
+                try
+                {
+                    harmony.CreateClassProcessor(typeof(RingOfTheViperArtifactScaling)).Patch();
+                    for (var index = 0; index < count; index++)
+                    {
+                        var owner = new Creature(new TenHpMonster().ToMutable(), CombatSide.Enemy, null);
+                        // The headless harness uses the registered buff ID without loading the native actor/UI.
+                        var buff = ModelDb.Power<StrengthPower>().ToMutable();
+                        AccessTools.Field(typeof(AbstractModel), "<Id>k__BackingField")
+                            .SetValue(buff, CorruptedPlayerBuffs.RingOfTheViper);
+                        buff.ApplyInternal(owner, 1);
+                        for (var turn = 0; turn < 3; turn++)
+                        {
+                            var gained = artifact.GetScaledAmountForMultiplayer(combat, owner, 1, owner, null);
+                            check(gained == 1, $"Silent {index}, turn {turn}: gained {gained} Artifact.");
+                        }
+                        check(artifact.GetScaledAmountForMultiplayer(combat, owner, 2, owner, null) == 2,
+                            "Preserve the requested amount rather than hard-coding one stack.");
+                        buff.RemoveInternal();
+                        check(artifact.GetScaledAmountForMultiplayer(combat, owner, 1, owner, null) == count,
+                            "The exemption must end when Ring of the Viper is removed.");
+                    }
+                    check(artifact.GetScaledAmountForMultiplayer(combat, normalEnemy, 1, normalEnemy, null) == count,
+                        "Normal enemies must retain native multiplayer Artifact scaling.");
+                }
+                finally
+                {
+                    harmony.UnpatchAll(harmony.Id);
+                }
+            });
+        }
+
         test("Corruption buffs: each base character receives its own buff below Ascension 9", () =>
         {
             (CharacterModel Character, ModelId Buff)[] expected =
