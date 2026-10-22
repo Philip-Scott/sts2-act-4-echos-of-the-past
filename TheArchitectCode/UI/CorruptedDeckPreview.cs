@@ -25,6 +25,7 @@ internal partial class CorruptedDeckPreview : Control, IScreenContext
     private CorruptedDeckButton close = null!;
     private Control? inspection;
     private Control? inspectionAnchor;
+    private NCard? inspectedCard;
     private NHotkeyManager hotkeys = null!;
     private CorruptedPlayerSnapshot[] snapshots = [];
     private string? status;
@@ -196,13 +197,14 @@ internal partial class CorruptedDeckPreview : Control, IScreenContext
         inspectionAnchor = new Control { MouseFilter = MouseFilterEnum.Ignore };
         inspection.AddChild(inspectionAnchor);
         inspectionAnchor.AddChild(card);
+        inspectedCard = card;
         card.SetForceUnpoweredPreview(true);
         card.UpdateVisuals(PileType.Deck, CardPreviewMode.Normal);
         card.Scale = Vector2.One * Mathf.Min(1.5f, (Size.Y - 180) / NCard.defaultSize.Y);
         inspectionAnchor.Size = card.GetCurrentSize();
         inspectionAnchor.Position = (Size - inspectionAnchor.Size) * 0.5f;
         card.Position = inspectionAnchor.Size * 0.5f;
-        card.MouseFilter = MouseFilterEnum.Ignore;
+        PooledCards.Borrow(card);
         var tips = NHoverTipSet.CreateAndShow(inspectionAnchor, model.HoverTips, HoverTipAlignment.Right);
         tips?.Reparent(inspection);
         grid.FocusBehaviorRecursive = FocusBehaviorRecursiveEnum.Disabled;
@@ -216,6 +218,8 @@ internal partial class CorruptedDeckPreview : Control, IScreenContext
         if (inspection == null)
             return;
         NHoverTipSet.Remove(inspectionAnchor!);
+        PooledCards.Return(inspectedCard);
+        inspectedCard = null;
         inspection.Hide();
         inspection.QueueFree();
         inspection = null;

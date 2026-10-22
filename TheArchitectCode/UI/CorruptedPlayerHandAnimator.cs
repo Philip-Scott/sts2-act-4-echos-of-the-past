@@ -96,7 +96,7 @@ internal sealed class CorruptedPlayerHandAnimator : IDisposable
             if (Animates && ToLayer(node))
                 _departures[card] = node;
             else
-                node.QueueFree();
+                PooledCards.Return(node);
         }
         _handChanged();
     }
@@ -225,6 +225,8 @@ internal sealed class CorruptedPlayerHandAnimator : IDisposable
 
     private void FlyToPile(NCard node, PileType pile)
     {
+        // The VFX returns the card to the pool when it lands.
+        PooledCards.Restore(node);
         if (_pileCenter(pile) is not { } end || NCardFlyVfx.Create(node, pile, false, _trailPath) is not { } vfx)
         {
             Free(node);
@@ -240,13 +242,20 @@ internal sealed class CorruptedPlayerHandAnimator : IDisposable
     private static void Burn(NCard node)
     {
         // The burn outlives this HUD if its owner dies mid-animation, so it joins the combat UI directly.
-        if (NCombatRoom.Instance?.Ui is not { } ui || NCardExhaustQuickVfx.Create(node) is not { } vfx)
+        // Move before creating the VFX: it lives inside the card, and reparenting would end it and free the card.
+        if (NCombatRoom.Instance?.Ui is not { } ui)
         {
             Free(node);
             return;
         }
         node.Visible = true;
         MoveKeepingTransform(node, ui);
+        PooledCards.Restore(node);
+        if (NCardExhaustQuickVfx.Create(node) is not { } vfx)
+        {
+            Free(node);
+            return;
+        }
         // The closing smoke burst is sized for a full hand card and would swallow the HUD; keep
         // the native flames and let the miniature char to exhaust gray before the VFX frees it.
         ExhaustBurst(vfx).Visible = false;
@@ -254,6 +263,8 @@ internal sealed class CorruptedPlayerHandAnimator : IDisposable
         var tween = node.CreateTween().SetParallel();
         tween.TweenProperty(node, "modulate", StsColors.exhaustGray, duration);
         tween.TweenProperty(node, "scale", node.Scale * 0.85f, duration);
+        // The VFX frees the card early when combat ends; a paused tween must not resume on a recycled card.
+        node.Connect(Node.SignalName.TreeExiting, Callable.From(tween.Kill), (uint)GodotObject.ConnectFlags.OneShot);
         NDebugAudioManager.Instance?.Play("card_exhaust.mp3");
         TaskHelper.RunSafely(vfx.PlayAnimation());
     }
@@ -287,11 +298,7 @@ internal sealed class CorruptedPlayerHandAnimator : IDisposable
         node.Position = local.Origin - node.PivotOffset + local.BasisXform(node.PivotOffset);
     }
 
-    private static void Free(NCard node)
-    {
-        if (GodotObject.IsInstanceValid(node))
-            node.QueueFree();
-    }
+    private static void Free(NCard node) => PooledCards.Return(node);
 
     public void Dispose()
     {
@@ -301,6 +308,13 @@ internal sealed class CorruptedPlayerHandAnimator : IDisposable
             pile.CardRemoved -= removed;
         }
         _subscriptions.Clear();
+        foreach (var flight in _flights.Values)
+            Free(flight.Node);
+        foreach (var node in _departures.Values)
+            Free(node);
+        if (GodotObject.IsInstanceValid(_layer))
+            foreach (var node in _layer!.GetChildren().OfType<NCard>())
+                Free(node);
         _flights.Clear();
         _departures.Clear();
         _arrivals.Clear();

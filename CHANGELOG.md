@@ -6,6 +6,11 @@
   and energy icons, when another mod adds cards to a card pool. The 1.4.0
   modded relic pool fix also rewrote card pools and failed to load their
   modded cards.
+- Corrupted Player cards that are exhausted from hand now burn in place.
+  Before, the card vanished before its flames could play.
+- Corrupted Player card displays now hand their cards back to the game's card
+  pool when they finish. They no longer leave stale entries behind or change
+  how recycled cards respond to the mouse in your own hand.
 
 ## 1.4.0 Changes
 

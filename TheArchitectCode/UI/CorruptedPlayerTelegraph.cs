@@ -194,8 +194,8 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         ClearPreview();
         // Cards still in hand keep their node and glide to their new slot instead of snapping.
         foreach (var cell in _cells)
-            if (cell is { Miniature: { } node, Entry.Card: { } model })
-                _hand?.Release(model, node);
+            if (cell is { Miniature: { } node, Entry.Card: { } model } && _hand?.Release(model, node) != true)
+                PooledCards.Return(node);
         _cells.Clear();
         foreach (var child in _row.GetChildren())
         {
@@ -314,7 +314,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
                     face.AddChild(miniature);
                     miniature.Scale = Vector2.One * MiniatureScale;
                     miniature.Position = CardFaceSize / 2f;
-                    IgnoreMouse(miniature);
+                    PooledCards.Borrow(miniature);
                 }
                 binding.Miniature = miniature;
                 if (!entry.PlayOrder.HasValue && !entry.NativeCurrentState)
@@ -406,17 +406,6 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         node.GetNode<MegaRichTextLabel>("%DescriptionLabel").SetTextAutoSize("[center]" + description + "[/center]");
     }
 
-    private static void IgnoreMouse(Node node)
-    {
-        if (node is Control control)
-        {
-            control.MouseFilter = MouseFilterEnum.Ignore;
-            control.FocusMode = FocusModeEnum.None;
-        }
-        foreach (var child in node.GetChildren())
-            IgnoreMouse(child);
-    }
-
     private void Inspect(CardCell cell)
     {
         if (_inspected == cell || cell.Entry.Card == null || !CanInspect ||
@@ -435,7 +424,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
         combatUi.AddChild(_preview);
         _enlarged.SetForceUnpoweredPreview(true);
         _preview.AddChild(_enlarged);
-        IgnoreMouse(_enlarged);
+        PooledCards.Borrow(_enlarged);
         UpdateCardText(_enlarged, cell.Entry);
         PositionPreview();
         // Only the detached preview owns tips, including native keyword/generated-card tips.
@@ -453,6 +442,7 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
 
     private void ClearPreview()
     {
+        PooledCards.Return(_enlarged);
         if (GodotObject.IsInstanceValid(_preview))
         {
             NHoverTipSet.Remove(_preview!);
@@ -599,6 +589,11 @@ public partial class CorruptedPlayerTelegraph : VBoxContainer
     {
         _hand?.Dispose();
         _hand = null;
+        foreach (var cell in _cells)
+        {
+            PooledCards.Return(cell.Miniature);
+            cell.Miniature = null;
+        }
     }
 
     private void UnsubscribeState()
