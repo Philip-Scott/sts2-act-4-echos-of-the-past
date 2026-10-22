@@ -1,0 +1,73 @@
+name: Animated Player Hands
+
+on:
+  push:
+    paths:
+      - "AnimatedPlayerHands/**"
+      - ".github/workflows/animated-player-hands.yml"
+  pull_request:
+    paths:
+      - "AnimatedPlayerHands/**"
+      - ".github/workflows/animated-player-hands.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: "9.0.x"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+defaults:
+  run:
+    working-directory: AnimatedPlayerHands
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      # sts2.dll and 0Harmony.dll ship with the game and cannot be committed. GodotSharp comes from NuGet.
+      - name: Fetch Slay the Spire 2 assemblies
+        id: assemblies
+        env:
+          STS2_ASSEMBLIES_URL: ${{ secrets.STS2_ASSEMBLIES_URL }}
+        run: |
+          if [ -z "$STS2_ASSEMBLIES_URL" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::STS2_ASSEMBLIES_URL secret is not set; skipping compilation."
+            exit 0
+          fi
+          mkdir -p ci/sts2-data
+          curl -fsSL "$STS2_ASSEMBLIES_URL" -o /tmp/sts2-data.zip
+          unzip -q -j /tmp/sts2-data.zip -d ci/sts2-data
+          for dll in sts2.dll 0Harmony.dll; do
+            if [ ! -f "ci/sts2-data/$dll" ]; then
+              echo "::error::$dll missing from the archive downloaded from STS2_ASSEMBLIES_URL"
+              exit 1
+            fi
+          done
+          echo "available=true" >> "$GITHUB_OUTPUT"
+
+      - name: Build mod
+        if: steps.assemblies.outputs.available == 'true'
+        run: dotnet build AnimatedPlayerHands.csproj -c Release "-p:Sts2DataDir=$PWD/ci/sts2-data"
+
+      - name: Unit tests
+        if: steps.assemblies.outputs.available == 'true'
+        run: dotnet run --project tests/Unit/AnimatedPlayerHands.Tests.csproj -c Release "-p:Sts2DataDir=$PWD/ci/sts2-data"
+
+      - name: Upload mod
+        if: steps.assemblies.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnimatedPlayerHands
+          path: AnimatedPlayerHands/artifacts/AnimatedPlayerHands/

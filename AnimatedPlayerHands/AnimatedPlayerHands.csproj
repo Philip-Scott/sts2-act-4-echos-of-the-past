@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="Sts2PathDiscovery.props" />
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Version>0.1.0</Version>
+    <AssemblyTitle>Animated Player Hands</AssemblyTitle>
+    <Product>Animated Player Hands</Product>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Mods are built for all platforms (MSIL); the local game assemblies are platform-specific. -->
+    <NoWarn>$(NoWarn);MSB3270</NoWarn>
+    <ModOutputDir Condition="'$(ModOutputDir)' == ''">$(MSBuildProjectDirectory)/artifacts/AnimatedPlayerHands/</ModOutputDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="sts2" HintPath="$(Sts2DataDir)/sts2.dll" Private="false" />
+    <Reference Include="0Harmony" HintPath="$(Sts2DataDir)/0Harmony.dll" Private="false" />
+    <!-- The game ships GodotSharp 4.5.1; the package keeps CI independent of the game's copy. -->
+    <PackageReference Include="GodotSharp" Version="4.5.1" ExcludeAssets="runtime" PrivateAssets="all" />
+    <Compile Remove="tests/**;artifacts/**" />
+    <InternalsVisibleTo Include="AnimatedPlayerHands.Tests" />
+    <InternalsVisibleTo Include="AnimatedPlayerHandsNativeTests" />
+  </ItemGroup>
+  <Target Name="CheckGameAssemblies" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(Sts2DataDir)/sts2.dll')"
+           Text="Slay the Spire 2 assemblies not found at '$(Sts2DataDir)'. Set Sts2Path or Sts2DataDir." />
+  </Target>
+  <Target Name="PackageMod" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetPath);$(MSBuildProjectDirectory)/AnimatedPlayerHands.json" DestinationFolder="$(ModOutputDir)" />
+  </Target>
+</Project>

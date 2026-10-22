@@ -1,0 +1,12 @@
+{
+  "id": "AnimatedPlayerHands",
+  "name": "Animated Player Hands",
+  "author": "Philip-Scott",
+  "description": "In co-op, shows every other player's hand above their character, with native draw, discard and exhaust animations. Client-side only.",
+  "version": "0.1.0",
+  "min_game_version": "0.111.0",
+  "has_pck": false,
+  "has_dll": true,
+  "dependencies": [],
+  "affects_gameplay": false
+}

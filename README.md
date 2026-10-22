@@ -178,5 +178,6 @@ It still validates the manifest and builds the Docker image.
 | `Sts2PathDiscovery.props` | Locates the Slay the Spire 2 install |
 | `scripts/` | Build helpers and manifest validation |
 | `Dockerfile` | Reproducible build environment |
+| `AnimatedPlayerHands/` | A separate mod, [Animated Player Hands](AnimatedPlayerHands/README.md). It builds on its own and neither mod depends on the other |
 
 See the [template wiki](https://github.com/Alchyr/ModTemplate-StS2/wiki) for more about modding.

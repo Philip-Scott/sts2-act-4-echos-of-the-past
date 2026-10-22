@@ -47,12 +47,14 @@
 
     <ItemGroup>
         <Compile Remove="artifacts/**" />
+        <Compile Remove="AnimatedPlayerHands/**" />
         <Compile Remove="tests/**" />
         <Compile Remove="TheArchitect/**" />
         <Compile Remove="materials/**" />
         <Compile Remove="shaders/**" />
         <Compile Remove="images/**" />
         <EmbeddedResource Remove="TheArchitect/**" />
+        <EmbeddedResource Remove="AnimatedPlayerHands/**" />
         <EmbeddedResource Remove="materials/**" />
         <EmbeddedResource Remove="shaders/**" />
         <EmbeddedResource Remove="images/**" />

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../Sts2PathDiscovery.props" />
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>AnimatedPlayerHandsNativeTests</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);MSB3270</NoWarn>
+    <TestModsDir>$(MSBuildProjectDirectory)/../../artifacts/test-mods/</TestModsDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../AnimatedPlayerHands.csproj" Private="false" />
+    <Reference Include="sts2" HintPath="$(Sts2DataDir)/sts2.dll" Private="false" />
+    <Reference Include="0Harmony" HintPath="$(Sts2DataDir)/0Harmony.dll" Private="false" />
+    <PackageReference Include="GodotSharp" Version="4.5.1" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+  <!-- A self-contained mods folder: the mod under test plus this development-only runner. -->
+  <Target Name="PackageTests" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetPath);$(MSBuildProjectDirectory)/AnimatedPlayerHandsNativeTests.json"
+          DestinationFolder="$(TestModsDir)AnimatedPlayerHandsNativeTests" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)/../../artifacts/AnimatedPlayerHands/AnimatedPlayerHands.dll;$(MSBuildProjectDirectory)/../../AnimatedPlayerHands.json"
+          DestinationFolder="$(TestModsDir)AnimatedPlayerHands" />
+  </Target>
+</Project>

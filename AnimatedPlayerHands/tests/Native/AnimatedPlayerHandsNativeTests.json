@@ -1,0 +1,12 @@
+{
+  "id": "AnimatedPlayerHandsNativeTests",
+  "name": "Animated Player Hands Native Tests",
+  "author": "Philip-Scott",
+  "description": "Development-only native test runner. Do not install for play.",
+  "version": "0.1.0",
+  "min_game_version": "0.111.0",
+  "has_pck": false,
+  "has_dll": true,
+  "affects_gameplay": false,
+  "dependencies": [{"id": "AnimatedPlayerHands", "min_version": "0.1.0"}]
+}
