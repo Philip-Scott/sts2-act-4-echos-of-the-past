@@ -216,7 +216,7 @@ public static class NativeTests
             "leaving the card hides the enlarged preview");
         await Screenshot(game, "after-actions");
 
-        var second = Panel(remotes[1]);
+        var second = Panel(remotes[^1]);
         // Rendering every card is slow under software rendering; screenshot runs skip it.
         if (Environment.GetEnvironmentVariable("ANIMATED_PLAYER_HANDS_SWEEP") != "0")
             foreach (var remote in remotes)
@@ -235,7 +235,7 @@ public static class NativeTests
 
         // End combat while a drawn card is still sliding in, so teardown meets a card that is both
         // a flight and a hand miniature.
-        await CardPileCmd.Draw(context, remotes[1]);
+        await CardPileCmd.Draw(context, remotes[^1]);
         await Frames();
         Check(second.InFlight > 0, "combat ends while a remote card is in flight");
         foreach (var enemy in local.Creature.CombatState!.Enemies.Where(enemy => enemy.IsAlive).ToArray())
@@ -268,7 +268,7 @@ public static class NativeTests
         await Screenshot(game, "effigy");
     }
 
-    // Remote characters come from ANIMATED_PLAYER_HANDS_CHARACTERS (two or three comma-separated character
+    // Remote characters come from ANIMATED_PLAYER_HANDS_CHARACTERS (one to three comma-separated character
     // ID fragments, such as modded characters' IDs), or default to the Silent and the Defect.
     private static CharacterModel[] RemoteCharacters()
     {
@@ -282,8 +282,8 @@ public static class NativeTests
                 throw new InvalidOperationException($"No single character matches '{fragment}': " +
                     string.Join(", ", all.Select(character => character.Id))))
             .ToArray();
-        if (characters.Length is < 2 or > 3)
-            throw new InvalidOperationException("ANIMATED_PLAYER_HANDS_CHARACTERS must name two or three characters.");
+        if (characters.Length is < 1 or > 3)
+            throw new InvalidOperationException("ANIMATED_PLAYER_HANDS_CHARACTERS must name one to three characters.");
         return characters;
     }
 
@@ -363,8 +363,12 @@ public static class NativeTests
         var nodes = players.Select(player => NCombatRoom.Instance!.GetCreatureNode(player.Creature)!).ToArray();
         var allies = NCombatRoom.Instance!.CreatureNodes.Where(node => node.Entity.IsPlayer || node.Entity.PetOwner != null);
         var right = allies.Max(node => node.Position.X + node.Visuals.Bounds.Size.X * 0.5f);
-        Check(Math.Abs(right + PlayerFormation.MiddleMargin) < 1f,
-            $"the formation stops {-right:0} left of the middle line");
+        var left = allies.Min(node => node.Position.X - node.Visuals.Bounds.Size.X * 0.5f);
+        var edge = -960f / players[0].Creature.CombatState!.Encounter!.GetCameraScaling();
+        Console.WriteLine($"FORMATION left={left:0} right={right:0} screenEdge={edge:0}");
+        Check(right <= -PlayerFormation.MiddleMargin + 1f, $"the formation stays {-right:0} left of the middle line");
+        Check(left >= edge + PlayerFormation.EdgeMargin - 1f || right >= -PlayerFormation.MiddleMargin - 1f,
+            $"the formation leaves {left - edge:0} for hands at the left edge");
 
         foreach (var row in nodes.GroupBy(node => node.Position.Y))
         {

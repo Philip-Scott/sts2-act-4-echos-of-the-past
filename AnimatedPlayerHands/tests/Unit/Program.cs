@@ -108,11 +108,16 @@ Test("fit: four players never overlap each other or their own health bars", () =
     }
 });
 
-Test("formation: players move toward the middle without crossing it", () =>
+Test("formation: players keep their native place unless they reach the left edge", () =>
 {
-    Check(PlayerFormation.MiddleShift([-400f, -250f]) == 250f - PlayerFormation.MiddleMargin,
-        "the rightmost creature does not stop at the margin");
-    Check(PlayerFormation.MiddleShift([-10f]) == 0f, "creatures already near the middle move left");
+    Check(PlayerFormation.Shift([-795f, -560f], [-400f, -165f], 1f) == 0f,
+        "a formation with room on the left moves");
+    var shift = PlayerFormation.Shift([-945f], [-200f], 1f);
+    Check(Math.Abs(shift - (-960f + PlayerFormation.EdgeMargin + 945f)) < 0.01f,
+        $"a formation at the left edge moves {shift} instead of just enough");
+    Check(PlayerFormation.Shift([-955f], [-60f], 1f) == -PlayerFormation.MiddleMargin + 60f,
+        "a formation crosses the middle margin");
+    Check(PlayerFormation.Shift([-955f], [-30f], 1f) == 0f, "a formation already near the middle moves left");
 });
 
 Test("motion: draws are staggered like native CardPileCmd.Draw", () =>

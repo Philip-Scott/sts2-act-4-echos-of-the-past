@@ -9,7 +9,7 @@
 # Environment: STS2_PATH (game install), DOTNET (dotnet executable), SKIP_BUILD=1 (reuse the last
 # build in artifacts/test-mods), XVFB (Xvfb executable for --screenshots), EXTRA_MODS (colon-separated
 # mod folders to load as well, such as BaseLib and a content mod), ANIMATED_PLAYER_HANDS_CHARACTERS
-# (two or three comma-separated character ID fragments for the remote players), RESOLUTION (window size
+# (one to three comma-separated character ID fragments for the remote players), RESOLUTION (window size
 # for --screenshots; the UI lays out the same at any size, and smaller renders faster).
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -68,7 +68,7 @@ timeout "$([[ "$screenshots" == true ]] && echo 2400 || echo 180)" bwrap --die-w
     --setenv ANIMATED_PLAYER_HANDS_CHARACTERS "${ANIMATED_PLAYER_HANDS_CHARACTERS:-}" --unsetenv SteamAppId --unsetenv SteamGameId \
     --unsetenv DISPLAY --unsetenv WAYLAND_DISPLAY --unsetenv DBUS_SESSION_BUS_ADDRESS \
     --chdir "$game" "${launch[@]}" >"$run/output.log" 2>&1 || status=$?
-grep -E '^(PASS|LAYOUT|SCREENSHOT|UNFORMATTED|STATUS|HAND) ' "$run/output.log" || true
+grep -E '^(PASS|LAYOUT|SCREENSHOT|UNFORMATTED|STATUS|HAND|FORMATION) ' "$run/output.log" || true
 if grep -E 'NodePool|Tried to free|ObjectDisposedException' "$run/output.log"; then
     echo "Card pool misuse; see $run/output.log"
     status=1

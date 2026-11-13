@@ -16,9 +16,11 @@ their character, using the same compact card strip and animations that
   include the owner's powers, the same as in their own hand.
 - Players standing side by side get a wider gap (170 instead of 70), so their
   hands have room. The game still narrows the gap when a formation would not
-  fit its half of the screen. The formation also moves toward the middle of the
-  screen and stops just left of it. Solo runs, and encounters where the game
-  centers the players, keep their native positions.
+  fit its half of the screen. The formation keeps its native place, centered in
+  the left half of the screen. Only when the wider gap pushes a player off the
+  left edge, as in the back row of a four-player fight, does it move right, just
+  far enough to fit their hand and never past the middle. Solo runs, and
+  encounters where the game centers the players, keep their native positions.
 
 Each hand rests on its owner's health bar and gets the room between the screen's
 edges and its neighbours in the same row. A hand shrinks, down to a readable
@@ -90,8 +92,8 @@ tests/run-native.sh                  # headless
 XVFB=/path/to/Xvfb tests/run-native.sh --screenshots
 ```
 
-To test modded characters, load their mods with `EXTRA_MODS` and name two or three
-remote characters by ID fragment (three makes a four-player fight):
+To test modded characters, load their mods with `EXTRA_MODS` and name one to three
+remote characters by ID fragment (one makes a two-player fight, three a four-player fight):
 
 ```sh
 EXTRA_MODS=/path/to/BaseLib:/path/to/Downfall \
@@ -113,7 +115,7 @@ your `PATH`, or `SKIP_BUILD=1` to reuse the last build.
 | `src/RemoteHands.cs` | Attaches a hand to each remote player's creature, keeps their health bar visible, runs the hands every frame and lays them out. |
 | `src/RemoteHandPanel.cs` | The card strip and hover preview for one player. |
 | `src/RemoteStatusIcons.cs` | Energy, stars and pile icons placed ahead of a remote player's powers. |
-| `src/PlayerFormation.cs` | Widens the gap between players standing side by side and moves the formation toward the middle. |
+| `src/PlayerFormation.cs` | Widens the gap between players standing side by side and keeps the formation on screen. |
 | `src/RemoteHandAnimator.cs` | Draw, discard, exhaust and slide animations, driven by the player's pile events. |
 | `src/CardNodes.cs` | Borrows and returns card nodes from the game's card pool. |
 | `src/Faults.cs` | Keeps display failures, such as a modded card that throws, out of the game's commands. |
