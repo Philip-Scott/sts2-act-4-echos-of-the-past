@@ -7,8 +7,8 @@ For installation, see the [installation guide](../release/INSTALL.md).
 
 ## Compatibility
 
-Version 1.2.0 targets Steam's **public-beta**, game **v0.111.0**
-(Steam build `24724944`, game commit `41cef1ea`), with **BaseLib 3.4.5**.
+The current version targets Steam's **public-beta**, game **v0.113.0**
+(Steam build `26625880`, game commit `16ac0fe3`), with **BaseLib 3.4.8**.
 It supports single-player and multiplayer runs. All participants must use matching
 game, mod and content versions. Disable other fourth-act mods, including Act4Heart,
 before playing.
@@ -68,6 +68,7 @@ Each Corrupted Player also carries a corruption buff for its character:
 | Regent | Tarnished Crown | Gains 3 Stars at the start of combat and 2 Stars at the end of its turn. |
 | Necrobinder | Fractured Urn | Summons 17 at the start of combat and 5 at the start of its turn. |
 | Defect | Overvolted Matrix | Channels Lightning, Frost and Dark at the start of combat; gains 1 Focus at the end of its turn. |
+| Fool | Discordant Bow | Gains 12 Aim at the start of combat and 3 Aim at the end of its turn. |
 
 At Ascension 9 (Deadly Enemies) and above, every Corrupted Player also has
 **Echo Shard**: it gains 1 additional energy at the start of its turn. Modded

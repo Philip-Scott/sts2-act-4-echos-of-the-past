@@ -8,7 +8,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Alchyr.Sts2.BaseLib" Version="3.4.5" />
+    <PackageReference Include="Alchyr.Sts2.BaseLib" Version="3.4.8" />
     <Reference Include="sts2" HintPath="$(Sts2DataDir)/sts2.dll" />
     <Reference Include="GodotSharp" HintPath="$(Sts2DataDir)/GodotSharp.dll" />
     <Reference Include="0Harmony" HintPath="$(Sts2DataDir)/0Harmony.dll" />

@@ -17,7 +17,7 @@ run becomes a real party member, and `LocalContext` is unchanged.
 Native save restoration preserves card IDs, upgrades, installed enchantments,
 saved properties and BaseLib extended card/modifier data.
 For nonempty BaseLib modifier payloads, the runtime load object has a property
-container so BaseLib 3.4.5's property-fill deserializer runs; raw snapshots stay
+container so BaseLib's property-fill deserializer runs; raw snapshots stay
 unchanged. Modifier listeners from private piles join combat dispatch exactly
 once, including global gem cost modifiers and delayed modifier hooks.
 Native card-cloning call sites also check for a wholly omitted modifier collection
@@ -126,6 +126,8 @@ hand, using the player's HUD artwork, count badges and typography. Energy shows
 only the current amount in larger, auto-sized text, without a maximum-energy denominator.
 A native star counter sits beside energy, independently
 bound to that actor's private player and using native visibility rules.
+Once the actor has arrow slots, as the Fool does, an arrow counter follows the stars
+and shows how many arrows are ready to shoot.
 Each pile opens the native read-only pile browser,
 which keeps draw order hidden and reflects live pile contents.
 The enemy's pile icons do not register or override the human's pile hotkeys.
@@ -277,8 +279,8 @@ The separate snapshot/base-game crash-transaction gap remains tracked in #12.
 
 ## Isolated native runtime checks
 
-Target: public-beta v0.111.0, commit `41cef1ea`, Steam build `24724944`,
-BaseLib 3.4.5 and .NET 9.
+Target: public-beta v0.113.0, commit `16ac0fe3`, Steam build `26625880`,
+BaseLib 3.4.8 and .NET 9.
 
 ```sh
 scripts/build.sh --mods-path artifacts/mods
@@ -287,6 +289,8 @@ bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --label car
 # Alternative scenarios (each invocation creates a new isolated instance):
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --loss
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --nondefect
+# Corrupted Fool: Discordant Bow, the arrow counter and every Fool card, base and upgraded:
+bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --fool
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --poison
 # Hand/hover coverage plus modded effects, generated cards and saved BaseLib modifiers:
 bash scripts/native-demo.sh run "/absolute/path/to/Slay the Spire 2" --previews

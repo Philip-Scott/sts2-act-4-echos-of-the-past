@@ -163,6 +163,11 @@ internal static class NativeDemoPlaytest
                 manual: CommandLineHelper.HasArg("architect-native-party-manual"));
             return;
         }
+        if (CommandLineHelper.HasArg("architect-native-violet-lotus"))
+        {
+            await NativeVioletLotusPlaytest.Run(game);
+            return;
+        }
         if (CommandLineHelper.HasArg("architect-native-enchantment-art"))
         {
             await EnchantmentArtPlaytest.Run(game);
@@ -189,9 +194,9 @@ internal static class NativeDemoPlaytest
             return;
         }
         game.GetWindow().Title = $"The Architect - NATIVE {Path.GetFileName(NativeDemoSafety.RuntimePath)}";
-        var run = await game.StartNewSingleplayerRun(ModelDb.Character<Ironclad>(), true,
+        var run = await game.StartNewSingleplayerRun(Player.CreateForNewRun(ModelDb.Character<Ironclad>(), SaveManager.Instance.GenerateUnlockStateFromProgress(), 1), true,
             [ModelDb.Act<Overgrowth>(), ModelDb.Act<Hive>(), ModelDb.Act<Glory>()],
-            [], "ARCHITECT-NATIVE-INTEGRATION", GameMode.Standard);
+            [], "ARCHITECT-NATIVE-INTEGRATION", GameMode.Standard, false);
         Require(RunManager.Instance.ShouldSave, "disposable native save path enabled");
         var input = Path.Combine(NativeDemoSafety.RuntimePath, "snapshot-input.json");
         var destination = ProjectSettings.GlobalizePath(SaveManager.Instance.GetProfileScopedPath("TheArchitect/corrupted_player_snapshot.json"));
@@ -212,6 +217,8 @@ internal static class NativeDemoPlaytest
             CorruptedPlayerStore.Commit("non-defect-probe", "Probe", new CorruptedPlayerSnapshot(character, 80, cards,
                 CorruptedPlayerSnapshot.Hash(character, 80, cards)));
         }
+        if (CommandLineHelper.HasArg("architect-native-fool"))
+            NativeFoolPlaytest.CommitSnapshot();
         var expected = CorruptedPlayerStore.Load() ?? throw new InvalidOperationException("Snapshot input not loaded.");
         if (CommandLineHelper.HasArg("architect-native-attack-vfx"))
         {
@@ -228,6 +235,8 @@ internal static class NativeDemoPlaytest
         var human = run.Players.Single();
         await UnwrittenPlaytest.ChooseBuildGift(human);
         await WaitFor(() => NMapScreen.Instance?.IsOpen == true);
+        // Let the act banner fade so the capture shows the map.
+        await Task.Delay(4000);
         await Capture("map");
         var rest = run.Map.StartingMapPoint.Children.Single();
         await RunManager.Instance.EnterMapCoord(rest.coord);
@@ -333,7 +342,9 @@ internal static class NativeDemoPlaytest
             actor.Player.Deck.Cards.Count == expected.Snapshot.Deck.Length &&
             ArchitectRun.Get(run).EntrySnapshot!.Snapshot!.ContentHash == expected.Snapshot.ContentHash,
             "native room-boundary reload reconstructed the same saved deck without fixture or old actor state");
-        if (!CommandLineHelper.HasArg("architect-native-nondefect") &&
+        if (CommandLineHelper.HasArg("architect-native-fool"))
+            await NativeFoolPlaytest.Run(game, human, actor);
+        else if (!CommandLineHelper.HasArg("architect-native-nondefect") &&
             !CommandLineHelper.HasArg("architect-native-media"))
             await NativeMechanicsPlaytest.Run(human, actor);
         OrbCmd.RemoveSlots(actor.Player, actor.State.OrbQueue.Capacity);
@@ -350,9 +361,11 @@ internal static class NativeDemoPlaytest
             if (actor.Body.CombatState != null)
                 return;
             Require(actor.Body.GetCreatureNode() == null && GodotObject.IsInstanceValid(orbManager),
-                "death removed the room lookup while the orb UI still exists");
+                $"death removed the room lookup while the orb UI still exists (node={actor.Body.GetCreatureNode() != null}, " +
+                $"orbs={GodotObject.IsInstanceValid(orbManager)}, cleaned={actor.Cleaned})");
             Require(!orbManager.Visible && orbManager.DefaultFocusOwner == actorNode.Hitbox,
-                "dead actor orb UI was hidden and emptied before deferred refresh");
+                $"dead actor orb UI was hidden and emptied before deferred refresh (visible={orbManager.Visible}, " +
+                $"focus={orbManager.DefaultFocusOwner == actorNode.Hitbox}, cleaned={actor.Cleaned})");
             orbManager.UpdateVisuals(OrbEvokeType.None);
             observedOrbCleanup = true;
         }

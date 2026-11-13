@@ -29,6 +29,9 @@
   "THEARCHITECT-OVERVOLTED_MATRIX_POWER.title": "Overvolted Matrix",
   "THEARCHITECT-OVERVOLTED_MATRIX_POWER.description": "At the start of combat, [gold]Channel[/gold] [blue]1[/blue] [gold]Lightning[/gold], [gold]Frost[/gold], and [gold]Dark[/gold]. At the end of its turn, gain [blue]{FocusPower}[/blue] [gold]Focus[/gold].",
   "THEARCHITECT-OVERVOLTED_MATRIX_POWER.smartDescription": "At the start of combat, [gold]Channel[/gold] [blue]1[/blue] [gold]Lightning[/gold], [gold]Frost[/gold], and [gold]Dark[/gold]. At the end of its turn, gain [blue]{FocusPower}[/blue] [gold]Focus[/gold].",
+  "THEARCHITECT-DISCORDANT_BOW_POWER.title": "Discordant Bow",
+  "THEARCHITECT-DISCORDANT_BOW_POWER.description": "At the start of combat, gain [blue]{StartOfCombat}[/blue] [gold]Aim[/gold]. At the end of its turn, gain [blue]{EndOfTurn}[/blue] [gold]Aim[/gold].",
+  "THEARCHITECT-DISCORDANT_BOW_POWER.smartDescription": "At the start of combat, gain [blue]{StartOfCombat}[/blue] [gold]Aim[/gold]. At the end of its turn, gain [blue]{EndOfTurn}[/blue] [gold]Aim[/gold].",
   "THEARCHITECT-ECHO_SHARD_POWER.title": "Echo Shard",
   "THEARCHITECT-ECHO_SHARD_POWER.description": "At the start of its turn, gain {Energy:energyIcons()}.",
   "THEARCHITECT-ECHO_SHARD_POWER.smartDescription": "At the start of its turn, gain {Energy:energyIcons()}."

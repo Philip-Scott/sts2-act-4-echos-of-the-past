@@ -66,13 +66,16 @@ internal static class CorruptedPlayerBuffTests
 
         test("Corruption buffs: each base character receives its own buff below Ascension 9", () =>
         {
+            if (ModelDb.GetByIdOrNull<CharacterModel>(ModelDb.GetId(typeof(Fool))) == null)
+                ModelDb.Inject(typeof(Fool));
             (CharacterModel Character, ModelId Buff)[] expected =
             [
                 (ModelDb.Character<Ironclad>(), CorruptedPlayerBuffs.SingeingIchor),
                 (ModelDb.Character<Silent>(), CorruptedPlayerBuffs.RingOfTheViper),
                 (ModelDb.Character<Regent>(), CorruptedPlayerBuffs.TarnishedCrown),
                 (ModelDb.Character<Necrobinder>(), CorruptedPlayerBuffs.FracturedUrn),
-                (ModelDb.Character<Defect>(), CorruptedPlayerBuffs.OvervoltedMatrix)
+                (ModelDb.Character<Defect>(), CorruptedPlayerBuffs.OvervoltedMatrix),
+                (ModelDb.Character<Fool>(), CorruptedPlayerBuffs.DiscordantBow)
             ];
             foreach (var (character, buff) in expected)
             {
@@ -105,7 +108,7 @@ internal static class CorruptedPlayerBuffTests
             check(root != null, "Cannot locate the project sources.");
             var source = File.ReadAllText(Path.Combine(root!.FullName, "TheArchitectCode/Powers/CorruptionBuffPowers.cs"));
             var matrix = source.Split("public sealed class OvervoltedMatrixPower", StringSplitOptions.None)[1]
-                .Split("public sealed class EchoShardPower", StringSplitOptions.None)[0];
+                .Split("public sealed class DiscordantBowPower", StringSplitOptions.None)[0];
             check(matrix.Contains("Task AfterSideTurnEnd(") && !matrix.Contains("Task AfterSideTurnStart("),
                 "Overvolted Matrix must gain Focus after end-of-turn Orbs, not at turn start.");
             var classIds = Regex.Matches(source, @"public sealed class (\w+Power)\b")
@@ -115,7 +118,7 @@ internal static class CorruptedPlayerBuffTests
             [
                 CorruptedPlayerBuffs.SingeingIchor, CorruptedPlayerBuffs.RingOfTheViper,
                 CorruptedPlayerBuffs.TarnishedCrown, CorruptedPlayerBuffs.FracturedUrn,
-                CorruptedPlayerBuffs.OvervoltedMatrix, CorruptedPlayerBuffs.EchoShard
+                CorruptedPlayerBuffs.OvervoltedMatrix, CorruptedPlayerBuffs.DiscordantBow, CorruptedPlayerBuffs.EchoShard
             ];
             check(classIds.SetEquals(buffs.Select(id => id.Entry)), string.Join(",", classIds));
             using var json = JsonDocument.Parse(File.ReadAllText(

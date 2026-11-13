@@ -1,4 +1,6 @@
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Saves;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.DevConsole;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
@@ -28,9 +30,9 @@ internal static class ArchitectConsolePlaytest
     {
         await menuReady;
         await Task.Delay(3000);
-        var run = await game.StartNewSingleplayerRun(ModelDb.Character<Silent>(), false,
+        var run = await game.StartNewSingleplayerRun(Player.CreateForNewRun(ModelDb.Character<Silent>(), SaveManager.Instance.GenerateUnlockStateFromProgress(), 1), false,
             [ModelDb.Act<Overgrowth>(), ModelDb.Act<Hive>(), ModelDb.Act<Glory>()],
-            [], "ARCHITECT-CONSOLE", GameMode.Standard);
+            [], "ARCHITECT-CONSOLE", GameMode.Standard, false);
         await Task.Delay(2000);
         MainFile.Logger.Info("Architect console smoke: normal startup ready.");
         var result = new DevConsole(shouldAllowDebugCommands: true).ProcessCommand("architect");

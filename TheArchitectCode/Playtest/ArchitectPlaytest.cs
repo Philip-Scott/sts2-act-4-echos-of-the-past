@@ -180,7 +180,7 @@ public sealed class ArchitectPlaytest : IBootstrapSettings
         if (!rewards.Rewards.OfType<RelicReward>().Any() || !rewards.Rewards.OfType<CardReward>().Any() ||
             !rewards.Rewards.OfType<GoldReward>().Any())
             throw new InvalidOperationException("The Corrupted Player Elite must offer native relic, card, and gold rewards.");
-        await RunManager.Instance.ProceedFromTerminalRewardsScreen();
+        await RunManager.Instance.ProceedFromTerminalRewardsScreenAsync();
         await WaitFor(() => NMapScreen.Instance?.IsOpen == true);
         if (ArchitectMusicPlaytest.AssertEliteOutro() != eliteMusic)
             throw new InvalidOperationException("The Elite ending restarted on the map.");

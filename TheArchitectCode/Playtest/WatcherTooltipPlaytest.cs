@@ -39,7 +39,7 @@ internal static class WatcherTooltipPlaytest
         var player = Player.CreateForNewRun<Ironclad>(UnlockState.all, 1);
         var run = RunState.CreateForNewRun([player],
             [ModelDb.Act<Overgrowth>().ToMutable(), ModelDb.Act<Hive>().ToMutable(), ModelDb.Act<Glory>().ToMutable()],
-            [], GameMode.Standard, 0, "ARCHITECT-STANCE-TOOLTIPS");
+            [], GameMode.Standard, false, 0, "ARCHITECT-STANCE-TOOLTIPS");
         RunManager.Instance.SetUpTest(run, new NetSingleplayerGameService(),
             disableCombatStateSync: true, shouldSave: false);
         var combat = new CombatState(runState: run);

@@ -3,7 +3,7 @@
 Snapshot: **2026-09-12**, working tree based on `b8bb892`, **including uncommitted and untracked C# changes**. This describes the source currently present, not necessarily the installed DLL or published release.
 Watcher content, enchantment, stance-visual, audio and relic-hook rows updated **2026-09-15**; the patch census retains the original snapshot scope.
 
-Declared compatibility: Slay the Spire 2 **public-beta 0.111.0** (README: build `24724944`, game commit `41cef1ea`), **BaseLib 3.4.5**, .NET 9, Godot.NET SDK 4.5.1. See [project references](../TheArchitect.csproj), [mod manifest](../TheArchitect.json), and [README](../README.md). Game and Harmony assemblies come from the selected local game installation, not version-pinned NuGet packages. The manifest declares minimum versions, not a guarantee of compatibility with later versions.
+Declared compatibility: Slay the Spire 2 **public-beta 0.113.0** (build `26625880`, game commit `16ac0fe3`), **BaseLib 3.4.8**, .NET 9, Godot.NET SDK 4.5.1. See [project references](../TheArchitect.csproj), [mod manifest](../TheArchitect.json), and [README](../README.md). Game and Harmony assemblies come from the selected local game installation, not version-pinned NuGet packages. The manifest declares minimum versions, not a guarantee of compatibility with later versions.
 
 ## Bottom line
 

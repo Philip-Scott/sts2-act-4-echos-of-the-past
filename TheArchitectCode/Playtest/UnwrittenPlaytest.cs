@@ -108,9 +108,9 @@ internal static class UnwrittenPlaytest
 
     internal static async Task Run(NGame game)
     {
-        var run = await game.StartNewSingleplayerRun(ModelDb.Character<Ironclad>(), true,
+        var run = await game.StartNewSingleplayerRun(Player.CreateForNewRun(ModelDb.Character<Ironclad>(), SaveManager.Instance.GenerateUnlockStateFromProgress(), 1), true,
             [ModelDb.Act<Overgrowth>(), ModelDb.Act<Hive>(), ModelDb.Act<Glory>()],
-            [], "ARCHITECT-UNWRITTEN", GameMode.Standard);
+            [], "ARCHITECT-UNWRITTEN", GameMode.Standard, false);
         var player = run.Players.Single();
         player.Creature.SetCurrentHpInternal(10);
         var result = new DevConsole(shouldAllowDebugCommands: true).ProcessCommand("architect");

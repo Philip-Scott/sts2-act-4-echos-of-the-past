@@ -4,11 +4,11 @@
   "author": "Philip-Scott",
   "description": "Adds an Act 4 to Slay the Spire 2, in which you fight against a bound version of your past self.",
   "version": "v1.4.1",
-  "min_game_version": "0.111.0",
+  "min_game_version": "0.113.0",
   "has_pck": true,
   "has_dll": true,
   "dependencies": [
-    {"id": "BaseLib", "min_version": "3.4.5"}
+    {"id": "BaseLib", "min_version": "3.4.8"}
   ],
   "affects_gameplay": true
 }

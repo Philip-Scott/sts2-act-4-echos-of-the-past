@@ -74,7 +74,9 @@ public sealed class NativeCorruptedPlayer
             (int)body.MaxHp, character.MaxEnergy, 0, 0, character.BaseOrbSlotCount,
             new RelicGrabBag(), UnlockState.all, null, null, null, null, null]);
         var run = RunState.CreateForNewRun([Player], [ModelDb.Act<Glory>().ToMutable()], [],
-            GameMode.Standard, 0, seed);
+            GameMode.Standard, false, 0, seed);
+        foreach (var model in run.RunModels)
+            model.OnRunCreated(run);
         // Bind once: precompiled native/BaseLib callers can have inlined Player.Creature.
         AccessTools.Field(typeof(Player), "<Creature>k__BackingField").SetValue(Player, Body);
         View = new NativeCombatView(this, combat);
@@ -374,11 +376,11 @@ public sealed class NativeCorruptedPlayer
 
     internal async Task TakeExtraTurns()
     {
-        for (var extra = 0; CanAct && Hook.ShouldTakeExtraTurn(_combat, Player); extra++)
+        for (var extra = 0; CanAct && Hook.ShouldTakeExtraTurn(_combat, Player, out var source); extra++)
         {
             if (extra == 20)
                 throw new InvalidOperationException("Native Corrupted Player exceeded the 20-extra-turn safety limit.");
-            await Hook.AfterTakingExtraTurn(_combat, Player);
+            await Hook.AfterTakingExtraTurn(_combat, Player, source!);
             var participants = new[] { Body }.Concat(State.Pets).Where(c => c.IsAlive).ToArray();
             foreach (var creature in participants)
                 creature.BeforeTurnStart(CombatSide.Enemy);

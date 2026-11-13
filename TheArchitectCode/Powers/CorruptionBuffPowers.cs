@@ -151,6 +151,31 @@ public sealed class OvervoltedMatrixPower : CorruptionBuffPower
     }
 }
 
+public sealed class DiscordantBowPower : CorruptionBuffPower
+{
+    protected override IEnumerable<DynamicVar> CanonicalVars =>
+        [new PowerVar<AimPower>("StartOfCombat", 12), new PowerVar<AimPower>("EndOfTurn", 3)];
+    protected override IEnumerable<IHoverTip> ExtraHoverTips => [HoverTipFactory.FromPower<AimPower>()];
+
+    public override async Task BeforeCombatStart()
+    {
+        if (!TryGetActor(out _))
+            return;
+        Flash();
+        await PowerCmd.Apply<AimPower>(new ThrowingPlayerChoiceContext(), Owner,
+            DynamicVars["StartOfCombat"].BaseValue, Owner, null);
+    }
+
+    public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side,
+        IEnumerable<Creature> participants)
+    {
+        if (!IsOwnTurn(participants))
+            return;
+        Flash();
+        await PowerCmd.Apply<AimPower>(choiceContext, Owner, DynamicVars["EndOfTurn"].BaseValue, Owner, null);
+    }
+}
+
 public sealed class EchoShardPower : CorruptionBuffPower
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new EnergyVar(1)];

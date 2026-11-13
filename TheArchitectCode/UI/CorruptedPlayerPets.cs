@@ -49,8 +49,18 @@ internal static class CorruptedPlayerPetRoomPatch
             ?? throw new InvalidOperationException("The native Corrupted Player pet node was not created.");
         node.Body.Scale = new Vector2(-Math.Abs(node.Body.Scale.X), node.Body.Scale.Y);
         node.Position = CorruptedPlayerPets.Position(node);
-        __instance.SetCreatureIsInteractable(creature, creature.Monster!.IsHealthBarVisible);
     }
+}
+
+// Natively a pet the local player does not own cannot be hovered or targeted. A private pet is an enemy.
+[HarmonyPatch(typeof(NCreature), "UpdateInteractability")]
+internal static class CorruptedPlayerPetInteractabilityPatch
+{
+    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>
+        instructions.MethodReplacer(AccessTools.PropertyGetter(typeof(Creature), nameof(Creature.IsPet)),
+            AccessTools.Method(typeof(CorruptedPlayerPetInteractabilityPatch), nameof(IsPartyPet)));
+
+    private static bool IsPartyPet(Creature creature) => creature.IsPet && !CorruptedPlayerPets.IsPrivatePet(creature);
 }
 
 [HarmonyPatch(typeof(NCreature), nameof(NCreature.Create))]
@@ -70,7 +80,7 @@ internal static class CorruptedPlayerPetHealthDisplayPatch
         CorruptedPlayerPets.PlayerLayout(instructions);
 }
 
-[HarmonyPatch(typeof(NCreature), nameof(NCreature.OstyScaleToSize))]
+[HarmonyPatch(typeof(NCreature), nameof(NCreature.ScaleAndPositionOsty))]
 internal static class CorruptedPlayerOstyPositionPatch
 {
     private static void Postfix(NCreature __instance, double duration)

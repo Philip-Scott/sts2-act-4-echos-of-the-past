@@ -4,6 +4,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Godot;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Random;
+using MegaCrit.Sts2.Core.Unlocks;
 using MegaCrit.Sts2.Core.DevConsole;
 using MegaCrit.Sts2.Core.DevConsole.ConsoleCommands;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -34,6 +36,9 @@ public static class ArchitectLifecycle
     public static bool IsBossEncounter([NotNullWhen(true)] IRunState? run) =>
         run is { CurrentRoom: CombatRoom { Encounter: ArchitectEncounter } };
 
+    // Blitz builds its own short maps and merchant, so it keeps the native three-act finale.
+    public static bool Supports(IRunState run) => run.GameMode != GameMode.Blitz;
+
     public static void AppendAct(RunState run)
     {
         if (run.Acts.Any(act => act is ArchitectAct))
@@ -48,14 +53,15 @@ public static class ArchitectLifecycle
     public static void FinishVictory()
     {
         var run = RunManager.Instance.DebugOnlyGetState();
-        if (!IsBossEncounter(run) || ArchitectRun.Get(run).Outcome != null)
+        if (!IsBossEncounter(run) || ArchitectRun.Get(run).Outcome != null || RunManager.Instance.HasRunEnded)
             return;
         var save = RunManager.Instance.OnEnded(true);
-        NRun.Instance?.ShowGameOverScreen(save);
+        if (NRun.Instance is { } scene)
+            ArchitectEnding.ShowGameOverScreen(scene, save);
     }
 }
 
-[HarmonyPatch(typeof(ActModel), nameof(ActModel.GenerateRooms))]
+[HarmonyPatch(typeof(ActModel), nameof(ActModel.GenerateRooms), [typeof(Rng), typeof(UnlockState), typeof(bool), typeof(bool)])]
 internal static class ArchitectRoomsPatch
 {
     private static bool Prefix(ActModel __instance)
@@ -73,7 +79,7 @@ internal static class EnterArchitectActPatch
     private static void Prefix(RunManager __instance)
     {
         var run = __instance.DebugOnlyGetState();
-        if (run is { CurrentActIndex: 2, Acts.Count: 3 } && !__instance.IsAbandoned)
+        if (run is { CurrentActIndex: 2, Acts.Count: 3 } && !__instance.IsAbandoned && ArchitectLifecycle.Supports(run))
             ArchitectLifecycle.AppendAct(run);
     }
 }
@@ -87,7 +93,7 @@ internal static class ResumeLegacyArchitectEntryPatch
         var run = __instance.DebugOnlyGetState();
         if (run is not { CurrentActIndex: 2,
                 CurrentRoom: EventRoom { CanonicalEvent: MegaCrit.Sts2.Core.Models.Events.TheArchitect } } ||
-            __instance.IsAbandoned)
+            __instance.IsAbandoned || !ArchitectLifecycle.Supports(run))
             return true;
         ArchitectLifecycle.AppendAct(run);
         // The event's callback must return before its room can be exited.
@@ -274,6 +280,8 @@ public sealed class ArchitectConsoleCommand : AbstractConsoleCmd
             return new CmdResult(false, "Use 'architect' during a single-player run.");
         if (run.Act is ArchitectAct)
             return new CmdResult(false, "You are already in the Architect Act.");
+        if (!ArchitectLifecycle.Supports(run))
+            return new CmdResult(false, "The Architect Act is not available in Blitz runs.");
         ArchitectLifecycle.AppendAct(run);
         NMapScreen.Instance?.SetTravelEnabled(true);
         return new CmdResult(RunManager.Instance.EnterAct(3), true, "Entering Act 4 - The Architect.");

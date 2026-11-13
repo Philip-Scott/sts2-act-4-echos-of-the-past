@@ -5,7 +5,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Singleton;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Runs;
 using TheArchitect.TheArchitectCode.Lifecycle;
@@ -28,7 +27,7 @@ internal sealed class NativeCombatView(NativeCorruptedPlayer actor, ICombatState
     private IEnumerable<NativeCorruptedPlayer> Party =>
         NativeCorruptedPlayer.In(live).Where(member => !member.Cleaned);
     public IReadOnlyList<ModifierModel> Modifiers => live.Modifiers;
-    public MultiplayerScalingModel? MultiplayerScalingModel => live.MultiplayerScalingModel;
+    public IReadOnlyList<RunModel> RunModels => live.RunModels;
     public int RoundNumber { get => live.RoundNumber; set => throw new NotSupportedException("Cards cannot advance the encounter round."); }
     public CombatSide CurrentSide { get => live.CurrentSide; set => throw new NotSupportedException("Cards cannot change the encounter side."); }
     public EncounterModel? Encounter => live.Encounter;

@@ -12,6 +12,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Relics;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Models.Enchantments;
 using MegaCrit.Sts2.Core.Models.Events;
@@ -582,6 +583,8 @@ internal static class WatcherRelicTests
         SetBacking(player, "Deck", new CardPile(PileType.Deck));
         SetBacking(player, "PlayerRng", new PlayerRngSet(987UL));
         SetBacking(player, "IsActiveForHooks", true);
+        // Combat state reads the character's starting arrow slots.
+        SetBacking(player, "Character", (CharacterModel)RuntimeHelpers.GetUninitializedObject(typeof(Deprived)));
         var combat = new PlayerCombatState(player);
         SetBacking(player, "PlayerCombatState", combat);
         SetBacking(combat, "TurnNumber", 1);

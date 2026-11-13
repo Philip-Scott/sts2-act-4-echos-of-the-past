@@ -5,6 +5,8 @@
   "THEARCHITECT-CORRUPTED_ENERGY.description": "The corrupted player's current energy.",
   "THEARCHITECT-CORRUPTED_STARS.title": "Stars",
   "THEARCHITECT-CORRUPTED_STARS.description": "The corrupted player's current stars.",
+  "THEARCHITECT-CORRUPTED_ARROWS.title": "Arrows",
+  "THEARCHITECT-CORRUPTED_ARROWS.description": "Arrows the corrupted player has ready to shoot. A shot arrow [gold]Impales[/gold] its target until the corrupted player [gold]Dislodges[/gold] it.",
   "THEARCHITECT-CORRUPTED_DRAW_PILE.title": "Draw Pile",
   "THEARCHITECT-CORRUPTED_DRAW_PILE.description": "Cards the Corrupted Player will draw.\n\nClick to view its draw pile.",
   "THEARCHITECT-CORRUPTED_DISCARD_PILE.title": "Discard Pile",

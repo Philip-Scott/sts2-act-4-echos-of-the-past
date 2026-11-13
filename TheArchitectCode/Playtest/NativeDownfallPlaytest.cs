@@ -113,7 +113,7 @@ internal static class NativeDownfallPlaytest
         }
         var run = RunState.CreateForNewRun([human],
             [ModelDb.Act<Overgrowth>().ToMutable(), ModelDb.Act<Hive>().ToMutable(), ModelDb.Act<Glory>().ToMutable()],
-            [], GameMode.Standard, 0, "ARCHITECT-DOWNFALL-" + name);
+            [], GameMode.Standard, false, 0, "ARCHITECT-DOWNFALL-" + name);
         var manager = RunManager.Instance;
         manager.SetUpTest(run, new NetSingleplayerGameService(), disableCombatStateSync: true, shouldSave: false);
         manager.GenerateRooms();

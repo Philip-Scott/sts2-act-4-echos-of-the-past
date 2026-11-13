@@ -2,6 +2,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using Godot;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.DevConsole;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -55,9 +56,9 @@ internal static class CorruptionVisualPlaytest
     {
         var label = character.Id.Entry.ToLowerInvariant();
         MainFile.Logger.Info($"CORRUPTION CHARACTER BEGIN: {label}");
-        var run = await game.StartNewSingleplayerRun(character, true,
+        var run = await game.StartNewSingleplayerRun(Player.CreateForNewRun(character, SaveManager.Instance.GenerateUnlockStateFromProgress(), 1), true,
             [ModelDb.Act<Overgrowth>(), ModelDb.Act<Hive>(), ModelDb.Act<Glory>()],
-            [], "ARCHITECT-BOUND-ECHO-" + character.Id.Entry, GameMode.Standard);
+            [], "ARCHITECT-BOUND-ECHO-" + character.Id.Entry, GameMode.Standard, false);
         var human = run.Players.Single();
         var destination = ProjectSettings.GlobalizePath(
             SaveManager.Instance.GetProfileScopedPath("TheArchitect/corrupted_player_snapshot.json"));

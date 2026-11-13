@@ -451,7 +451,7 @@ internal static class DeckPreviewPlaytest
         RunState.CreateForNewRun(players.Select(id =>
                 Player.CreateForNewRun(ModelDb.Character<Defect>(), UnlockState.all, id)).ToArray(),
             [ModelDb.Act<Overgrowth>().ToMutable(), ModelDb.Act<Hive>().ToMutable(), ModelDb.Act<Glory>().ToMutable()],
-            [], GameMode.Standard, 0, "CONTINUE-DECK-PREVIEW");
+            [], GameMode.Standard, false, 0, "CONTINUE-DECK-PREVIEW");
 
     private static SerializableRun ResumeSave(ulong[] players)
     {

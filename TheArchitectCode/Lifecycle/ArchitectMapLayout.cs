@@ -33,7 +33,8 @@ internal static class ArchitectMapLayout
             // The boss artwork extends below its node; leave room for the Elite beneath it.
             2325f => hasElite ? 350f : hasAncient ? 460f : 220f,
             -1980f => hasAncient || hasElite ? -400f : -180f,
-            740f => hasElite ? 300f : hasAncient ? 430f : 460f,
+            // Row origin, measured from the top of the screen and offset by each node's pivot.
+            1280f => hasElite ? 840f : hasAncient ? 970f : 1000f,
             720f => 300f,
             800f => 400f,
             _ => value
@@ -47,7 +48,7 @@ internal static class ArchitectMapLayout
         {
             yield return instruction;
             if (instruction.opcode != OpCodes.Ldc_R4 || instruction.operand is not float value ||
-                (value != 2325f && value != -1980f && value != 740f && value != 720f && value != 800f))
+                (value != 2325f && value != -1980f && value != 1280f && value != 720f && value != 800f))
                 continue;
             yield return new CodeInstruction(OpCodes.Ldarg_1);
             yield return CodeInstruction.Call(typeof(ArchitectMapLayout), nameof(CompactExtent));

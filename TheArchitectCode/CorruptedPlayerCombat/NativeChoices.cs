@@ -1,7 +1,5 @@
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.CardRewardAlternatives;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -14,7 +12,7 @@ using MegaCrit.Sts2.Core.TestSupport;
 namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
 internal sealed class NativeChoiceContext(Player player)
-    : HookPlayerChoiceContext(player, player.NetId, GameActionType.Combat)
+    : HookPlayerChoiceContext(player, player.NetId, MegaCrit.Sts2.Core.Entities.Multiplayer.GameActionType.Combat)
 {
     public override Task SignalPlayerChoiceBegun(Player chooser, PlayerChoiceOptions options) =>
         throw new NotSupportedException("An unbridged native Corrupted Player choice attempted to enter the human action queue.");
@@ -38,47 +36,18 @@ internal sealed class NativeCardSelector : ICardSelector
     }
 }
 
-// Replace selector reads inside each native selection routine, not the process-wide
-// selector stack. Native filters, ordering, pile hooks and human choices stay intact.
-[HarmonyPatch]
+// Native selection routines look up their chooser's selector stack. A private actor is not in the
+// run's player collection, so it gets its own selector instead of the human party's stacks.
+[HarmonyPatch(typeof(CardSelectorStack), nameof(CardSelectorStack.GetSelector))]
 internal static class NativeCardSelectionPatch
 {
-    private static IEnumerable<MethodBase> TargetMethods() =>
-        typeof(CardSelectCmd).GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(m => m.GetParameters().Any(p => p.ParameterType == typeof(Player)) ||
-                m.Name == nameof(CardSelectCmd.FromDeckForEnchantment))
-            .Select(m => m.GetCustomAttribute<AsyncStateMachineAttribute>()?.StateMachineType)
-            .OfType<Type>()
-            .Where(t => t.GetField("player", AccessTools.all) != null || t.GetField("cards", AccessTools.all) != null)
-            .Select(t => AccessTools.Method(t, "MoveNext"));
-
-    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase __originalMethod)
+    private static bool Prefix(Player player, ref ICardSelector? __result)
     {
-        var getter = AccessTools.PropertyGetter(typeof(CardSelectCmd), nameof(CardSelectCmd.Selector));
-        var owner = AccessTools.Field(__originalMethod.DeclaringType, "player");
-        var cards = owner == null ? AccessTools.Field(__originalMethod.DeclaringType, "cards") : null;
-        foreach (var instruction in instructions)
-        {
-            if (instruction.Calls(getter))
-            {
-                var load = new CodeInstruction(OpCodes.Ldarg_0);
-                load.MoveLabelsFrom(instruction);
-                load.MoveBlocksFrom(instruction);
-                yield return load;
-                yield return new CodeInstruction(OpCodes.Ldfld, owner ?? cards);
-                yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(NativeCardSelectionPatch),
-                    owner != null ? nameof(Selector) : nameof(DeckSelector)));
-            }
-            else
-                yield return instruction;
-        }
+        if (!NativeCorruptedPlayer.TryGet(player, out _))
+            return true;
+        __result = NativeCardSelector.Instance;
+        return false;
     }
-
-    private static ICardSelector? Selector(Player player) =>
-        NativeCorruptedPlayer.TryGet(player, out _) ? NativeCardSelector.Instance : CardSelectCmd.Selector;
-
-    private static ICardSelector? DeckSelector(IReadOnlyList<CardModel> cards) =>
-        cards.Count > 0 ? Selector(cards[0].Owner) : CardSelectCmd.Selector;
 }
 
 [HarmonyPatch(typeof(CardSelectCmd), nameof(CardSelectCmd.FromChooseABundleScreen))]

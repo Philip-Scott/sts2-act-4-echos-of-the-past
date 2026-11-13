@@ -27,7 +27,7 @@ internal static class WatcherBackgroundPlaytest
         var player = Player.CreateForNewRun<Ironclad>(UnlockState.all, 1);
         var run = RunState.CreateForNewRun([player],
             [ModelDb.Act<Overgrowth>().ToMutable(), ModelDb.Act<Hive>().ToMutable(), ModelDb.Act<Glory>().ToMutable()],
-            [], GameMode.Standard, 0, "ARCHITECT-WATCHER-BACKGROUND");
+            [], GameMode.Standard, false, 0, "ARCHITECT-WATCHER-BACKGROUND");
         var manager = RunManager.Instance;
         manager.SetUpTest(run, new NetSingleplayerGameService(), disableCombatStateSync: true, shouldSave: false);
         manager.GenerateRooms();

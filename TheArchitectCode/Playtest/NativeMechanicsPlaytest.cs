@@ -103,7 +103,8 @@ internal static class NativeMechanicsPlaytest
                 $"{node.GetNode<MegaRichTextLabel>("%DescriptionLabel").GetParsedText()})");
             if (card == previewStrike)
             {
-                var enlarged = game.HoverTipsContainer!.GetNode<Control>("CorruptedPlayerCardPreview")
+                var enlarged = NCombatRoom.Instance!.Ui.GetChildren().OfType<Control>()
+                    .Single(control => control.Name == "CorruptedPlayerCardPreview" && control.Visible)
                     .GetChildren().OfType<NCard>().Single();
                 Require(enlarged.Model == card && FirstDisplayedNumber(enlarged) == expected,
                     $"already-open hover updates to current damage {expected}");
@@ -206,7 +207,8 @@ internal static class NativeMechanicsPlaytest
             await game.AwaitProcessFrame();
             await game.AwaitProcessFrame();
             var miniature = PreviewFace(blade).GetChildren().OfType<NCard>().Single();
-            var enlarged = game.HoverTipsContainer!.GetNode<Control>("CorruptedPlayerCardPreview")
+            var enlarged = NCombatRoom.Instance!.Ui.GetChildren().OfType<Control>()
+                    .Single(control => control.Name == "CorruptedPlayerCardPreview" && control.Visible)
                 .GetChildren().OfType<NCard>().Single();
             foreach (var (node, label) in new[] { (miniature, "miniature"), (enlarged, "open hover") })
             {
@@ -308,7 +310,7 @@ internal static class NativeMechanicsPlaytest
             "next five-card hand is ready before the human can act");
         visibleHand = actor.State.Hand.Cards.ToArray();
         var completedBeforeExtraHumanTurn = actor.CompletedTurns;
-        await PowerCmd.Apply<AmbergrisPower>(context, human.Creature, 1, human.Creature, null);
+        await PowerCmd.Apply<ExtraTurnPower>(context, human.Creature, 1, human.Creature, null);
         await Turn();
         Require(actor.CompletedTurns == completedBeforeExtraHumanTurn &&
             actor.State.Hand.Cards.SequenceEqual(visibleHand) && actor.State.DrawPile.Cards.Count == 1,
@@ -471,10 +473,10 @@ internal static class NativeMechanicsPlaytest
         Require(human.Creature.CurrentHp < hp, "native automatic card play resolves against human");
         actor.Body.RemoveAllPowersInternalExcept();
         Prepare(Card<Wound>(), Card<Wound>(), Card<Wound>(), Card<Wound>(), Card<Wound>());
-        await PowerCmd.Apply<AmbergrisPower>(context, actor.Body, 1, actor.Body, null);
+        await PowerCmd.Apply<ExtraTurnPower>(context, actor.Body, 1, actor.Body, null);
         var turns = actor.CompletedTurns;
         await Turn();
-        Require(actor.CompletedTurns == turns + 2 && actor.Body.GetPowerAmount<AmbergrisPower>() == 0,
+        Require(actor.CompletedTurns == turns + 2 && actor.Body.GetPowerAmount<ExtraTurnPower>() == 0,
             "native extra turn consumed exactly once without advancing human turn twice");
         actor.Body.RemoveAllPowersInternalExcept();
         var excluded = Card<EnergySurge>();

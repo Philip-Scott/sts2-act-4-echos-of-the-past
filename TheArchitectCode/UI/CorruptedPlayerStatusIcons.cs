@@ -3,6 +3,7 @@ using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.FoolArrows;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.HoverTips;
@@ -13,7 +14,7 @@ using MegaCrit.Sts2.addons.mega_text;
 
 namespace TheArchitect.TheArchitectCode.UI;
 
-// The Corrupted Player's energy, stars and card piles, drawn as power-sized icons ahead of its
+// The Corrupted Player's energy, stars, arrows and card piles, drawn as power-sized icons ahead of its
 // native powers. They are presentation only: no PowerModel exists, so nothing can remove or react to them.
 internal sealed class CorruptedPlayerStatusIcons
 {
@@ -26,6 +27,8 @@ internal sealed class CorruptedPlayerStatusIcons
         AccessTools.MethodDelegate<Action<NPowerContainer>>(AccessTools.Method(typeof(NPowerContainer), "UpdatePositions"));
     // The compact star the multiplayer party panel uses.
     private const string StarIconPath = "res://images/ui/combat/energy_star.png";
+    // The Fool's own arrow sprite is too thin to read at power-icon size.
+    private const string ArrowIconPath = "res://TheArchitect/images/ui/corrupted_arrows.png";
 
     private readonly NCreature _anchor;
     private readonly NPowerContainer _container;
@@ -39,6 +42,9 @@ internal sealed class CorruptedPlayerStatusIcons
     private readonly MegaLabel _energy;
     private readonly Control _stars;
     private readonly MegaLabel _starCount;
+    private readonly Control _arrows;
+    private readonly MegaLabel _arrowCount;
+    private readonly HashSet<ArrowSlot> _watchedArrows = [];
     private bool _detached;
 
     private CorruptedPlayerStatusIcons(NCreature anchor, NPowerContainer container, Player player,
@@ -58,11 +64,16 @@ internal sealed class CorruptedPlayerStatusIcons
         (_stars, _, _starCount) = AddIcon("Stars",
             ResourceLoader.Load<Texture2D>(StarIconPath, null, ResourceLoader.CacheMode.Reuse), Tip("CORRUPTED_STARS"));
         _stars.Visible = false;
+        (_arrows, _, _arrowCount) = AddIcon("Arrows",
+            ResourceLoader.Load<Texture2D>(ArrowIconPath, null, ResourceLoader.CacheMode.Reuse), Tip("CORRUPTED_ARROWS"));
+        _arrows.Visible = false;
         AddPile(PileType.Draw, "draw_pile", "CORRUPTED_DRAW_PILE", () => _state.DrawPile);
         AddPile(PileType.Discard, "discard_pile", "CORRUPTED_DISCARD_PILE", () => _state.DiscardPile);
         AddPile(PileType.Exhaust, "exhaust_pile", "CORRUPTED_EXHAUST_PILE", () => _state.ExhaustPile);
         _state.EnergyChanged += OnEnergyChanged;
         _state.StarsChanged += OnStarsChanged;
+        _state.ArrowsChanged += OnArrowsChanged;
+        WatchArrows();
         Refresh();
     }
 
@@ -91,13 +102,16 @@ internal sealed class CorruptedPlayerStatusIcons
         _energy.AddThemeColorOverride(ThemeConstants.Label.FontColor, energy == 0 ? StsColors.red : StsColors.cream);
         _energyIcon.Modulate = energy == 0 ? Colors.DarkGray : Colors.White;
         _starCount.SetTextAutoSize(_state.Stars.ToString());
+        _arrowCount.SetTextAutoSize(_state.AvailableArrowCount.ToString());
         foreach (var (pile, (_, count)) in _piles)
             count.SetTextAutoSize(Pile(pile).Cards.Count.ToString());
         // Like the native star counter, stars stay visible once shown.
         var stars = _stars.Visible || _player.Character.ShouldAlwaysShowStarCounter || _state.Stars > 0;
-        if (stars != _stars.Visible)
+        var arrows = _arrows.Visible || _state.Arrows.Count > 0;
+        if (stars != _stars.Visible || arrows != _arrows.Visible)
         {
             _stars.Visible = stars;
+            _arrows.Visible = arrows;
             UpdatePositions(_container);
         }
     }
@@ -114,6 +128,10 @@ internal sealed class CorruptedPlayerStatusIcons
         _detached = true;
         _state.EnergyChanged -= OnEnergyChanged;
         _state.StarsChanged -= OnStarsChanged;
+        _state.ArrowsChanged -= OnArrowsChanged;
+        foreach (var arrow in _watchedArrows)
+            arrow.ArrowStatusUpdated -= Refresh;
+        _watchedArrows.Clear();
         if (GodotObject.IsInstanceValid(_anchor))
             _anchor.HideHoverTips();
         foreach (var icon in _icons.Where(GodotObject.IsInstanceValid))
@@ -139,6 +157,20 @@ internal sealed class CorruptedPlayerStatusIcons
     private void OnEnergyChanged(int oldEnergy, int newEnergy) => Refresh();
 
     private void OnStarsChanged(int oldStars, int newStars) => Refresh();
+
+    // Shooting and retrieving an arrow changes only that slot's status, not the slot list.
+    private void OnArrowsChanged()
+    {
+        WatchArrows();
+        Refresh();
+    }
+
+    private void WatchArrows()
+    {
+        foreach (var arrow in _state.Arrows)
+            if (_watchedArrows.Add(arrow))
+                arrow.ArrowStatusUpdated += Refresh;
+    }
 
     private static HoverTip Tip(string key) => new(
         new LocString("static_hover_tips", $"THEARCHITECT-{key}.title"),

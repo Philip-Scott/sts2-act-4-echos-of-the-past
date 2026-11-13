@@ -93,7 +93,7 @@ internal partial class CharacterSelectDeckPreview : Control
                     net.SendMessage(message);
             },
             UpdateMultiplayer));
-        // BaseLib normally registers its custom-message dispatcher only after a run starts.
+        // BaseLib registers its custom-message dispatcher on clients only after a run starts.
         net.RegisterMessageHandler<CustomMessageWrapper>(Receive);
         lobby.PlayerConnected += MembershipChanged;
         lobby.PlayerDisconnected += MembershipChanged;

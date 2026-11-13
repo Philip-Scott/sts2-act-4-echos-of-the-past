@@ -342,7 +342,7 @@ def launch(args):
         tool("pactl")
     party_history = load_party_history(party_history_path, int(args.scenario[-1])) if party_history_path is not None else None
     game = required_file(Path(args.game) / "SlayTheSpire2").parent
-    requires_snapshot = args.scenario not in DOWNFALL_SCENARIOS + DOWNFALL_INSPECTIONS + ("save-template", "save-input", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "watcher-audio", "watcher-background", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx", "encounters")
+    requires_snapshot = args.scenario not in DOWNFALL_SCENARIOS + DOWNFALL_INSPECTIONS + ("save-template", "save-input", "ancient", "saved-run", "relic-art", "enchantment-art", "violet-lotus", "stance-tooltips", "watcher-audio", "watcher-background", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx", "encounters")
     if requires_snapshot and not os.environ.get("ARCHITECT_SNAPSHOT_INPUT"):
         raise ValueError("Set ARCHITECT_SNAPSHOT_INPUT to the captured snapshot to copy (never modified).")
     snapshot = required_file(os.environ["ARCHITECT_SNAPSHOT_INPUT"]) if (
@@ -752,7 +752,7 @@ def main():
     cache.add_argument("--cache-from", help="Copy shader caches from this completed run ID.")
     cache.add_argument("--cold", action="store_true", help="Do not seed shader caches from a completed run.")
     scenarios = run.add_mutually_exclusive_group()
-    for scenario in DOWNFALL_SCENARIOS + DOWNFALL_INSPECTIONS + ("loss", "nondefect", "poison", "ancient", "saved-run", "relic-art", "enchantment-art", "stance-tooltips", "watcher-audio", "watcher-background", "previews", "media", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx", "encounters"):
+    for scenario in DOWNFALL_SCENARIOS + DOWNFALL_INSPECTIONS + ("loss", "nondefect", "fool", "poison", "ancient", "saved-run", "relic-art", "enchantment-art", "violet-lotus", "stance-tooltips", "watcher-audio", "watcher-background", "previews", "media", "party", "party-1", "party-2", "party-3", "party-4", "party-layout", "party-layout-prototype", "attack-vfx", "deck-preview", "ending", "corruption", "stance-vfx", "encounters"):
         scenarios.add_argument("--" + scenario, dest="scenario", action="store_const", const=scenario)
     run.set_defaults(scenario="default")
     for action in ("status", "capture", "stop", "pointer", "click", "key", "_serve"):

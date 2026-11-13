@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export the six original corruption relic SVGs. Requires ImageMagick and Pillow.
+"""Export the seven original corruption relic SVGs. Requires ImageMagick and Pillow.
 
 Run from any directory with: python scripts/render-corruption-icons.py
 Writes 94px relics, white relic outlines, 64px powers, and 256px tooltip art.
@@ -22,6 +22,7 @@ NAMES = (
     "tarnished_crown",
     "fractured_urn",
     "overvolted_matrix",
+    "discordant_bow",
     "echo_shard",
 )
 

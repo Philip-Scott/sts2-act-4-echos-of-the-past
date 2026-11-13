@@ -112,7 +112,7 @@ public static class NativeTests
             Player.CreateForNewRun(character, UnlockState.all, (ulong)index + 1)).ToArray();
         var run = RunState.CreateForNewRun(players,
             [ModelDb.Act<Overgrowth>().ToMutable(), ModelDb.Act<Hive>().ToMutable(), ModelDb.Act<Glory>().ToMutable()],
-            [], GameMode.Standard, 0, "ANIMATED-PLAYER-HANDS");
+            [], GameMode.Standard, false, 0, "ANIMATED-PLAYER-HANDS");
         // Tutorial overlays would cover combat; a hand under an overlay correctly refuses inspection.
         SaveManager.Instance.SetFtuesEnabled(false);
         var manager = RunManager.Instance;

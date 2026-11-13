@@ -88,7 +88,7 @@ internal static class ArchitectSavePlaytest
             ModelDb.GetById<CharacterModel>(ModelId.Deserialize(id)), UnlockState.all, (ulong)index + 1)).ToArray();
         var run = RunState.CreateForNewRun(players,
             [ModelDb.Act<Overgrowth>().ToMutable(), ModelDb.Act<Hive>().ToMutable(), ModelDb.Act<Glory>().ToMutable()],
-            [], GameMode.Standard, config.Ascension, config.Seed);
+            [], GameMode.Standard, false, config.Ascension, config.Seed);
         var manager = RunManager.Instance;
         manager.SetUpTest(run, new NetSingleplayerGameService(), shouldSave: false);
         manager.GenerateRooms();

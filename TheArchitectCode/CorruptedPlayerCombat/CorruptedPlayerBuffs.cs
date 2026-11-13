@@ -11,6 +11,7 @@ internal static class CorruptedPlayerBuffs
     internal static readonly ModelId TarnishedCrown = PowerId("TARNISHED_CROWN_POWER");
     internal static readonly ModelId FracturedUrn = PowerId("FRACTURED_URN_POWER");
     internal static readonly ModelId OvervoltedMatrix = PowerId("OVERVOLTED_MATRIX_POWER");
+    internal static readonly ModelId DiscordantBow = PowerId("DISCORDANT_BOW_POWER");
     internal static readonly ModelId EchoShard = PowerId("ECHO_SHARD_POWER");
 
     // Ascension 9 (Deadly Enemies).
@@ -26,6 +27,7 @@ internal static class CorruptedPlayerBuffs
                 Regent => TarnishedCrown,
                 Necrobinder => FracturedUrn,
                 Defect => OvervoltedMatrix,
+                Fool => DiscordantBow,
                 _ => null
             } is { } characterBuff)
             buffs.Add(characterBuff);

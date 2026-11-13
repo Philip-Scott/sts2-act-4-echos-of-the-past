@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using Godot;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
@@ -107,9 +108,9 @@ internal static class ArchitectHistoryPlaytest
         var character = ModelDb.GetById<CharacterModel>(hero.Player.Character);
         var ancient = ModelDb.GetById<TheUnwritten>(new ModelId("EVENT", "THEARCHITECT-THE_UNWRITTEN"));
         var seed = setup.ForceMirror ? FindMirrorSeed(setup.Seed, ancient.Id.Entry) : setup.Seed;
-        var run = await game.StartNewSingleplayerRun(character, true,
+        var run = await game.StartNewSingleplayerRun(Player.CreateForNewRun(character, SaveManager.Instance.GenerateUnlockStateFromProgress(), 1), true,
             [ModelDb.Act<Overgrowth>(), ModelDb.Act<Hive>(), ModelDb.Act<Glory>()],
-            [], seed, GameMode.Standard, hero.History.Ascension);
+            [], seed, GameMode.Standard, false, hero.History.Ascension);
 
         var save = RunManager.Instance.ToSave(null);
         var restored = save.Players.Single();

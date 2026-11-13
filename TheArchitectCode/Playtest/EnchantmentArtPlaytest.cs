@@ -1,4 +1,6 @@
 using Godot;
+using MegaCrit.Sts2.Core.Saves;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Models;
@@ -19,9 +21,9 @@ internal static class EnchantmentArtPlaytest
     {
         Check(NativeDemoSafety.Enabled && !NativeDemoSafety.SharedVisible,
             "Enchantment art probes require private, disposable native-test storage.");
-        var run = await game.StartNewSingleplayerRun(ModelDb.Character<Ironclad>(), true,
+        var run = await game.StartNewSingleplayerRun(Player.CreateForNewRun(ModelDb.Character<Ironclad>(), SaveManager.Instance.GenerateUnlockStateFromProgress(), 1), true,
             [ModelDb.Act<Overgrowth>(), ModelDb.Act<Hive>(), ModelDb.Act<Glory>()],
-            [], "ARCHITECT-ENCHANTMENT-ART", GameMode.Standard);
+            [], "ARCHITECT-ENCHANTMENT-ART", GameMode.Standard, false);
         var player = run.Players.Single();
         var backdrop = new ColorRect
         {

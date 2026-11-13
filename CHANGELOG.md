@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Updated for Slay the Spire 2 public-beta v0.113.0 and BaseLib 3.4.8; 1.4.1
+  fails to load on this game version. Corrupted Players keep their card choices,
+  extra turns and targetable Osty, the Act 4 map stays compact, and defeating
+  the Architect still leads into the bound-party ending before the results.
+- The Fool can now be a Corrupted Player. Its character buff is Discordant Bow:
+  it gains 12 Aim at the start of combat and 3 Aim at the end of each of its turns.
+- A Corrupted Player with arrows shows how many it has ready below its health
+  bar, next to its energy and stars.
+- Blitz runs end after Act 3; the Architect Act is not added to them.
+- Hosts no longer log a warning for every lobby deck-preview message.
+
 ## 1.4.1 Changes
 
 Released October 21, 2026 at 11:07 p.m. PDT.

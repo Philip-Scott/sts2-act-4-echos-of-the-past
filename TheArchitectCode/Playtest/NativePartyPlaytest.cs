@@ -122,7 +122,7 @@ internal static class NativePartyPlaytest
         var historyLoadouts = history == null ? null : players.Select(player => player.ToSerializable()).ToArray();
         var run = RunState.CreateForNewRun(players,
             [ModelDb.Act<Overgrowth>().ToMutable(), ModelDb.Act<Hive>().ToMutable(), ModelDb.Act<Glory>().ToMutable()],
-            [], GameMode.Standard, ascension, history?.Seed ?? $"ARCHITECT-PARTY-{count}-{ascension}");
+            [], GameMode.Standard, false, ascension, history?.Seed ?? $"ARCHITECT-PARTY-{count}-{ascension}");
         var manager = RunManager.Instance;
         manager.SetUpTest(run, new NetSingleplayerGameService(), disableCombatStateSync: true,
             shouldSave: eliteDefeatOnly && count == 1);
@@ -323,6 +323,11 @@ internal static class NativePartyPlaytest
             combat.RemoveCard(random);
         }
         await NativeDemoPlaytest.Capture($"party-{count}-opening");
+        Require(actors.All(actor => actor.Player.Character is not Necrobinder || actor.State.Pets.Count > 0),
+            $"{count}: every corrupted Necrobinder starts with Osty");
+        foreach (var pet in actors.SelectMany(actor => actor.State.Pets))
+            Require(pet.GetCreatureNode() is { IsInteractable: true } petNode && petNode.Hitbox.MouseFilter == Control.MouseFilterEnum.Stop,
+                $"{count}: Corrupted Player pet {pet.Monster?.Id.Entry} can be hovered and targeted");
         var panels = enemies.Select(enemy => CorruptedPlayerTelegraph.Of(enemy.GetCreatureNode()!)).ToArray();
         var bindings = enemies.SelectMany(enemy => enemy.GetCreatureNode()!.Visuals
             .FindChildren("BoundEcho*", recursive: true, owned: false).OfType<CorruptedPlayerBinding>()).ToArray();
@@ -399,7 +404,7 @@ internal static class NativePartyPlaytest
         finishTargetingProbe?.Invoke();
         Require(actors.All(actor => actor.CompletedTurns == 1), $"{count}: every saved member plays one native turn");
         var context = new ThrowingPlayerChoiceContext();
-        await PowerCmd.Apply<AmbergrisPower>(context, enemies[0], 1, enemies[0], null);
+        await PowerCmd.Apply<ExtraTurnPower>(context, enemies[0], 1, enemies[0], null);
         await EndTurn(players, 3);
         Require(actors[0].CompletedTurns == 3 && actors.Skip(1).All(actor => actor.CompletedTurns == 2),
             $"{count}: extra turns do not advance other corrupted players");

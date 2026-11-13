@@ -8,6 +8,7 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Ancients;
 using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Save;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes;
@@ -34,7 +35,7 @@ internal static class ArchitectEnding
     {
         public int Wins { get; init; }
         public Dictionary<ModelId, int> CharacterWins { get; init; } = [];
-        public SerializableRun? Result { get; set; }
+        public PostRunProgressUpdateResult? Result { get; set; }
         public bool FinalAttack { get; set; }
         public Task? Completion { get; set; }
     }
@@ -56,7 +57,13 @@ internal static class ArchitectEnding
         });
     }
 
-    internal static bool DeferResult(SerializableRun result)
+    internal static void ShowGameOverScreen(NRun scene, PostRunProgressUpdateResult result)
+    {
+        if (!DeferResult(result))
+            scene.ShowGameOverScreen(result);
+    }
+
+    internal static bool DeferResult(PostRunProgressUpdateResult result)
     {
         var run = RunManager.Instance.DebugOnlyGetState();
         if (!ArchitectLifecycle.IsBossEncounter(run) || RunManager.Instance.IsAbandoned ||
@@ -151,7 +158,41 @@ internal static class ArchitectEnding
 [HarmonyPatch(typeof(NRun), nameof(NRun.ShowGameOverScreen))]
 internal static class DeferArchitectResultPatch
 {
-    private static bool Prefix(SerializableRun serializableRun) => !ArchitectEnding.DeferResult(serializableRun);
+    private static bool Prefix(PostRunProgressUpdateResult result) => !ArchitectEnding.DeferResult(result);
+}
+
+// The JIT can inline the small ShowGameOverScreen into its callers, bypassing the prefix above.
+// Route the game's own victory and defeat calls through ArchitectEnding explicitly.
+[HarmonyPatch]
+internal static class DeferArchitectResultCallSitesPatch
+{
+    private static IEnumerable<MethodBase> TargetMethods() =>
+    [
+        StateMachine(AccessTools.Method(typeof(CreatureCmd), nameof(CreatureCmd.Kill),
+            [typeof(IReadOnlyCollection<Creature>), typeof(CardModel), typeof(bool)])),
+        StateMachine(AccessTools.Method(typeof(RunManager), nameof(RunManager.WinRun)))
+    ];
+
+    private static MethodBase StateMachine(MethodInfo method) => AccessTools.Method(
+        method.GetCustomAttribute<AsyncStateMachineAttribute>()!.StateMachineType, "MoveNext");
+
+    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    {
+        var native = AccessTools.Method(typeof(NRun), nameof(NRun.ShowGameOverScreen));
+        var count = 0;
+        foreach (var instruction in instructions)
+        {
+            if (instruction.Calls(native))
+            {
+                instruction.opcode = OpCodes.Call;
+                instruction.operand = AccessTools.Method(typeof(ArchitectEnding), nameof(ArchitectEnding.ShowGameOverScreen));
+                count++;
+            }
+            yield return instruction;
+        }
+        if (count != 1)
+            throw new InvalidOperationException("The native game-over call changed.");
+    }
 }
 
 [HarmonyPatch(typeof(NAudioManager), nameof(NAudioManager.PlayMusic))]

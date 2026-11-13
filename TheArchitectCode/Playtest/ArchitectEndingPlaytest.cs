@@ -39,9 +39,9 @@ internal static class ArchitectEndingPlaytest
         foreach (var loss in new[] { false, true })
         {
             NAudioManager.Instance!.StopMusic();
-            var run = await game.StartNewSingleplayerRun(ModelDb.Character<Ironclad>(), true,
+            var run = await game.StartNewSingleplayerRun(Player.CreateForNewRun(ModelDb.Character<Ironclad>(), SaveManager.Instance.GenerateUnlockStateFromProgress(), 1), true,
                 [ModelDb.Act<Overgrowth>(), ModelDb.Act<Hive>(), ModelDb.Act<Glory>()],
-                [], "ARCHITECT-ENDING-" + loss, GameMode.Standard);
+                [], "ARCHITECT-ENDING-" + loss, GameMode.Standard, false);
             await Exercise(run, loss, $"solo-{loss}");
             await game.ReturnToMainMenu();
         }
@@ -54,7 +54,7 @@ internal static class ArchitectEndingPlaytest
                 Player.CreateForNewRun(character, UnlockState.all, (ulong)index + 1)).ToArray();
             var run = RunState.CreateForNewRun(players,
                 [ModelDb.Act<Overgrowth>().ToMutable(), ModelDb.Act<Hive>().ToMutable(), ModelDb.Act<Glory>().ToMutable()],
-                [], GameMode.Standard, 0, "ARCHITECT-ENDING-PARTY-" + loss);
+                [], GameMode.Standard, false, 0, "ARCHITECT-ENDING-PARTY-" + loss);
             RunManager.Instance.SetUpTest(run, new NetSingleplayerGameService(),
                 disableCombatStateSync: true, shouldSave: false);
             RunManager.Instance.GenerateRooms();
