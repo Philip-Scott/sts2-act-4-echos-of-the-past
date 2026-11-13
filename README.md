@@ -6,7 +6,7 @@ Meet The Watcher and choose an Ancient gift before fighting the Architect.
 On later visits, you first fight a Corrupted Player that uses your previous deck.
 Play solo or with a party of 2-4 players.
 
-Version 1.5.0 is available on
+Version 1.5.1 is available on
 [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3799307965).
 
 ## Gameplay and compatibility

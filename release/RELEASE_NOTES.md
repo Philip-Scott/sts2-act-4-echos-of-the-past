@@ -4,6 +4,7 @@
 
 This update from **1.5.0** retunes the Corrupted Fool's character buff.
 It still requires Slay the Spire 2 public-beta **v0.113.0**.
+Published to Steam Workshop on November 13, 2026 at 12:48 p.m. PST.
 
 ## What's new
 
