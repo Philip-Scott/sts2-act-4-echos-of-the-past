@@ -1,5 +1,32 @@
 # Corrupted Player prototypes
 
+## Painterly Echo visual study
+
+Open [echo-visuals-prototype.html](echo-visuals-prototype.html) directly in a browser,
+or use the local server command below. Keep its `echo-visuals-prototype-assets/`
+folder beside the HTML file. No build or installation is required.
+
+This throwaway study uses native character idle-frame captures and an empty native
+workshop background. Only the proposed browser effects animate, not the character rigs.
+It compares three directions without changing the installed mod:
+
+- A, Fading echo. Incomplete blue-gray afterimages behind a readable painted body.
+- B, Unraveling echo. A lower silhouette that frays into dusty smoke and costume scraps.
+- C, Shattered echo. Misaligned costume fragments with muted ivory fracture seams.
+
+Use the bottom arrows, left/right keys outside controls, or the three previews.
+`?variant=A`, `B`, or `C` selects a direction. `character=silent`, `ironclad`,
+`regent`, `necrobinder`, or `defect` selects the native art. `view=duel`, `study`,
+or `party` selects combat scale, close-up, or four-enemy composition.
+Intensity, pause, and hold-for-original controls help compare the effect.
+The optional current Bound Echo reference is a browser approximation, not a capture.
+The state panel records the current selection and outlines possible Godot implementations.
+
+No direction has been selected. These Canvas effects do not establish native shader
+cost, Spine compatibility, or final fracture placement. Health bars are illustrative
+and stay outside the effects. Prototype art is for local visual comparison with the
+installed game, not a new game-asset distribution or production UI.
+
 ## Drag-and-drop party layout editor
 
 `corrupted-party-layout-editor-prototype.html` is a throwaway placement editor
