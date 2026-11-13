@@ -24,6 +24,11 @@ For C, fracture amount and circle strength are independent. The defaults are 40%
 fracture and 75% circles. Set either to zero to compare the other layer alone.
 `fracture=0` through `100` and `circles=0` through `100` preserve those settings in
 the URL. Circle geometry approximates the native back/front layers and ground sigil.
+The default Etched binding artwork uses tapered, broken brush strokes, an inscribed
+double ground circle, and faceted gold seals with dark insets. Only small highlights
+move along the painted bands; the worn edges do not flicker. The Circle artwork
+selector compares this with the previous thin circles. `circleStyle=etched` or
+`circleStyle=current` preserves that comparison in the URL.
 The optional current Bound Echo reference is a browser approximation, not a capture.
 The state panel records the current selection and outlines possible Godot implementations.
 

@@ -142,6 +142,12 @@
     <label class="label" for="strength"><span id="strength-title">Effect intensity</span> <output id="strength-label">70%</output></label>
     <input id="strength" type="range" min="0" max="100" value="70">
     <div id="binding-controls" hidden>
+      <label class="reference">Circle artwork
+        <select id="circle-style">
+          <option value="etched">Etched binding</option>
+          <option value="current">Current thin circles</option>
+        </select>
+      </label>
       <label class="label" for="circles">Circle strength <output id="circles-label">75%</output></label>
       <input id="circles" type="range" min="0" max="100" value="75">
       <p class="note">Set fractures to 0 for circles only. Set circles to 0 to compare the body without its binding.</p>
@@ -156,7 +162,7 @@
         <option value="current">Current Bound Echo approximation</option>
       </select>
     </label>
-    <p class="note">C keeps the ground circle, body circles, and gold seals. Only the body fractures; the binding stays intact. No scan lines or RGB splits. Health bars stay outside every effect.</p>
+    <p class="note">The new circles use worn brush strokes, an inscribed ground sigil, and faceted gold seals. Only the body fractures; the binding stays intact. Health bars stay outside every effect.</p>
     <details>
       <summary>Prototype state and implementation notes</summary>
       <pre id="state"></pre>
@@ -191,10 +197,10 @@ const variants = {
   },
   C: {
     name: "Bound shattered echo", direction: "Direction C / fractured body + binding",
-    description: "The ground circle and the circles beside the character remain. Inside them, the painted body splits along faint ivory seams. The pieces shift slightly while the binding stays whole.",
-    fit: "Retains the familiar rose-colored circles and gold seals. The softer default fractures preserve more of the costume and silhouette.",
+    description: "A worn, inscribed circle anchors the character to the floor. Tapered bands pass behind and in front of the body, carrying faceted gold seals. The painted body shifts along faint ivory seams inside the binding.",
+    fit: "Dusty violet underpainting, uneven ivory-gold edges, and small incised marks replace the uniform pink lines. Slow highlights follow the circles without a neon glow.",
     tradeoff: "The circles already communicate corruption. The body may need only a few cracks, rather than visibly separated pieces. Compare each layer on its own.",
-    implementation: "Candidate: keep CorruptedPlayerBinding's independent back/front circles and ground sigil. Apply the fracture masks only to the composed body. The browser approximates the native geometry and layering; it does not change the game."
+    implementation: "Candidate: retain CorruptedPlayerBinding's independent back/front layers, but replace uniform strokes with tapered ribbon meshes, an etched floor decal, and faceted seals. Apply fracture masks only to the body. The browser does not establish native performance or change the game."
   }
 };
 const characters = [
@@ -215,6 +221,7 @@ function amount(params, key, fallback) {
   return params.has(key) && Number.isFinite(value) ? Math.max(0, Math.min(100, value)) / 100 : fallback;
 }
 let fracture = amount(initial, "fracture", .4), circles = amount(initial, "circles", .75);
+let circleStyle = initial.get("circleStyle") === "current" ? "current" : "etched";
 let reference = "native", time = 3.5, last = 0, ready = false;
 const arena = $("arena"), ctx = arena.getContext("2d");
 const art = new Map(), frames = new Map(), thumbs = keys.map(k => $("thumb-" + k).getContext("2d"));
@@ -380,7 +387,7 @@ function currentEffect(source, target, t) {
   c.globalAlpha=.13; c.drawImage(scratch,0,0); c.globalAlpha=1;
 }
 const coloredCurrent = new Map(), currentFrame = surface();
-function drawBinding(c, bounds, t, opacity, front) {
+function drawCurrentBinding(c, bounds, t, opacity, front) {
   if (opacity === 0) return;
   const [left, top, width, height] = bounds;
   const cx = left + width * .5, cy = top + height * .55, floor = top + height - 2;
@@ -419,8 +426,104 @@ function drawBinding(c, bounds, t, opacity, front) {
   }
   c.restore();
 }
+function paintedArc(c, rx, ry, start, sweep, weight, seed, opacity) {
+  c.save();
+  const alpha = c.globalAlpha * opacity;
+  const pigment = c.createLinearGradient(-rx, -ry, rx, ry);
+  pigment.addColorStop(0, "#82798d"); pigment.addColorStop(.42, "#b8a78d");
+  pigment.addColorStop(.7, "#776881"); pigment.addColorStop(1, "#c8baa1");
+  const segments = Math.round(Math.abs(sweep) / (Math.PI / 4));
+  for (let segment = 0; segment < segments; segment++) {
+    const from = start + sweep * segment / segments + .014;
+    const length = sweep / segments - .028;
+    const outer = [], inner = [], shadowOuter = [], shadowInner = [];
+    for (let i = 0; i <= 18; i++) {
+      const progress = i / 18, angle = from + length * progress;
+      const wobble = 1 + .004 * Math.sin(angle * 13 + seed) + .002 * Math.sin(angle * 31 - seed);
+      const x = Math.cos(angle) * rx * wobble, y = Math.sin(angle) * ry * wobble;
+      const nx = Math.cos(angle) / rx, ny = Math.sin(angle) / ry, normal = Math.hypot(nx, ny);
+      const taper = .22 + .78 * Math.pow(Math.sin(progress * Math.PI), .55);
+      const half = weight * taper * (.76 + .2 * Math.sin(angle * 9 + seed));
+      const point = offset => [x + nx / normal * offset, y + ny / normal * offset];
+      outer.push(point(half)); inner.push(point(-half));
+      shadowOuter.push(point(half + weight * .65)); shadowInner.push(point(-half - weight * .65));
+    }
+    c.globalAlpha = alpha * .65; c.fillStyle = "#302a3d";
+    polygon(c, [...shadowOuter, ...shadowInner.reverse()]); c.fill();
+    c.globalAlpha = alpha; c.fillStyle = pigment;
+    polygon(c, [...outer, ...inner.reverse()]); c.fill();
+    c.globalAlpha = alpha * .7;
+    line(c, outer.slice(3, 13), "#e3d1a9", weight * .35);
+  }
+  c.restore();
+}
+function drawEtchedBinding(c, bounds, t, opacity, front) {
+  if (opacity === 0) return;
+  const [left, top, width, height] = bounds;
+  const cx = left + width * .5, cy = top + height * .55, floor = top + height - 2;
+  const rx = width * .75, ry = height * .24, floorRy = height * .045;
+  const tilt = .35 * Math.sin(t * .35), weight = Math.max(1.2, Math.min(2.4, height * .006));
+  const start = front ? 0 : Math.PI;
+  c.save(); c.globalAlpha *= opacity;
+  if (!front) {
+    c.save(); c.translate(cx, floor); c.scale(rx * 1.16, floorRy * 1.55);
+    const dust = c.createRadialGradient(0, 0, .35, 0, 0, 1);
+    dust.addColorStop(0, "#a094b000"); dust.addColorStop(.7, "#9d8baf20"); dust.addColorStop(1, "#9d8baf00");
+    c.fillStyle = dust; c.fillRect(-1, -1, 2, 2); c.restore();
+    c.save(); c.translate(cx, floor);
+    paintedArc(c, rx * 1.04, floorRy * 1.04, 0, Math.PI * 2, weight * 1.25, 3, .9);
+    paintedArc(c, rx * .81, floorRy * .81, 0, Math.PI * 2, weight * .35, 7, .5);
+    for (let i = 0; i < 8; i++) {
+      const angle = i * Math.PI / 4;
+      const point = (r, a) => [Math.cos(a) * rx * r, Math.sin(a) * floorRy * r];
+      c.globalAlpha = opacity * (i % 2 ? .5 : .85);
+      line(c, [point(.84, angle - .028), point(.96, angle), point(.84, angle + .028)], "#cbb68b", weight * .65);
+      if (i % 2 === 0) line(c, [point(.9, angle), point(1.1, angle)], "#e0c393", weight * .75);
+    }
+    c.globalAlpha = opacity * .45;
+    for (let i = 0; i < 3; i++) {
+      const angle = t * .16 + i * Math.PI * 2 / 3;
+      c.beginPath(); c.ellipse(0, 0, rx * .93, floorRy * .93, 0, angle, angle + .25);
+      c.strokeStyle = "#dbc9a0"; c.lineWidth = weight * .6; c.stroke();
+    }
+    c.restore();
+  }
+  c.save(); c.translate(cx, cy); c.rotate(tilt);
+  paintedArc(c, rx, ry, start, Math.PI, weight * 1.6, 2, front ? .92 : .5);
+  // The accent moves along the band; the worn edges stay fixed to its geometry.
+  const accent = (t * .22) % (Math.PI * 2);
+  if ((accent < Math.PI) === front) {
+    c.globalAlpha = opacity * .45; c.strokeStyle = "#ead8b4"; c.lineWidth = weight * .5;
+    c.beginPath(); c.ellipse(0, 0, rx, ry, 0, accent, Math.min(accent + .16, front ? Math.PI : Math.PI * 2)); c.stroke();
+  }
+  c.restore();
+  c.save(); c.translate(cx, top + height * .5);
+  paintedArc(c, width * .53, height * .52, front ? Math.PI / 2 : -Math.PI / 2, Math.PI, weight * .85, 5, front ? .58 : .3);
+  c.restore();
+  const size = Math.max(4.5, Math.min(9, height * .026));
+  for (let i = 0; i < 6; i++) {
+    const angle = t * .45 + Math.PI * 2 * i / 6;
+    if ((Math.sin(angle) >= 0) !== front) continue;
+    const ex = Math.cos(angle) * rx, ey = Math.sin(angle) * ry;
+    c.save();
+    c.translate(cx + ex * Math.cos(tilt) - ey * Math.sin(tilt), cy + ex * Math.sin(tilt) + ey * Math.cos(tilt));
+    c.rotate(-tilt * .3); c.globalAlpha *= front ? 1 : .65;
+    polygon(c, [[0,-size*1.25],[size*.85,0],[0,size*1.25],[-size*.85,0]]);
+    c.fillStyle = "#343544"; c.fill(); c.strokeStyle = "#c5a16b"; c.lineWidth = weight; c.stroke();
+    line(c, [[-size*.85,0],[0,-size*1.25],[size*.85,0]], "#e8d4a7", weight * .65);
+    polygon(c, [[0,-size*.65],[size*.35,0],[0,size*.65],[-size*.35,0]]);
+    c.fillStyle = i % 2 ? "#99859c" : "#c2b992"; c.fill();
+    line(c, [[0,-size*.3],[0,size*.3]], "#f0ddb3", weight * .6);
+    c.restore();
+  }
+  c.restore();
+}
+function drawBinding(c, binding, front) {
+  const draw = binding.style === "current" ? drawCurrentBinding : drawEtchedBinding;
+  draw(c, binding.bounds, binding.time, binding.opacity, front);
+}
 function bindingFor(id, key) {
-  return key === "C" && !holding ? { bounds: art.get(id).bounds, opacity: circles, time } : null;
+  return key === "C" && !holding ? { bounds: art.get(id).bounds, opacity: circles, time, style: circleStyle } : null;
 }
 function shadow(context, x, y, scale = 1) {
   context.save(); context.translate(x,y); context.scale(scale,scale);
@@ -432,9 +535,9 @@ function drawActor(context, image, x, floor, size, facingLeft = true, binding = 
   shadow(context,x,floor,size/512);
   context.save(); context.translate(x,floor); context.scale(facingLeft ? -1 : 1,1);
   context.scale(size/512,size/512); context.translate(-256,-470);
-  if (binding) drawBinding(context,binding.bounds,binding.time,binding.opacity,false);
+  if (binding) drawBinding(context,binding,false);
   context.drawImage(image,0,0,512,512);
-  if (binding) drawBinding(context,binding.bounds,binding.time,binding.opacity,true);
+  if (binding) drawBinding(context,binding,true);
   context.restore();
 }
 function health(context, x, y, width, value, name) {
@@ -471,7 +574,7 @@ function renderArena(s, t) {
     const close=view==="study", floor=close?737:694, size=close?650:510, lx=close?430:390, rx=close?1170:1170;
     let ref = source.image;
     if(reference==="current") { currentEffect(source,currentFrame,t); ref=currentFrame; }
-    const referenceBinding = reference === "current" ? { bounds: source.bounds, opacity: .75, time: t } : null;
+    const referenceBinding = reference === "current" ? { bounds: source.bounds, opacity: .75, time: t, style: "current" } : null;
     drawActor(ctx,ref,lx,floor,size,false,referenceBinding);
     drawActor(ctx,holding ? source.image : frame,rx,floor,size,true,bindingFor(character,variant));
     health(ctx,lx,floor+36,225,"70 / 70",name);
@@ -494,6 +597,7 @@ function updateState() {
     throwaway:true, variant, treatment:variants[variant].name, character, view,
     intensity:Math.round(strength*100), paused, originalBypass:holding, reference,
     fractureAmount:Math.round(fracture*100), circleStrength:Math.round(circles*100),
+    circleArtwork:circleStyle,
     bindingApplied:variant==="C" && circles>0 && !holding,
     bindingGeometry:"Independent ground sigil and back/front body circles, approximating production",
     nativeArt:"Flattened native idle frame, not live Spine animation",
@@ -505,6 +609,7 @@ function syncURL() {
   const url = new URL(location.href);
   url.searchParams.set("variant",variant); url.searchParams.set("character",character); url.searchParams.set("view",view);
   url.searchParams.set("fracture",Math.round(fracture*100)); url.searchParams.set("circles",Math.round(circles*100));
+  url.searchParams.set("circleStyle",circleStyle);
   history.replaceState(null,"",url);
 }
 function renderUI() {
@@ -517,6 +622,7 @@ function renderUI() {
   $("strength-label").textContent=$("strength").value+"%";
   $("binding-controls").hidden=variant!=="C";
   $("circles").value=Math.round(circles*100); $("circles-label").textContent=$("circles").value+"%";
+  $("circle-style").value=circleStyle;
   $("pause").textContent=paused?"Resume":"Pause"; $("pause").setAttribute("aria-pressed",String(paused));
   $("original").setAttribute("aria-pressed",String(holding));
   $("scene-label").textContent=view==="study"?"Neutral light / enlarged character":"The Architect's workshop";
@@ -556,6 +662,7 @@ $("strength").addEventListener("input",e=>{
   syncURL();renderUI();
 });
 $("circles").addEventListener("input",e=>{circles=Number(e.target.value)/100;syncURL();renderUI();});
+$("circle-style").addEventListener("change",e=>{circleStyle=e.target.value;syncURL();renderUI();});
 $("pause").addEventListener("click",()=>{paused=!paused;renderUI();});
 $("reference").addEventListener("change",e=>{reference=e.target.value;renderUI();});
 function hold(value) { holding=value;renderUI(); }
@@ -575,7 +682,8 @@ window.addEventListener("popstate",()=>{
   variant=keys.includes(p.get("variant"))?p.get("variant"):"A";
   character=characters.some(c=>c.id===p.get("character"))?p.get("character"):"silent";
   view=["duel","study","party"].includes(p.get("view"))?p.get("view"):"duel";
-  fracture=amount(p,"fracture",.4); circles=amount(p,"circles",.75);renderUI();
+  fracture=amount(p,"fracture",.4); circles=amount(p,"circles",.75);
+  circleStyle=p.get("circleStyle")==="current"?"current":"etched";renderUI();
 });
 renderUI();
 Promise.all([
