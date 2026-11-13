@@ -1,21 +1,21 @@
-# Act 4: Echos of the Past 1.4.1
+# Act 4: Echos of the Past 1.5.0
 
 **Your past is the final boss.**
 
-This update from **1.4.0** fixes modded card text, Corrupted Player card
-cleanup and exhaust animations, and Ring of the Viper's multiplayer scaling.
-Published to Steam Workshop on October 21, 2026 at 11:07 p.m. PDT.
+This update from **1.4.1** brings the mod to Slay the Spire 2 public-beta
+**v0.113.0** and adds the Fool as a Corrupted Player. 1.4.1 does not load on
+v0.113.0, and 1.5.0 requires it.
 
 ## What's new
 
-- Fixed card text showing raw code strings, including calculated damage values
-  and energy icons, when another mod adds cards to a card pool.
-- Corrupted Player cards exhausted from hand now burn in place instead of
-  disappearing before their flames play.
-- Corrupted Player displays return cards to the game's pool without leaving
-  stale entries or changing mouse behavior in your own hand.
-- Ring of the Viper no longer grants extra Artifact stacks based on party size.
-  Each corrupted Silent receives the intended amount in multiplayer.
+- Updated for public-beta v0.113.0 and BaseLib 3.4.8. Corrupted Players keep
+  their card choices, extra turns and targetable Osty, the Act 4 map stays
+  compact, and defeating the Architect still leads into the bound-party ending.
+- The Fool can now be a Corrupted Player. Its character buff is Discordant Bow:
+  12 Aim at the start of combat and 3 Aim at the end of each of its turns.
+- A Corrupted Player with arrows shows how many it has ready below its health
+  bar, next to its energy and stars.
+- Blitz runs end after Act 3; the Architect Act is not added to them.
 
 The internal ID, runtime filenames and installation folder remain `TheArchitect`.
 Update the existing installation; do not install this as a second mod.
@@ -24,7 +24,7 @@ matching versions across the entire party.
 
 ## Compatibility and limitations
 
-**Compatibility:** public-beta **v0.111.0**, BaseLib **3.4.5**.
+**Compatibility:** public-beta **v0.113.0**, BaseLib **3.4.8**.
 All co-op participants need matching versions. Disable other fourth-act mods.
 BaseLib must be installed separately.
 Downfall **0.1.16** remains optional; it is neither required nor bundled.
@@ -38,6 +38,6 @@ audited. Lineages are local, not Steam Cloud data. Changing hosts during an ongo
 Avoid force-closing during the result transition; full crash-transaction recovery
 is still tracked in issue #12.
 
-Use `TheArchitect-v1.4.1.zip` for manual installation, not GitHub's source archives.
+Use `TheArchitect-v1.5.0.zip` for manual installation, not GitHub's source archives.
 Extract its `TheArchitect` folder into the game's `mods` folder with the game
 closed. See `INSTALL.md` for details and `SHA256SUMS` for file hashes.

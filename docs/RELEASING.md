@@ -1,4 +1,20 @@
-# Publishing 1.4.1 - Act 4: Echos of the Past
+# Publishing 1.5.0 - Act 4: Echos of the Past
+
+## Preparing 1.5.0
+
+Version 1.5.0 updates the mod for Slay the Spire 2 public-beta **v0.113.0**
+(Steam build `26625880`, commit `16ac0fe3`) and BaseLib **3.4.8**, and adds the
+Fool as a Corrupted Player. 1.4.1 fails to load on v0.113.0 and 1.5.0 requires
+it, so publish only once the Workshop audience is on v0.113.0.
+
+The release is built from committed source; the bundle records the commit.
+The C# suites passed: 165 Corrupted Player tests and 193 Architect tests.
+Isolated native playtests on v0.113.0 passed for two-player parties, solo and
+party Architect wins and losses, Osty targeting, Violet Lotus enchantment reloads
+and every Fool card. Real networked co-op was not tested. After the full Fool
+card sweep, the later orb display death check still fails; ordinary fights
+pass it. Publication to Workshop item **3799307965** requires the author's
+approval.
 
 ## Published 1.4.1
 

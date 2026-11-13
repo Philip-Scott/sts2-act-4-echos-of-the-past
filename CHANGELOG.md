@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.0 Changes
 
 - Updated for Slay the Spire 2 public-beta v0.113.0 and BaseLib 3.4.8; 1.4.1
   fails to load on this game version. Corrupted Players keep their card choices,

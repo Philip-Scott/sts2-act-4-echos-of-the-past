@@ -1,11 +1,11 @@
-# Act 4: Echos of the Past 1.4.1
+# Act 4: Echos of the Past 1.5.0
 
 Previously named The Architect. This is the same mod and Workshop item:
 the internal ID, `TheArchitect` installation folder and saved lineages are unchanged.
 
 ## Requirements
 
-Slay the Spire 2 **public-beta v0.111.0** and **BaseLib 3.4.5**.
+Slay the Spire 2 **public-beta v0.113.0** and **BaseLib 3.4.8**.
 Later game or BaseLib releases are not automatically guaranteed compatible.
 For co-op, every participant must use matching game, mod and content versions.
 Disable other fourth-act mods, including Act4Heart.
