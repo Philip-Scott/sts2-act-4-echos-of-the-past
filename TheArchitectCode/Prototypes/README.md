@@ -12,17 +12,23 @@ It compares three directions without changing the installed mod:
 
 - A, Fading echo. Incomplete blue-gray afterimages behind a readable painted body.
 - B, Unraveling echo. A lower silhouette that frays into dusty smoke and costume scraps.
-- C, Shattered echo. Misaligned costume fragments with muted ivory fracture seams.
+- C, Bound shattered echo. Softer costume fractures inside the familiar ground
+  circle, side circles, and gold seals. The binding does not fracture with the body.
 
 Use the bottom arrows, left/right keys outside controls, or the three previews.
 `?variant=A`, `B`, or `C` selects a direction. `character=silent`, `ironclad`,
 `regent`, `necrobinder`, or `defect` selects the native art. `view=duel`, `study`,
 or `party` selects combat scale, close-up, or four-enemy composition.
 Intensity, pause, and hold-for-original controls help compare the effect.
+For C, fracture amount and circle strength are independent. The defaults are 40%
+fracture and 75% circles. Set either to zero to compare the other layer alone.
+`fracture=0` through `100` and `circles=0` through `100` preserve those settings in
+the URL. Circle geometry approximates the native back/front layers and ground sigil.
 The optional current Bound Echo reference is a browser approximation, not a capture.
 The state panel records the current selection and outlines possible Godot implementations.
 
-No direction has been selected. These Canvas effects do not establish native shader
+The user wants to retain the current ground and side circles. Shattered echo is
+still under review, not approved for production. These Canvas effects do not establish native shader
 cost, Spine compatibility, or final fracture placement. Health bars are illustrative
 and stay outside the effects. Prototype art is for local visual comparison with the
 installed game, not a new game-asset distribution or production UI.

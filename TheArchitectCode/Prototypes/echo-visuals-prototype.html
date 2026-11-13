@@ -1,6 +1,7 @@
 <!doctype html>
 <!-- THROWAWAY: Which of three painterly Echo treatments fits native combat art?
      Open directly. ?variant=A|B|C&character=silent&view=duel|party|study.
+     C keeps the native-style binding circles; fracture and circles are independent.
      Native idle-frame captures, live Canvas effects. No production hooks or saves. -->
 <html lang="en">
 <head>
@@ -124,7 +125,7 @@
       </button>
       <button class="study" data-variant="C" aria-pressed="false">
         <canvas id="thumb-C" width="560" height="310" aria-label="Shattered echo preview"></canvas>
-        <span class="study-text"><strong>C. Shattered echo</strong><small>Broken reflection / separated fragments</small></span>
+        <span class="study-text"><strong>C. Bound shattered echo</strong><small>Quieter fractures / familiar binding circles</small></span>
       </button>
     </div>
   </section>
@@ -138,8 +139,13 @@
     </div>
     <div class="label">Character <output id="character-label">Silent</output></div>
     <div class="characters" id="characters" aria-label="Choose a native character"></div>
-    <label class="label" for="strength">Effect intensity <output id="strength-label">70%</output></label>
+    <label class="label" for="strength"><span id="strength-title">Effect intensity</span> <output id="strength-label">70%</output></label>
     <input id="strength" type="range" min="0" max="100" value="70">
+    <div id="binding-controls" hidden>
+      <label class="label" for="circles">Circle strength <output id="circles-label">75%</output></label>
+      <input id="circles" type="range" min="0" max="100" value="75">
+      <p class="note">Set fractures to 0 for circles only. Set circles to 0 to compare the body without its binding.</p>
+    </div>
     <div class="actions">
       <button id="pause" aria-pressed="false">Pause</button>
       <button id="original" aria-pressed="false">Hold for original</button>
@@ -150,7 +156,7 @@
         <option value="current">Current Bound Echo approximation</option>
       </select>
     </label>
-    <p class="note">No scan lines, RGB splits, orbiting cages, or constant bright bloom in the new directions. Health bars stay outside every effect.</p>
+    <p class="note">C keeps the ground circle, body circles, and gold seals. Only the body fractures; the binding stays intact. No scan lines or RGB splits. Health bars stay outside every effect.</p>
     <details>
       <summary>Prototype state and implementation notes</summary>
       <pre id="state"></pre>
@@ -184,17 +190,19 @@ const variants = {
     implementation: "Candidate: a composed-body erosion mask with a few body-relative smoke particles and masked costume fragments. Keep the head readable and cap the affected area to the lower third."
   },
   C: {
-    name: "Shattered echo", direction: "Direction C / broken reflection",
-    description: "The same character, split into a handful of misaligned pieces. Dull ivory cracks cross the painted body. Detached fragments retain pieces of the costume instead of becoming colored lights.",
-    fit: "Chipped, uneven facets, restrained bone-gold seams, and deep blue-gray reflections. No digital slice bands.",
-    tradeoff: "The most explicit broken-memory theme. Fracture placement would need review on unusual character shapes.",
-    implementation: "Candidate: a small set of polygon masks over the composed body, with independent offsets and alpha-clipped seams. Keep fracture geometry outside health bars, intents, pets, and orbs."
+    name: "Bound shattered echo", direction: "Direction C / fractured body + binding",
+    description: "The ground circle and the circles beside the character remain. Inside them, the painted body splits along faint ivory seams. The pieces shift slightly while the binding stays whole.",
+    fit: "Retains the familiar rose-colored circles and gold seals. The softer default fractures preserve more of the costume and silhouette.",
+    tradeoff: "The circles already communicate corruption. The body may need only a few cracks, rather than visibly separated pieces. Compare each layer on its own.",
+    implementation: "Candidate: keep CorruptedPlayerBinding's independent back/front circles and ground sigil. Apply the fracture masks only to the composed body. The browser approximates the native geometry and layering; it does not change the game."
   }
 };
 const characters = [
-  { id: "ironclad", name: "Ironclad" }, { id: "silent", name: "Silent" },
-  { id: "regent", name: "Regent" }, { id: "necrobinder", name: "Necrobinder" },
-  { id: "defect", name: "Defect" }
+  { id: "ironclad", name: "Ironclad", bounds: [156, 199, 206, 270] },
+  { id: "silent", name: "Silent", bounds: [144, 124, 224, 345] },
+  { id: "regent", name: "Regent", bounds: [160, 65, 194, 405] },
+  { id: "necrobinder", name: "Necrobinder", bounds: [172, 240, 172, 226] },
+  { id: "defect", name: "Defect", bounds: [152, 133, 208, 337] }
 ];
 const keys = Object.keys(variants);
 const initial = new URLSearchParams(location.search);
@@ -202,6 +210,11 @@ let variant = keys.includes(initial.get("variant")) ? initial.get("variant") : "
 let character = characters.some(c => c.id === initial.get("character")) ? initial.get("character") : "silent";
 let view = ["duel", "study", "party"].includes(initial.get("view")) ? initial.get("view") : "duel";
 let strength = .7, paused = matchMedia("(prefers-reduced-motion: reduce)").matches, holding = false;
+function amount(params, key, fallback) {
+  const value = Number(params.get(key));
+  return params.has(key) && Number.isFinite(value) ? Math.max(0, Math.min(100, value)) / 100 : fallback;
+}
+let fracture = amount(initial, "fracture", .4), circles = amount(initial, "circles", .75);
 let reference = "native", time = 3.5, last = 0, ready = false;
 const arena = $("arena"), ctx = arena.getContext("2d");
 const art = new Map(), frames = new Map(), thumbs = keys.map(k => $("thumb-" + k).getContext("2d"));
@@ -242,7 +255,7 @@ const shardPolygons = [
   [[0,384],[188,411],[242,365],[264,512],[0,512]],
   [[242,365],[303,379],[350,427],[512,408],[512,512],[264,512]]
 ];
-function prepare(image) {
+function prepare(image, bounds) {
   const body = colored(image, "#68787a", .10, "saturate(.8)");
   const ghost = colored(image, "#a9b5b4", .5, "grayscale(.8) contrast(.8)");
   const dark = colored(image, "#544b60", .7, "saturate(.25) brightness(.65)");
@@ -264,7 +277,7 @@ function prepare(image) {
     polygon(c, points); c.stroke();
     return piece;
   });
-  return { image, body, ghost, faded, dark, shards };
+  return { image, body, ghost, faded, dark, shards, bounds };
 }
 function smoke(c, x, y, size, alpha, color) {
   c.save(); c.globalAlpha *= alpha; c.fillStyle = color;
@@ -365,28 +378,64 @@ function currentEffect(source, target, t) {
   scratchCtx.globalCompositeOperation="destination-in"; scratchCtx.drawImage(source.image,0,0);
   scratchCtx.globalCompositeOperation="source-over";
   c.globalAlpha=.13; c.drawImage(scratch,0,0); c.globalAlpha=1;
-  c.save(); c.translate(256,298); c.rotate(Math.sin(t*.35)*.3);
-  c.strokeStyle = "#bd8ca5"; c.globalAlpha = .75; c.lineWidth = 2;
-  c.beginPath(); c.ellipse(0,0,172,78,0,0,Math.PI*2); c.stroke();
-  c.beginPath(); c.ellipse(0,0,123,170,0,0,Math.PI*2); c.stroke();
-  for(let i=0;i<6;i++) {
-    const angle=i*Math.PI/3+t*.45, x=Math.cos(angle)*172, y=Math.sin(angle)*78;
-    polygon(c,[[x,y-5],[x+5,y],[x,y+5],[x-5,y]]);
-    c.fillStyle="#dab46a"; c.fill();
+}
+const coloredCurrent = new Map(), currentFrame = surface();
+function drawBinding(c, bounds, t, opacity, front) {
+  if (opacity === 0) return;
+  const [left, top, width, height] = bounds;
+  const cx = left + width * .5, cy = top + height * .55, floor = top + height - 2;
+  const rx = width * .75, ry = height * .24, tilt = .35 * Math.sin(t * .35);
+  const weight = Math.max(1.1, Math.min(2.4, height * .006));
+  const start = front ? 0 : Math.PI;
+  c.save();
+  function stroke(alpha = 1) {
+    c.strokeStyle = "#d692ae";
+    c.globalAlpha = opacity * .72 * alpha * .12; c.lineWidth = weight * 4; c.stroke();
+    c.globalAlpha = opacity * .72 * alpha; c.lineWidth = weight; c.stroke();
+  }
+  if (!front) {
+    c.beginPath(); c.ellipse(cx, floor, rx, height * .045, 0, 0, Math.PI * 2); stroke();
+    c.beginPath();
+    for (let i = 0; i < 12; i++) {
+      const angle = Math.PI * 2 * i / 12 + t * .2;
+      c.moveTo(cx + Math.cos(angle) * rx * .78, floor + Math.sin(angle) * height * .045 * .78);
+      c.lineTo(cx + Math.cos(angle) * rx * .90, floor + Math.sin(angle) * height * .045 * .90);
+    }
+    stroke();
+  }
+  c.beginPath(); c.ellipse(cx, cy, rx, ry, tilt, start, start + Math.PI); stroke();
+  const verticalStart = front ? Math.PI / 2 : -Math.PI / 2;
+  c.beginPath(); c.ellipse(cx, top + height * .5, width * .53, height * .52, 0, verticalStart, verticalStart + Math.PI); stroke(.65);
+  const sealSize = Math.max(3, Math.min(7, height * .022));
+  for (let i = 0; i < 6; i++) {
+    const angle = t * .45 + Math.PI * 2 * i / 6;
+    if ((Math.sin(angle) >= 0) !== front) continue;
+    const ex = Math.cos(angle) * rx, ey = Math.sin(angle) * ry;
+    const x = cx + ex * Math.cos(tilt) - ey * Math.sin(tilt);
+    const y = cy + ex * Math.sin(tilt) + ey * Math.cos(tilt);
+    polygon(c, [[x,y-sealSize],[x+sealSize,y],[x,y+sealSize],[x-sealSize,y]]);
+    c.globalAlpha = opacity * .9; c.strokeStyle = "#ffb859"; c.lineWidth = weight * 1.25; c.stroke();
+    c.fillStyle = "#ffb859"; c.beginPath(); c.arc(x, y, weight * .7, 0, Math.PI * 2); c.fill();
   }
   c.restore();
 }
-const coloredCurrent = new Map(), currentFrame = surface();
+function bindingFor(id, key) {
+  return key === "C" && !holding ? { bounds: art.get(id).bounds, opacity: circles, time } : null;
+}
 function shadow(context, x, y, scale = 1) {
   context.save(); context.translate(x,y); context.scale(scale,scale);
   const grad = context.createRadialGradient(0,0,2,0,0,130);
   grad.addColorStop(0,"#090c0ac4"); grad.addColorStop(1,"#090c0a00");
   context.scale(1,.15); context.fillStyle=grad; context.fillRect(-135,-135,270,270); context.restore();
 }
-function drawActor(context, image, x, floor, size, facingLeft = true) {
+function drawActor(context, image, x, floor, size, facingLeft = true, binding = null) {
   shadow(context,x,floor,size/512);
   context.save(); context.translate(x,floor); context.scale(facingLeft ? -1 : 1,1);
-  context.drawImage(image,-size/2,-size*470/512,size,size); context.restore();
+  context.scale(size/512,size/512); context.translate(-256,-470);
+  if (binding) drawBinding(context,binding.bounds,binding.time,binding.opacity,false);
+  context.drawImage(image,0,0,512,512);
+  if (binding) drawBinding(context,binding.bounds,binding.time,binding.opacity,true);
+  context.restore();
 }
 function health(context, x, y, width, value, name) {
   context.save(); context.textAlign = "center";
@@ -414,7 +463,7 @@ function renderArena(s, t) {
     const party = [character,...characters.map(c=>c.id).filter(id=>id!==character)].slice(0,4);
     party.forEach((id,i) => {
       const x=260+i*360, floor=690+(i%2)*18;
-      drawActor(ctx, holding ? art.get(id).image : frames.get(id)[variant],x,floor,410);
+      drawActor(ctx, holding ? art.get(id).image : frames.get(id)[variant],x,floor,410,true,bindingFor(id,variant));
       health(ctx,x,floor+32,190,"120 / 120",characters.find(c=>c.id===id).name+" echo");
     });
     sceneLabel("FOUR ECHOES / " + variants[variant].name.toUpperCase(),800,75);
@@ -422,8 +471,9 @@ function renderArena(s, t) {
     const close=view==="study", floor=close?737:694, size=close?650:510, lx=close?430:390, rx=close?1170:1170;
     let ref = source.image;
     if(reference==="current") { currentEffect(source,currentFrame,t); ref=currentFrame; }
-    drawActor(ctx,ref,lx,floor,size,false);
-    drawActor(ctx,holding ? source.image : frame,rx,floor,size);
+    const referenceBinding = reference === "current" ? { bounds: source.bounds, opacity: .75, time: t } : null;
+    drawActor(ctx,ref,lx,floor,size,false,referenceBinding);
+    drawActor(ctx,holding ? source.image : frame,rx,floor,size,true,bindingFor(character,variant));
     health(ctx,lx,floor+36,225,"70 / 70",name);
     health(ctx,rx,floor+36,225,"140 / 140",name+" echo");
     sceneLabel(reference==="current" ? "CURRENT BOUND ECHO / APPROXIMATION" : "ORIGINAL CHARACTER",lx,65);
@@ -436,13 +486,16 @@ function renderThumbs() {
   keys.forEach((key,i) => {
     const c=thumbs[i]; c.clearRect(0,0,560,310); c.fillStyle="#292f29"; c.fillRect(0,0,560,310);
     c.globalAlpha=.18; c.drawImage(background,0,300,1600,600,0,0,560,310); c.globalAlpha=1;
-    drawActor(c,frames.get(character)[key],278,291,340);
+    drawActor(c,frames.get(character)[key],278,291,340,true,bindingFor(character,key));
   });
 }
 function updateState() {
   $("state").textContent=JSON.stringify({
     throwaway:true, variant, treatment:variants[variant].name, character, view,
     intensity:Math.round(strength*100), paused, originalBypass:holding, reference,
+    fractureAmount:Math.round(fracture*100), circleStrength:Math.round(circles*100),
+    bindingApplied:variant==="C" && circles>0 && !holding,
+    bindingGeometry:"Independent ground sigil and back/front body circles, approximating production",
     nativeArt:"Flattened native idle frame, not live Spine animation",
     palette:{ A:"dusty blue-gray / old ivory",B:"soot / dusty plum",C:"bone-gold / slate" }[variant],
     productionChanged:false
@@ -451,6 +504,7 @@ function updateState() {
 function syncURL() {
   const url = new URL(location.href);
   url.searchParams.set("variant",variant); url.searchParams.set("character",character); url.searchParams.set("view",view);
+  url.searchParams.set("fracture",Math.round(fracture*100)); url.searchParams.set("circles",Math.round(circles*100));
   history.replaceState(null,"",url);
 }
 function renderUI() {
@@ -458,7 +512,11 @@ function renderUI() {
   for(const key of ["name","direction","description","fit","tradeoff","implementation"]) $(key).textContent=choice[key];
   $("current").textContent=variant+" / "+choice.name;
   $("character-label").textContent=characters.find(c=>c.id===character).name;
-  $("strength-label").textContent=Math.round(strength*100)+"%";
+  $("strength-title").textContent=variant==="C"?"Fracture amount":"Effect intensity";
+  $("strength").value=Math.round((variant==="C"?fracture:strength)*100);
+  $("strength-label").textContent=$("strength").value+"%";
+  $("binding-controls").hidden=variant!=="C";
+  $("circles").value=Math.round(circles*100); $("circles-label").textContent=$("circles").value+"%";
   $("pause").textContent=paused?"Resume":"Pause"; $("pause").setAttribute("aria-pressed",String(paused));
   $("original").setAttribute("aria-pressed",String(holding));
   $("scene-label").textContent=view==="study"?"Neutral light / enlarged character":"The Architect's workshop";
@@ -477,7 +535,7 @@ function frame(stamp) {
     const ids=view==="party"?characters.map(c=>c.id):[character];
     for(const id of ids) {
       const source=art.get(id);
-      for(const key of keys) renderEffect(source,key,holding?0:strength,time,frames.get(id)[key]);
+      for(const key of keys) renderEffect(source,key,holding?0:key==="C"?fracture:strength,time,frames.get(id)[key]);
     }
     renderArena(holding?0:strength,time); renderThumbs();
   }
@@ -493,7 +551,11 @@ characters.forEach(entry => {
 document.querySelectorAll("[data-variant]").forEach(b=>b.addEventListener("click",()=>{variant=b.dataset.variant;syncURL();renderUI();}));
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{view=b.dataset.view;syncURL();renderUI();}));
 $("previous").addEventListener("click",()=>cycle(-1)); $("next").addEventListener("click",()=>cycle(1));
-$("strength").addEventListener("input",e=>{strength=Number(e.target.value)/100;renderUI();});
+$("strength").addEventListener("input",e=>{
+  if(variant==="C") fracture=Number(e.target.value)/100; else strength=Number(e.target.value)/100;
+  syncURL();renderUI();
+});
+$("circles").addEventListener("input",e=>{circles=Number(e.target.value)/100;syncURL();renderUI();});
 $("pause").addEventListener("click",()=>{paused=!paused;renderUI();});
 $("reference").addEventListener("change",e=>{reference=e.target.value;renderUI();});
 function hold(value) { holding=value;renderUI(); }
@@ -512,14 +574,15 @@ window.addEventListener("popstate",()=>{
   const p=new URLSearchParams(location.search);
   variant=keys.includes(p.get("variant"))?p.get("variant"):"A";
   character=characters.some(c=>c.id===p.get("character"))?p.get("character"):"silent";
-  view=["duel","study","party"].includes(p.get("view"))?p.get("view"):"duel";renderUI();
+  view=["duel","study","party"].includes(p.get("view"))?p.get("view"):"duel";
+  fracture=amount(p,"fracture",.4); circles=amount(p,"circles",.75);renderUI();
 });
 renderUI();
 Promise.all([
   loadImage(background,"echo-visuals-prototype-assets/workshop.jpg"),
   ...characters.map(async entry=>{
     const image=await loadImage(new Image(),`echo-visuals-prototype-assets/${entry.id}.png`);
-    art.set(entry.id,prepare(image)); frames.set(entry.id,Object.fromEntries(keys.map(k=>[k,surface()])));
+    art.set(entry.id,prepare(image,entry.bounds)); frames.set(entry.id,Object.fromEntries(keys.map(k=>[k,surface()])));
     coloredCurrent.set(entry.id,colored(image,"#743bba",.75));
   })
 ]).then(()=>{ready=true;}).catch(error=>{$("error").hidden=false;$("error").textContent=error.message;});
