@@ -3,8 +3,8 @@
 ## Painterly Echo visual study
 
 Open [echo-visuals-prototype.html](echo-visuals-prototype.html) directly in a browser,
-or use the local server command below. Keep its `echo-visuals-prototype-assets/`
-folder beside the HTML file. No build or installation is required.
+or use the local server command below. Keep `echo-visuals-prototype-assets/` and
+`echo-circle-studies/` beside the HTML file. No build or installation is required.
 
 This throwaway study uses native character idle-frame captures and an empty native
 workshop background. Only the proposed browser effects animate, not the character rigs.
@@ -29,6 +29,17 @@ double ground circle, and faceted gold seals with dark insets. Only small highli
 move along the painted bands; the worn edges do not flicker. The Circle artwork
 selector compares this with the previous thin circles. `circleStyle=etched` or
 `circleStyle=current` preserves that comparison in the URL.
+
+The model comparison adds three independently authored circle renderers, built by
+GPT-6.1 Sol, GPT-6 Astra, and Claude Opus 5.5. Open
+`echo-visuals-prototype.html?variant=C&view=circles` to see them side by side with the
+same native character, time, circle strength, and fracture amount. This view starts
+with fractures disabled unless `fracture` is specified. `circleStyle=sol`,
+`circleStyle=astra`, or `circleStyle=opus` selects a study. Click its preview to
+inspect it close up, or use the floating arrows to switch model studies. The
+character, party, pause, original bypass, and independent strength controls still
+apply. The two previous circle styles remain available as baselines.
+
 The optional current Bound Echo reference is a browser approximation, not a capture.
 The state panel records the current selection and outlines possible Godot implementations.
 

@@ -1,6 +1,7 @@
 <!doctype html>
 <!-- THROWAWAY: Which of three painterly Echo treatments fits native combat art?
-     Open directly. ?variant=A|B|C&character=silent&view=duel|party|study.
+     Open directly. ?variant=A|B|C&character=silent&view=duel|party|study|circles.
+     Three model-authored binding-circle studies use ?variant=C&view=circles.
      C keeps the native-style binding circles; fracture and circles are independent.
      Native idle-frame captures, live Canvas effects. No production hooks or saves. -->
 <html lang="en">
@@ -28,7 +29,7 @@
   .badge { padding: 7px 12px; border: 1px solid var(--line); font-size: 10px; color: var(--muted); letter-spacing: 1px; white-space: nowrap; }
   main { display: grid; grid-template-columns: minmax(0, 1fr) 278px; gap: 30px; align-items: start; }
   .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-  .segmented { display: flex; gap: 4px; }
+  .segmented { display: flex; gap: 4px; flex-wrap: wrap; }
   .segmented button { font-size: 11px; padding: 6px 11px; }
   .toolbar > span { font-size: 11px; color: var(--muted); }
   .arena { position: relative; border: 1px solid #756b50; background: #252421; }
@@ -103,6 +104,7 @@
         <button data-view="duel" aria-pressed="true">Combat scale</button>
         <button data-view="study" aria-pressed="false">Close-up</button>
         <button data-view="party" aria-pressed="false">Party of four</button>
+        <button data-view="circles" aria-pressed="false">Compare models</button>
       </div>
       <span id="scene-label">The Architect's workshop</span>
     </div>
@@ -114,7 +116,7 @@
       <span id="comparison-label">Left: original colors. Right: corrupted Echo.</span>
       <span>Native idle stills. Only the proposed effects animate.</span>
     </div>
-    <div class="studies" aria-label="Compare the three directions">
+    <div class="studies" id="body-studies" aria-label="Compare the three body directions">
       <button class="study" data-variant="A" aria-pressed="true">
         <canvas id="thumb-A" width="560" height="310" aria-label="Fading echo preview"></canvas>
         <span class="study-text"><strong>A. Fading echo</strong><small>Trailing memories / least intrusive</small></span>
@@ -126,6 +128,20 @@
       <button class="study" data-variant="C" aria-pressed="false">
         <canvas id="thumb-C" width="560" height="310" aria-label="Shattered echo preview"></canvas>
         <span class="study-text"><strong>C. Bound shattered echo</strong><small>Quieter fractures / familiar binding circles</small></span>
+      </button>
+    </div>
+    <div class="studies" id="circle-studies" aria-label="Compare model-authored circle treatments" hidden>
+      <button class="study" data-circle-study="sol" aria-pressed="false">
+        <canvas id="circle-sol" width="560" height="310" aria-label="GPT-6.1 Sol circle treatment"></canvas>
+        <span class="study-text"><strong id="circle-sol-name">Sol study</strong><small>GPT-6.1 Sol</small></span>
+      </button>
+      <button class="study" data-circle-study="astra" aria-pressed="false">
+        <canvas id="circle-astra" width="560" height="310" aria-label="GPT-6 Astra circle treatment"></canvas>
+        <span class="study-text"><strong id="circle-astra-name">Astra study</strong><small>GPT-6 Astra</small></span>
+      </button>
+      <button class="study" data-circle-study="opus" aria-pressed="false">
+        <canvas id="circle-opus" width="560" height="310" aria-label="Claude Opus 5.5 circle treatment"></canvas>
+        <span class="study-text"><strong id="circle-opus-name">Opus study</strong><small>Claude Opus 5.5</small></span>
       </button>
     </div>
   </section>
@@ -144,6 +160,9 @@
     <div id="binding-controls" hidden>
       <label class="reference">Circle artwork
         <select id="circle-style">
+          <option value="sol">GPT-6.1 Sol study</option>
+          <option value="astra">GPT-6 Astra study</option>
+          <option value="opus">Claude Opus 5.5 study</option>
           <option value="etched">Etched binding</option>
           <option value="current">Current thin circles</option>
         </select>
@@ -162,7 +181,7 @@
         <option value="current">Current Bound Echo approximation</option>
       </select>
     </label>
-    <p class="note">The new circles use worn brush strokes, an inscribed ground sigil, and faceted gold seals. Only the body fractures; the binding stays intact. Health bars stay outside every effect.</p>
+    <p class="note">The three model studies share the same native character, time, circle strength, and fracture amount. Only the circle artwork changes. The previous etched and thin circles remain available for comparison.</p>
     <details>
       <summary>Prototype state and implementation notes</summary>
       <pre id="state"></pre>
@@ -175,8 +194,11 @@
   <button id="previous" aria-label="Previous visual treatment">&larr;</button>
   <output id="current" aria-live="polite">A / Fading echo</output>
   <button id="next" aria-label="Next visual treatment">&rarr;</button>
-  <small>Arrow keys switch treatments</small>
+  <small id="switcher-hint">Arrow keys switch treatments</small>
 </nav>
+<script src="echo-circle-studies/sol.js"></script>
+<script src="echo-circle-studies/astra.js"></script>
+<script src="echo-circle-studies/opus.js"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -211,20 +233,26 @@ const characters = [
   { id: "defect", name: "Defect", bounds: [152, 133, 208, 337] }
 ];
 const keys = Object.keys(variants);
+const circleModels = { sol: "GPT-6.1 Sol", astra: "GPT-6 Astra", opus: "Claude Opus 5.5" };
+const circleKeys = Object.keys(circleModels), circleStyles = [...circleKeys, "etched", "current"];
+const circleStudies = window.EchoCircleStudies ?? {};
 const initial = new URLSearchParams(location.search);
 let variant = keys.includes(initial.get("variant")) ? initial.get("variant") : "A";
 let character = characters.some(c => c.id === initial.get("character")) ? initial.get("character") : "silent";
-let view = ["duel", "study", "party"].includes(initial.get("view")) ? initial.get("view") : "duel";
+let view = ["duel", "study", "party", "circles"].includes(initial.get("view")) ? initial.get("view") : "duel";
+if (view === "circles") variant = "C";
 let strength = .7, paused = matchMedia("(prefers-reduced-motion: reduce)").matches, holding = false;
 function amount(params, key, fallback) {
   const value = Number(params.get(key));
   return params.has(key) && Number.isFinite(value) ? Math.max(0, Math.min(100, value)) / 100 : fallback;
 }
-let fracture = amount(initial, "fracture", .4), circles = amount(initial, "circles", .75);
-let circleStyle = initial.get("circleStyle") === "current" ? "current" : "etched";
+let fracture = amount(initial, "fracture", view === "circles" ? 0 : .4), circles = amount(initial, "circles", .75);
+let circleStyle = circleStyles.includes(initial.get("circleStyle")) ? initial.get("circleStyle") : view === "circles" ? "sol" : "etched";
+if (view === "circles" && !circleKeys.includes(circleStyle)) circleStyle = "sol";
 let reference = "native", time = 3.5, last = 0, ready = false;
 const arena = $("arena"), ctx = arena.getContext("2d");
 const art = new Map(), frames = new Map(), thumbs = keys.map(k => $("thumb-" + k).getContext("2d"));
+const circleThumbs = Object.fromEntries(circleKeys.map(key => [key, $("circle-" + key).getContext("2d")]));
 const background = new Image();
 
 function surface(width = 512, height = width) {
@@ -519,6 +547,10 @@ function drawEtchedBinding(c, bounds, t, opacity, front) {
   c.restore();
 }
 function drawBinding(c, binding, front) {
+  if (circleKeys.includes(binding.style)) {
+    circleStudies[binding.style].draw(c, binding.bounds, binding.time, binding.opacity, front);
+    return;
+  }
   const draw = binding.style === "current" ? drawCurrentBinding : drawEtchedBinding;
   draw(c, binding.bounds, binding.time, binding.opacity, front);
 }
@@ -562,7 +594,17 @@ function renderArena(s, t) {
   } else ctx.drawImage(background,0,0,1600,900);
   const frame = frames.get(character)[variant], source = art.get(character);
   const name = characters.find(c=>c.id===character).name;
-  if (view === "party") {
+  if (view === "circles") {
+    circleKeys.forEach((key, index) => {
+      const x = 280 + index * 520, floor = 750;
+      const binding = holding ? null : { bounds: source.bounds, opacity: circles, time: t, style: key };
+      drawActor(ctx, holding ? source.image : frames.get(character).C, x, floor, 610, true, binding);
+      sceneLabel(circleModels[key], x, 66);
+      sceneLabel(circleStudies[key].name, x, 98);
+      health(ctx, x, floor + 36, 210, "140 / 140", name + " echo");
+      if (key === circleStyle) line(ctx, [[x-130,124],[x+130,124]], "#c9b17d", 2);
+    });
+  } else if (view === "party") {
     const party = [character,...characters.map(c=>c.id).filter(id=>id!==character)].slice(0,4);
     party.forEach((id,i) => {
       const x=260+i*360, floor=690+(i%2)*18;
@@ -580,12 +622,22 @@ function renderArena(s, t) {
     health(ctx,lx,floor+36,225,"70 / 70",name);
     health(ctx,rx,floor+36,225,"140 / 140",name+" echo");
     sceneLabel(reference==="current" ? "CURRENT BOUND ECHO / APPROXIMATION" : "ORIGINAL CHARACTER",lx,65);
-    sceneLabel(holding ? "ORIGINAL / EFFECT BYPASSED" : variant+" / "+variants[variant].name.toUpperCase(),rx,65);
+    const treatment = variant==="C" && circleStudies[circleStyle] ? circleStudies[circleStyle].name : variants[variant].name;
+    sceneLabel(holding ? "ORIGINAL / EFFECT BYPASSED" : variant+" / "+treatment.toUpperCase(),rx,65);
   }
   ctx.save(); ctx.font="12px system-ui"; ctx.textAlign="left"; ctx.fillStyle="#d6c9ac99";
   ctx.fillText("VISUAL STUDY / NO COMBAT OR HUD CHANGES",25,870); ctx.restore();
 }
 function renderThumbs() {
+  if (view === "circles") {
+    circleKeys.forEach(key => {
+      const c = circleThumbs[key]; c.clearRect(0,0,560,310); c.fillStyle="#292f29"; c.fillRect(0,0,560,310);
+      c.globalAlpha=.18; c.drawImage(background,0,300,1600,600,0,0,560,310); c.globalAlpha=1;
+      const binding = holding ? null : { bounds: art.get(character).bounds, opacity: circles, time, style: key };
+      drawActor(c,frames.get(character).C,278,291,340,true,binding);
+    });
+    return;
+  }
   keys.forEach((key,i) => {
     const c=thumbs[i]; c.clearRect(0,0,560,310); c.fillStyle="#292f29"; c.fillRect(0,0,560,310);
     c.globalAlpha=.18; c.drawImage(background,0,300,1600,600,0,0,560,310); c.globalAlpha=1;
@@ -598,6 +650,8 @@ function updateState() {
     intensity:Math.round(strength*100), paused, originalBypass:holding, reference,
     fractureAmount:Math.round(fracture*100), circleStrength:Math.round(circles*100),
     circleArtwork:circleStyle,
+    circleAuthor:circleModels[circleStyle] ?? null,
+    circleConcept:circleStudies[circleStyle]?.name ?? null,
     bindingApplied:variant==="C" && circles>0 && !holding,
     bindingGeometry:"Independent ground sigil and back/front body circles, approximating production",
     nativeArt:"Flattened native idle frame, not live Spine animation",
@@ -615,7 +669,26 @@ function syncURL() {
 function renderUI() {
   const choice=variants[variant];
   for(const key of ["name","direction","description","fit","tradeoff","implementation"]) $(key).textContent=choice[key];
-  $("current").textContent=variant+" / "+choice.name;
+  const study = variant==="C" ? circleStudies[circleStyle] : null;
+  if (study) {
+    $("name").textContent=study.name;
+    $("direction").textContent=circleModels[circleStyle]+" / circle study";
+    $("description").textContent=study.description;
+    $("fit").textContent="Independent artwork from "+circleModels[circleStyle]+". Compare against the other models with the same character, strength, and lighting.";
+    $("implementation").textContent="An independently authored Canvas renderer for the ground and back/front body circles. The model study does not change the body shader, native game, or installed mod.";
+  }
+  $("current").textContent=study?"Circles / "+circleModels[circleStyle]:variant+" / "+choice.name;
+  $("switcher-hint").textContent=study?"Arrow keys select a circle study":"Arrow keys switch body treatments";
+  $("body-studies").hidden=view==="circles"; $("circle-studies").hidden=view!=="circles";
+  for (const key of circleKeys) {
+    const concept=circleStudies[key];
+    if (concept) {
+      $("circle-"+key+"-name").textContent=concept.name;
+      const option=$("circle-style").querySelector(`option[value="${key}"]`);
+      option.textContent=circleModels[key]+" / "+concept.name;
+    }
+    document.querySelector(`[data-circle-study="${key}"]`).setAttribute("aria-pressed",String(circleStyle===key));
+  }
   $("character-label").textContent=characters.find(c=>c.id===character).name;
   $("strength-title").textContent=variant==="C"?"Fracture amount":"Effect intensity";
   $("strength").value=Math.round((variant==="C"?fracture:strength)*100);
@@ -626,14 +699,18 @@ function renderUI() {
   $("pause").textContent=paused?"Resume":"Pause"; $("pause").setAttribute("aria-pressed",String(paused));
   $("original").setAttribute("aria-pressed",String(holding));
   $("scene-label").textContent=view==="study"?"Neutral light / enlarged character":"The Architect's workshop";
-  $("comparison-label").textContent=view==="party"?"Four enemies, one treatment. Character selection changes the first slot.":
+  $("comparison-label").textContent=view==="circles"?"Same character and settings. Click a model preview for a close-up.":view==="party"?"Four enemies, one treatment. Character selection changes the first slot.":
     `Left: ${reference==="native"?"original colors":"current effect approximation"}. Right: selected Echo.`;
   document.querySelectorAll("[data-variant]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.variant===variant)));
   document.querySelectorAll("[data-character]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.character===character)));
   document.querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===view)));
   updateState();
 }
-function cycle(delta) { variant=keys[(keys.indexOf(variant)+delta+keys.length)%keys.length]; syncURL(); renderUI(); }
+function cycle(delta) {
+  if(variant==="C" && circleKeys.includes(circleStyle)) circleStyle=circleKeys[(circleKeys.indexOf(circleStyle)+delta+circleKeys.length)%circleKeys.length];
+  else variant=keys[(keys.indexOf(variant)+delta+keys.length)%keys.length];
+  syncURL(); renderUI();
+}
 function frame(stamp) {
   const delta=last?Math.min((stamp-last)/1000,.05):0; last=stamp;
   if(!paused) time+=delta;
@@ -655,14 +732,25 @@ characters.forEach(entry => {
   button.append(image,label); button.addEventListener("click",()=>{character=entry.id;syncURL();renderUI();}); $("characters").append(button);
 });
 document.querySelectorAll("[data-variant]").forEach(b=>b.addEventListener("click",()=>{variant=b.dataset.variant;syncURL();renderUI();}));
-document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{view=b.dataset.view;syncURL();renderUI();}));
+document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{
+  view=b.dataset.view;
+  if(view==="circles"){variant="C";if(!circleKeys.includes(circleStyle))circleStyle="sol";}
+  syncURL();renderUI();
+}));
+document.querySelectorAll("[data-circle-study]").forEach(b=>b.addEventListener("click",()=>{
+  circleStyle=b.dataset.circleStudy;variant="C";view="study";syncURL();renderUI();
+}));
 $("previous").addEventListener("click",()=>cycle(-1)); $("next").addEventListener("click",()=>cycle(1));
 $("strength").addEventListener("input",e=>{
   if(variant==="C") fracture=Number(e.target.value)/100; else strength=Number(e.target.value)/100;
   syncURL();renderUI();
 });
 $("circles").addEventListener("input",e=>{circles=Number(e.target.value)/100;syncURL();renderUI();});
-$("circle-style").addEventListener("change",e=>{circleStyle=e.target.value;syncURL();renderUI();});
+$("circle-style").addEventListener("change",e=>{
+  circleStyle=e.target.value;
+  if(view==="circles"&&!circleKeys.includes(circleStyle))view="study";
+  syncURL();renderUI();
+});
 $("pause").addEventListener("click",()=>{paused=!paused;renderUI();});
 $("reference").addEventListener("change",e=>{reference=e.target.value;renderUI();});
 function hold(value) { holding=value;renderUI(); }
@@ -681,9 +769,11 @@ window.addEventListener("popstate",()=>{
   const p=new URLSearchParams(location.search);
   variant=keys.includes(p.get("variant"))?p.get("variant"):"A";
   character=characters.some(c=>c.id===p.get("character"))?p.get("character"):"silent";
-  view=["duel","study","party"].includes(p.get("view"))?p.get("view"):"duel";
-  fracture=amount(p,"fracture",.4); circles=amount(p,"circles",.75);
-  circleStyle=p.get("circleStyle")==="current"?"current":"etched";renderUI();
+  view=["duel","study","party","circles"].includes(p.get("view"))?p.get("view"):"duel";
+  if(view==="circles")variant="C";
+  fracture=amount(p,"fracture",view==="circles"?0:.4); circles=amount(p,"circles",.75);
+  circleStyle=circleStyles.includes(p.get("circleStyle"))?p.get("circleStyle"):view==="circles"?"sol":"etched";
+  if(view==="circles"&&!circleKeys.includes(circleStyle))circleStyle="sol";renderUI();
 });
 renderUI();
 Promise.all([
@@ -693,7 +783,10 @@ Promise.all([
     art.set(entry.id,prepare(image,entry.bounds)); frames.set(entry.id,Object.fromEntries(keys.map(k=>[k,surface()])));
     coloredCurrent.set(entry.id,colored(image,"#743bba",.75));
   })
-]).then(()=>{ready=true;}).catch(error=>{$("error").hidden=false;$("error").textContent=error.message;});
+]).then(()=>{
+  for(const key of circleKeys) if(typeof circleStudies[key]?.draw!=="function") throw new Error("Circle study unavailable: "+key+". Keep the echo-circle-studies folder beside the HTML file.");
+  ready=true;renderUI();
+}).catch(error=>{$("error").hidden=false;$("error").textContent=error.message;});
 requestAnimationFrame(frame);
 </script>
 </body>
