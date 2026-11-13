@@ -1,22 +1,15 @@
-# Act 4: Echos of the Past 1.5.0
+# Act 4: Echos of the Past 1.5.1
 
 **Your past is the final boss.**
 
-This update from **1.4.1** brings the mod to Slay the Spire 2 public-beta
-**v0.113.0** and adds the Fool as a Corrupted Player. 1.4.1 does not load on
-v0.113.0, and 1.5.0 requires it.
-Published to Steam Workshop on November 12, 2026 at 11:42 p.m. PST.
+This update from **1.5.0** retunes the Corrupted Fool's character buff.
+It still requires Slay the Spire 2 public-beta **v0.113.0**.
 
 ## What's new
 
-- Updated for public-beta v0.113.0 and BaseLib 3.4.8. Corrupted Players keep
-  their card choices, extra turns and targetable Osty, the Act 4 map stays
-  compact, and defeating the Architect still leads into the bound-party ending.
-- The Fool can now be a Corrupted Player. Its character buff is Discordant Bow:
-  12 Aim at the start of combat and 3 Aim at the end of each of its turns.
-- A Corrupted Player with arrows shows how many it has ready below its health
-  bar, next to its energy and stars.
-- Blitz runs end after Act 3; the Architect Act is not added to them.
+- Discordant Bow now gives the Corrupted Fool 1 additional Arrow and 7 Aim at
+  the start of combat, and 7 Aim at the end of each of its turns. It previously
+  gave 12 Aim at the start of combat and 3 at the end of each turn.
 
 The internal ID, runtime filenames and installation folder remain `TheArchitect`.
 Update the existing installation; do not install this as a second mod.
@@ -39,6 +32,6 @@ audited. Lineages are local, not Steam Cloud data. Changing hosts during an ongo
 Avoid force-closing during the result transition; full crash-transaction recovery
 is still tracked in issue #12.
 
-Use `TheArchitect-v1.5.0.zip` for manual installation, not GitHub's source archives.
+Use `TheArchitect-v1.5.1.zip` for manual installation, not GitHub's source archives.
 Extract its `TheArchitect` folder into the game's `mods` folder with the game
 closed. See `INSTALL.md` for details and `SHA256SUMS` for file hashes.

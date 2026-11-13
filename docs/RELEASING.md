@@ -1,4 +1,18 @@
-# Publishing 1.5.0 - Act 4: Echos of the Past
+# Publishing 1.5.1 - Act 4: Echos of the Past
+
+## Preparing 1.5.1
+
+Version 1.5.1 retunes Discordant Bow, the Corrupted Fool's character buff:
+1 additional Arrow and 7 Aim at the start of combat, and 7 Aim at the end of
+each of its turns (previously 12 Aim and 3 per turn). The targets are unchanged:
+Slay the Spire 2 public-beta **v0.113.0** and BaseLib **3.4.8**.
+
+The release is built from committed source; the bundle records the commit.
+The C# suites passed: 165 Corrupted Player tests and 193 Architect tests.
+An isolated native Fool playtest on v0.113.0 confirmed 7 Aim and two arrow
+slots at combat start, with the arrow counter matching. Real networked co-op
+was not tested. Publication to Workshop item **3799307965** requires the
+author's approval.
 
 ## Published 1.5.0
 

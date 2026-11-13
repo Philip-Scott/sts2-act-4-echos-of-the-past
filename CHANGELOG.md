@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.1 Changes
 
 - Discordant Bow now gives the Corrupted Fool 1 additional Arrow and 7 Aim at
   the start of combat, and 7 Aim at the end of each of its turns. It previously

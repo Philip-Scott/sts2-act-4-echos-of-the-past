@@ -1,4 +1,4 @@
-# Act 4: Echos of the Past 1.5.0
+# Act 4: Echos of the Past 1.5.1
 
 Previously named The Architect. This is the same mod and Workshop item:
 the internal ID, `TheArchitect` installation folder and saved lineages are unchanged.
