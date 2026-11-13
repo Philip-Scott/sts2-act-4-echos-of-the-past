@@ -5,6 +5,7 @@
 This update from **1.4.1** brings the mod to Slay the Spire 2 public-beta
 **v0.113.0** and adds the Fool as a Corrupted Player. 1.4.1 does not load on
 v0.113.0, and 1.5.0 requires it.
+Published to Steam Workshop on November 12, 2026 at 11:42 p.m. PST.
 
 ## What's new
 

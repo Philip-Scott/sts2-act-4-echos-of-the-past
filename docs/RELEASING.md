@@ -1,20 +1,27 @@
 # Publishing 1.5.0 - Act 4: Echos of the Past
 
-## Preparing 1.5.0
+## Published 1.5.0
 
-Version 1.5.0 updates the mod for Slay the Spire 2 public-beta **v0.113.0**
-(Steam build `26625880`, commit `16ac0fe3`) and BaseLib **3.4.8**, and adds the
-Fool as a Corrupted Player. 1.4.1 fails to load on v0.113.0 and 1.5.0 requires
-it, so publish only once the Workshop audience is on v0.113.0.
+The author approved publication on November 12, 2026. Steam accepted the update
+to item **3799307965** at **11:42:56 p.m. PST**. The build uses committed source
+`d01701f` for Slay the Spire 2 public-beta **v0.113.0** (Steam build `26625880`,
+commit `16ac0fe3`) and BaseLib **3.4.8**, and adds the Fool as a Corrupted Player.
+1.4.1 fails to load on v0.113.0 and 1.5.0 requires it.
 
-The release is built from committed source; the bundle records the commit.
+The bundle is `artifacts/releases/steam-v1.5.0-d01701f/v1.5.0/`. The content-only
+upload workspace `v1.5.0-steam-content-only/` contains only the three runtime
+files, `mod_id.txt` and `workshop.json` with `changeNote`, plus the upload log,
+before/after listing and changelog snapshots, and `publication-receipt.json`.
+The published change note matches the submitted note; the title, description,
+thumbnail and screenshots are unchanged. No tag or GitHub Release was made.
+Do not rerun the uploader without approval for another update.
+
 The C# suites passed: 165 Corrupted Player tests and 193 Architect tests.
 Isolated native playtests on v0.113.0 passed for two-player parties, solo and
 party Architect wins and losses, Osty targeting, Violet Lotus enchantment reloads
 and every Fool card. Real networked co-op was not tested. After the full Fool
 card sweep, the later orb display death check still fails; ordinary fights
-pass it. Publication to Workshop item **3799307965** requires the author's
-approval.
+pass it.
 
 ## Published 1.4.1
 

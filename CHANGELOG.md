@@ -2,6 +2,8 @@
 
 ## 1.5.0 Changes
 
+Released November 12, 2026 at 11:42 p.m. PST.
+
 - Updated for Slay the Spire 2 public-beta v0.113.0 and BaseLib 3.4.8; 1.4.1
   fails to load on this game version. Corrupted Players keep their card choices,
   extra turns and targetable Osty, the Act 4 map stays compact, and defeating
