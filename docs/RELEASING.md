@@ -1,4 +1,27 @@
-# Publishing 1.4.0 - Act 4: Echos of the Past
+# Publishing 1.4.1 - Act 4: Echos of the Past
+
+## Published 1.4.1
+
+The author requested a new Steam Workshop release on October 21, 2026.
+Steam accepted the update to item **3799307965** at **11:07:54 p.m. PDT**.
+The build uses committed source `065d18f` with the 1.4.1 release documentation
+overlaid, excluding unrelated worktree edits. This release fixes modded card
+text, Corrupted Player card pooling and exhaust animations, and Ring of the
+Viper's multiplayer Artifact scaling. The separate Animated Player Hands mod
+is not part of the package.
+
+The bundle is `artifacts/releases/steam-v1.4.1-065d18f/v1.4.1/`.
+The separate `v1.4.1-steam-content-only/` workspace retains the upload log,
+before/after listing and changelog snapshots, and `publication-receipt.json`.
+The published change note matches the submitted note. The title, description,
+thumbnail and screenshots are unchanged. No commit, push, tag or GitHub Release
+was made. Do not rerun the uploader without approval for another update.
+
+The isolated release source passed 165 Corrupted Player tests, 193 Architect
+tests and six packaging tests. Real networked co-op was not tested for this
+release. `PREPARATION.json` and `release-metadata.patch` retain the source
+identity and build overlay. The bundle's preparation-time publishing handoff
+remains unchanged; the publication receipt records the final status.
 
 ## Published 1.4.0
 
@@ -224,14 +247,13 @@ Python runs on the host; only compilation runs in the existing
 inside the build image. Podman output must remain under the repository so it is
 visible in the container mount.
 
-The default command outputs to `artifacts/releases/v1.4.0/` and will refuse the
+The default command outputs to `artifacts/releases/v1.4.1/` and refuses an
 existing candidate. For a refresh, build from an isolated source export, then
-retain the resulting bundle under a new parent directory. The current refreshed
-bundle is under `artifacts/releases/steam-v1.4.0-d99fe5e/v1.4.0/`:
+retain the resulting bundle under a new parent directory.
 
 | File/directory | Use |
 | --- | --- |
-| `TheArchitect-v1.4.0.zip` | Manual install; only this mod's three runtime files plus install instructions |
+| `TheArchitect-v1.4.1.zip` | Manual install; only this mod's three runtime files plus install instructions |
 | `SHA256SUMS` | SHA-256 hashes of the staged files |
 | `workshop/` | Existing-item update workspace; preserves Steam description and visibility |
 | `media/` | Thumbnail, banner and gameplay screenshots |
@@ -307,7 +329,7 @@ a listing identifier, not a credential.
 ## GitHub Release
 
 After approval, commit the reviewed release changes and tag that exact commit
-`v1.4.0`. Create a GitHub Release from the tag, use `release/RELEASE_NOTES.md`
+`v1.4.1`. Create a GitHub Release from the tag, use `release/RELEASE_NOTES.md`
 as the description, and attach the ZIP, `SHA256SUMS`, and install instructions.
 The archive uses the source commit and release overlay recorded in
 `PREPARATION.json`: rebuild from the approved commit if anything has changed

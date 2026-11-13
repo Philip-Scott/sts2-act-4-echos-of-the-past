@@ -2,6 +2,8 @@
 
 ## 1.4.1 Changes
 
+Released October 21, 2026 at 11:07 p.m. PDT.
+
 - Fixed card text showing raw code strings, such as calculated damage values
   and energy icons, when another mod adds cards to a card pool. The 1.4.0
   modded relic pool fix also rewrote card pools and failed to load their
@@ -11,6 +13,8 @@
 - Corrupted Player card displays now hand their cards back to the game's card
   pool when they finish. They no longer leave stale entries behind or change
   how recycled cards respond to the mouse in your own hand.
+- Ring of the Viper no longer grants extra Artifact stacks based on party size.
+  Each corrupted Silent receives the intended amount in multiplayer.
 
 ## 1.4.0 Changes
 
