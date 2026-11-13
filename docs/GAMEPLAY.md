@@ -68,7 +68,7 @@ Each Corrupted Player also carries a corruption buff for its character:
 | Regent | Tarnished Crown | Gains 3 Stars at the start of combat and 2 Stars at the end of its turn. |
 | Necrobinder | Fractured Urn | Summons 17 at the start of combat and 5 at the start of its turn. |
 | Defect | Overvolted Matrix | Channels Lightning, Frost and Dark at the start of combat; gains 1 Focus at the end of its turn. |
-| Fool | Discordant Bow | Gains 12 Aim at the start of combat and 3 Aim at the end of its turn. |
+| Fool | Discordant Bow | Gains 1 additional Arrow and 7 Aim at the start of combat; gains 7 Aim at the end of its turn. |
 
 At Ascension 9 (Deadly Enemies) and above, every Corrupted Player also has
 **Echo Shard**: it gains 1 additional energy at the start of its turn. Modded

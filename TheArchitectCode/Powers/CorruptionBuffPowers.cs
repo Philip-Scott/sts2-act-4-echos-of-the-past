@@ -154,14 +154,20 @@ public sealed class OvervoltedMatrixPower : CorruptionBuffPower
 public sealed class DiscordantBowPower : CorruptionBuffPower
 {
     protected override IEnumerable<DynamicVar> CanonicalVars =>
-        [new PowerVar<AimPower>("StartOfCombat", 12), new PowerVar<AimPower>("EndOfTurn", 3)];
-    protected override IEnumerable<IHoverTip> ExtraHoverTips => [HoverTipFactory.FromPower<AimPower>()];
+    [
+        new DynamicVar("Arrows", 1), new PowerVar<AimPower>("StartOfCombat", 7),
+        new PowerVar<AimPower>("EndOfTurn", 7)
+    ];
+    protected override IEnumerable<IHoverTip> ExtraHoverTips =>
+        [HoverTipFactory.ForArrow(null), HoverTipFactory.FromPower<AimPower>()];
 
     public override async Task BeforeCombatStart()
     {
-        if (!TryGetActor(out _))
+        if (!TryGetActor(out var actor))
             return;
         Flash();
+        for (var arrow = 0; arrow < DynamicVars["Arrows"].IntValue; arrow++)
+            ArrowCmd.GainArrowSlot(actor.Player);
         await PowerCmd.Apply<AimPower>(new ThrowingPlayerChoiceContext(), Owner,
             DynamicVars["StartOfCombat"].BaseValue, Owner, null);
     }

@@ -41,9 +41,9 @@ internal static class NativeFoolPlaytest
             throw new InvalidOperationException("Fool probes require the disposable smoke environment.");
         Require(actor.Player.Character is Fool, "the saved Fool is restored");
         Require(actor.Body.HasPower<DiscordantBowPower>(), "the Corrupted Fool carries Discordant Bow");
-        Require(actor.Body.GetPowerAmount<AimPower>() >= 12, "Discordant Bow grants Aim at combat start");
-        Require(actor.State.Arrows.Count == ModelDb.Character<Fool>().BaseArrowSlotCount,
-            "the private player starts with the Fool's arrow slots");
+        Require(actor.Body.GetPowerAmount<AimPower>() >= 7, "Discordant Bow grants Aim at combat start");
+        Require(actor.State.Arrows.Count == ModelDb.Character<Fool>().BaseArrowSlotCount + 1,
+            "Discordant Bow adds an arrow to the Fool's starting arrow slots");
         var arrows = CorruptedPlayerTelegraph.Of(actor.Body.GetCreatureNode()!).StatusIcon("Arrows")
             ?? throw new InvalidOperationException("Fool probe: the arrow icon is missing.");
         async Task RequireArrowIcon(string stage)
