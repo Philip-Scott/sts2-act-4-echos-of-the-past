@@ -226,9 +226,10 @@ public partial class CorruptedPlayerCorruption : Node
         _strength = _animateBinding && alive
             ? Intensity * Mathf.SmoothStep(0f, 1f, (float)(_time - 0.5) / 1.2f)
             : Mathf.MoveToward(_strength, alive ? Intensity : 0f, (float)delta * 3f);
+        // The armillary is authored at full strength; it follows the body's fades proportionally.
         var bindingStrength = _animateBinding && alive
-            ? Intensity * Mathf.SmoothStep(0f, 1f, (float)_time / 0.8f)
-            : _strength;
+            ? Mathf.SmoothStep(0f, 1f, (float)_time / 0.8f)
+            : _strength / Intensity;
         bool anyVisible = false;
         foreach (var effect in _bodies)
         {

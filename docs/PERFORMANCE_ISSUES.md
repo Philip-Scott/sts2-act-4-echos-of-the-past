@@ -36,12 +36,13 @@ node, and for transitioning back to a populated hand. No production fix needed.
 **Finding:** the front and back bindings rebuilt rings, seals, and their glow
 strokes on every frame, including for corrupted Osty.
 
-**Implemented:** retain the drawing commands for ring and seal nodes. Animate
-their transforms and opacity, rebuilding geometry only when bounds change.
-Only the twelve moving floor ticks still submit drawing commands every frame.
-Animation cadence and the body shader are unchanged.
+**Implemented:** cache the bounds-derived geometry (line width, floor ellipse
+and the pool mesh), rebuilding it only when bounds change. The Verdigris
+Armillary binding projects its rotating bands, ripples and orbiting shards, so
+each back/front layer submits its drawing commands every frame from those
+caches. Animation cadence and the body shader are unchanged.
 
-**Acceptance:** idle animation does not rebuild stroke geometry. Front/back
+**Acceptance:** idle animation does not rebuild cached geometry. Front/back
 ordering, inherited fades, scaling, bounds changes, pet visuals, and cleanup
 remain correct. Drawing API submissions are not GPU draw-call measurements.
 
