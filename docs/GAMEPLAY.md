@@ -234,8 +234,10 @@ Four-player parties use two wider rows, with the back pair shifted diagonally
 away from the humans to keep the bodies and card rows distinct.
 
 Corrupted Players use **Bound Echo** rather than a purple tint: cyan-violet
-afterimages and a slowly shifting body slice sit inside orbiting gold seals and
-a ground sigil. The effect composites the animated body, not individual Spine
+afterimages and a slowly shifting body slice sit inside a patinated bronze
+armillary. A tilted equatorial band and a leaning meridian, with lilac
+afterimages, pass in front of and behind the body. Five echo-glass shards orbit
+it above a plum ground pool with lilac ripples and broken bronze rim arcs. The effect composites the animated body, not individual Spine
 attachments, and leaves native character materials, health, intents and orbs
 alone. Enemy-owned Osty gets the same effect on its own body, including when it
 grows or revives; the human's Osty is unchanged. The bindings stay outside the
