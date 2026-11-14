@@ -1,0 +1,24 @@
+{
+  "model": "Claude Opus 5.5",
+  "method": "Glitch revision of the original Opus studies. Same layouts, re-rendered from the original generators; only the Corrupted Player body layer changed. The body effect is a CPU emulation (Python/Pillow) of one static frame of the native Bound Echo shader in TheArchitectCode/UI/CorruptedPlayerCorruption.cs, not a game capture. Steady body strength 0.75, the native creature bounds as body_rect, screen-oriented offsets on the mirrored body. It includes offset ice-cyan and violet body-alpha echoes (alpha x0.36 and x0.45), the narrow scan band with horizontal slip and ice tint, faint noise-modulated scanlines and 15% desaturation. The original invented lilac body tint was removed in favour of the native effect. Normal players, the Architect, cards, text, backgrounds and the armillary are not glitched. The armillary keeps its back/body/front depth and approved opus.js drawing. The corrupted layer is now alpha-composited rather than self-masked, so faint armillary strokes render at their true opacity. Body-effect time is chosen independently of the armillary frame time.",
+  "candidates": [
+    {
+      "file": "candidate-1.jpg",
+      "title": "The Architect's Duel",
+      "description": "The requested duel: a warm-lit normal Ironclad faces a mirrored Corrupted Silent wrapped in the Opus armillary. Each has their own native card fan underneath, while a dimmed Architect looms between them in the dark workshop.",
+      "body_effect": "Corrupted Silent only. Native Bound Echo emulation at effect_time 98.4, strength 0.75: scan band at 38% of body height across the arms and blades, slip about 4.5% of body width, cyan echo up-left and violet echo down-right."
+    },
+    {
+      "file": "candidate-2.jpg",
+      "title": "Mirror Match",
+      "description": "A split-sky poster at the Architect's tower: the Defect in warm sunset light on the left faces its armillary-bound Corrupted echo in plum on the right, with the tagline above and the title below.",
+      "body_effect": "Corrupted Defect (right) only; the left Defect stays clean. Native Bound Echo emulation at effect_time 46.0, strength 0.75: scan band at 45% of body height across the core and arms, slip about -3.9% of body width."
+    },
+    {
+      "file": "candidate-3.jpg",
+      "title": "Your Move",
+      "description": "First-person framing: the viewer's native Ironclad hand spans the foreground as their own armillary-bound Corrupted Ironclad steps up on the tower approach, with the Architect waiting beside the tower.",
+      "body_effect": "Corrupted Ironclad only. Native Bound Echo emulation at effect_time 98.0, strength 0.75: scan band at 35% of body height across the chest and arms, slip about 4.7% of body width."
+    }
+  ]
+}

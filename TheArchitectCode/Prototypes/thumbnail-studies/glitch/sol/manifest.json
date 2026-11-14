@@ -1,0 +1,20 @@
+{
+  "model": "GPT-6.1 Sol",
+  "candidates": [
+    {
+      "file": "candidate-1.jpg",
+      "title": "The opposing hands",
+      "description": "The Silent faces a Corrupted Defect above their native card hands while the Architect looms between them. The Defect alone has a CPU/Pillow emulation of the native body shader at t=16.8 s, strength 0.75; the approved armillary stays at its original t=2.4 s and opacity 1."
+    },
+    {
+      "file": "candidate-2.jpg",
+      "title": "The hand you left behind",
+      "description": "A Corrupted Silent and her green card hand stand against the burning tower in an asymmetric character poster. The Silent alone has a CPU/Pillow emulation of the native body shader at t=16.8 s, strength 0.75; the approved armillary stays at its original t=2.4 s and opacity 1."
+    },
+    {
+      "file": "candidate-3.jpg",
+      "title": "The Architect's court",
+      "description": "The Architect towers over a Corrupted Regent, framed by an engraved bronze mechanism and blue staff fire. The Regent alone has a CPU/Pillow emulation of the native body shader at t=16.8 s, strength 0.75; the approved armillary stays at its original t=2.4 s and opacity 1."
+    }
+  ]
+}
