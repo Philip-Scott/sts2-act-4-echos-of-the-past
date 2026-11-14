@@ -12,7 +12,7 @@ It compares three directions without changing the installed mod:
 
 - A, Fading echo. Incomplete blue-gray afterimages behind a readable painted body.
 - B, Unraveling echo. A lower silhouette that frays into dusty smoke and costume scraps.
-- C, Bound shattered echo. Moving ivory cracks across an intact painted body,
+- C, Bound shattered echo. Moving ivory-edged gaps between painted body fragments,
   inside independent ground and side circles. The binding does not fracture with
   the body.
 
@@ -46,9 +46,10 @@ The user prefers Opus's Verdigris Armillary circles. The
 [current Opus iteration](echo-visuals-prototype.html?variant=C&view=study&circleStyle=opus&fracture=85&circles=100&pulse=1)
 keeps those circles at 100% while the fracture cracks move across the body.
 `pulse=1` makes fracture strength rise from 80% to 95% and return over a
-12-second cycle. The body stays intact; the moving seams are masked to its painted
-pixels. Pause freezes the cracks, pulse, and circle animation together. Disable
-the Slow fracture pulse control for a fixed strength or a circles-only comparison.
+12-second cycle. The moving cracks open transparent gaps between fragments, with
+thin ivory rims on each side. Gap width follows fracture strength. Pause freezes
+the cracks, pulse, and circle animation together. Disable the Slow fracture pulse
+control for a fixed strength or a circles-only comparison.
 
 The optional current Bound Echo reference is a browser approximation, not a capture.
 The state panel records the current selection and outlines possible Godot implementations.

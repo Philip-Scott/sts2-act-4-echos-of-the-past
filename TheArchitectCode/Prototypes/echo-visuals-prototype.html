@@ -220,10 +220,10 @@ const variants = {
   },
   C: {
     name: "Bound shattered echo", direction: "Direction C / fractured body + binding",
-    description: "Uneven ivory cracks drift across the painted body inside its binding circles. The silhouette stays intact while the seams move. An optional slow pulse raises and lowers fracture strength without changing the circles.",
+    description: "Uneven ivory-edged cracks drift through the painted body, leaving visible gaps between the fragments. An optional slow pulse raises and lowers fracture strength without changing the binding circles.",
     fit: "Dusty violet underpainting, uneven ivory-gold edges, and small incised marks replace the uniform pink lines. Slow highlights follow the circles without a neon glow.",
-    tradeoff: "Moving cracks keep the silhouette intact. At higher strengths they can compete with costume details. Compare the body and circles separately.",
-    implementation: "Candidate: drift a body-space fracture mask over the composed character and pulse its opacity. Keep CorruptedPlayerBinding's independent back/front layers outside that mask. The browser does not establish native performance or change the game."
+    tradeoff: "Drifting gaps make the shattered body clearer. Wider breaks can compete with costume details. Compare the body and circles separately.",
+    implementation: "Candidate: use a moving body-space fracture mask to cut narrow gaps with painted rims. Pulse gap width and rim strength while keeping CorruptedPlayerBinding's independent back/front layers outside the mask. The browser does not establish native performance or change the game."
   }
 };
 const characters = [
@@ -379,24 +379,27 @@ function renderEffect(source, key, s, t, target) {
     c.globalAlpha = 1;
   } else {
     c.drawImage(source.body, 0, 0);
+    if (s < 1) { c.globalAlpha = 1 - s; c.drawImage(source.image, 0, 0); c.globalAlpha = 1; }
     const [left, top, width, height] = source.bounds;
     const paths = fracturePaths.map(points => points.map(([u,v]) => [
       left + width * (u + .07 * Math.sin(t * .28 + v * 5.3 + u * 2.1)),
       top + height * (v + .08 * Math.sin(t * .23 + u * 5.8 - v * 3.1))
     ]));
     const weight = Math.max(.9, Math.min(1.6, height * .004)) * (.5 + s * .5);
+    const gap = weight * 4 * s;
     c.save();
     c.beginPath(); c.rect(left, top, width, height); c.clip();
     c.globalCompositeOperation = "source-atop"; c.lineCap = "round"; c.lineJoin = "round";
     for (const points of paths) {
-      c.globalAlpha = s * .45; line(c, points, "#283849", weight * 3);
-      c.globalAlpha = s * .66; line(c, points.map(([x,y]) => [x+.5,y-.5]), "#d3c7a6", weight);
+      c.globalAlpha = s * .45; line(c, points, "#283849", gap + weight * 4);
+      c.globalAlpha = s * .66; line(c, points, "#d3c7a6", gap + weight * 1.8);
     }
     c.setLineDash([7,4,2,5]); c.lineDashOffset = -t * .8;
     c.globalAlpha = s * .32;
-    for (const points of paths) line(c, points.map(([x,y]) => [x+.5,y-.8]), "#eee2c7", weight * .45);
+    for (const points of paths) line(c, points.map(([x,y]) => [x+.5,y-.8]), "#eee2c7", gap + weight * .45);
+    c.setLineDash([]); c.globalCompositeOperation = "destination-out"; c.globalAlpha = 1;
+    for (const points of paths) line(c, points, "#000", gap);
     c.restore();
-    if (s < 1) { c.globalAlpha = 1 - s; c.drawImage(source.image, 0, 0); c.globalAlpha = 1; }
     c.save(); c.globalCompositeOperation = "destination-over"; c.globalAlpha = s * .17;
     c.drawImage(source.faded, -27 * s, -8 * s); c.restore();
   }
@@ -656,7 +659,7 @@ function updateState() {
     fractureAmount:Math.round(fractureStrength(time)*100), circleStrength:Math.round(circles*100),
     fracturePulse, fracturePulseRange:fracturePulse?[80,95]:null,
     fracturePulsePeriodSeconds:fracturePulse?12:null,
-    fractureMotion:"Body-relative drifting cracks; intact silhouette",
+    fractureMotion:"Body-relative drifting cracks; separated fragments",
     circleArtwork:circleStyle,
     circleAuthor:circleModels[circleStyle] ?? null,
     circleConcept:circleStudies[circleStyle]?.name ?? null,
