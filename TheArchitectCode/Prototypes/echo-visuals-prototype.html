@@ -127,7 +127,7 @@
       </button>
       <button class="study" data-variant="C" aria-pressed="false">
         <canvas id="thumb-C" width="560" height="310" aria-label="Shattered echo preview"></canvas>
-        <span class="study-text"><strong>C. Bound shattered echo</strong><small>Quieter fractures / familiar binding circles</small></span>
+        <span class="study-text"><strong>C. Bound shattered echo</strong><small>Moving cracks / independent binding circles</small></span>
       </button>
     </div>
     <div class="studies" id="circle-studies" aria-label="Compare model-authored circle treatments" hidden>
@@ -158,6 +158,7 @@
     <label class="label" for="strength"><span id="strength-title">Effect intensity</span> <output id="strength-label">70%</output></label>
     <input id="strength" type="range" min="0" max="100" value="70">
     <div id="binding-controls" hidden>
+      <label class="reference"><input id="fracture-pulse" type="checkbox"> Slow fracture pulse, 80-95%</label>
       <label class="reference">Circle artwork
         <select id="circle-style">
           <option value="sol">GPT-6.1 Sol study</option>
@@ -169,7 +170,7 @@
       </label>
       <label class="label" for="circles">Circle strength <output id="circles-label">75%</output></label>
       <input id="circles" type="range" min="0" max="100" value="75">
-      <p class="note">Set fractures to 0 for circles only. Set circles to 0 to compare the body without its binding.</p>
+      <p class="note">Disable the pulse to set fractures manually. Set fractures to 0 for circles only, or circles to 0 for the body alone.</p>
     </div>
     <div class="actions">
       <button id="pause" aria-pressed="false">Pause</button>
@@ -219,10 +220,10 @@ const variants = {
   },
   C: {
     name: "Bound shattered echo", direction: "Direction C / fractured body + binding",
-    description: "A worn, inscribed circle anchors the character to the floor. Tapered bands pass behind and in front of the body, carrying faceted gold seals. The painted body shifts along faint ivory seams inside the binding.",
+    description: "Uneven ivory cracks drift across the painted body inside its binding circles. The silhouette stays intact while the seams move. An optional slow pulse raises and lowers fracture strength without changing the circles.",
     fit: "Dusty violet underpainting, uneven ivory-gold edges, and small incised marks replace the uniform pink lines. Slow highlights follow the circles without a neon glow.",
-    tradeoff: "The circles already communicate corruption. The body may need only a few cracks, rather than visibly separated pieces. Compare each layer on its own.",
-    implementation: "Candidate: retain CorruptedPlayerBinding's independent back/front layers, but replace uniform strokes with tapered ribbon meshes, an etched floor decal, and faceted seals. Apply fracture masks only to the body. The browser does not establish native performance or change the game."
+    tradeoff: "Moving cracks keep the silhouette intact. At higher strengths they can compete with costume details. Compare the body and circles separately.",
+    implementation: "Candidate: drift a body-space fracture mask over the composed character and pulse its opacity. Keep CorruptedPlayerBinding's independent back/front layers outside that mask. The browser does not establish native performance or change the game."
   }
 };
 const characters = [
@@ -246,7 +247,8 @@ function amount(params, key, fallback) {
   const value = Number(params.get(key));
   return params.has(key) && Number.isFinite(value) ? Math.max(0, Math.min(100, value)) / 100 : fallback;
 }
-let fracture = amount(initial, "fracture", view === "circles" ? 0 : .4), circles = amount(initial, "circles", .75);
+let fracturePulse = initial.get("pulse") === "1";
+let fracture = amount(initial, "fracture", view === "circles" ? 0 : .4), circles = amount(initial, "circles", fracturePulse ? 1 : .75);
 let circleStyle = circleStyles.includes(initial.get("circleStyle")) ? initial.get("circleStyle") : view === "circles" ? "sol" : "etched";
 if (view === "circles" && !circleKeys.includes(circleStyle)) circleStyle = "sol";
 let reference = "native", time = 3.5, last = 0, ready = false;
@@ -280,15 +282,14 @@ function colored(image, color, amount, filter = "none") {
   c.globalAlpha = amount; c.fillStyle = color; c.fillRect(0, 0, 512, 512);
   return result;
 }
-const shardPolygons = [
-  [[0,0],[512,0],[512,174],[304,206],[227,172],[0,194]],
-  [[0,194],[227,172],[252,275],[183,309],[0,281]],
-  [[227,172],[304,206],[512,174],[512,290],[333,309],[252,275]],
-  [[0,281],[183,309],[242,365],[188,411],[0,384]],
-  [[183,309],[252,275],[333,309],[303,379],[242,365]],
-  [[333,309],[512,290],[512,408],[350,427],[303,379]],
-  [[0,384],[188,411],[242,365],[264,512],[0,512]],
-  [[242,365],[303,379],[350,427],[512,408],[512,512],[264,512]]
+const fracturePaths = [
+  [[0,.38],[.44,.34],[.59,.40],[1,.34]],
+  [[.44,.34],[.49,.54],[.36,.60],[0,.55]],
+  [[.49,.54],[.65,.60],[1,.57]],
+  [[.36,.60],[.47,.71],[.37,.80],[0,.75]],
+  [[.65,.60],[.59,.74],[.47,.71]],
+  [[.59,.74],[.68,.83],[1,.80]],
+  [[.47,.71],[.52,1]]
 ];
 function prepare(image, bounds) {
   const body = colored(image, "#68787a", .10, "saturate(.8)");
@@ -302,17 +303,7 @@ function prepare(image, bounds) {
     f.fillStyle = `rgba(0,0,0,${.25 + random(i + 50) * .6})`;
     f.beginPath(); f.ellipse(x, y, 15 + random(i + 21) * 42, 4 + random(i + 81) * 14, -.4, 0, Math.PI * 2); f.fill();
   }
-  const shards = shardPolygons.map((points, index) => {
-    const piece = surface(), c = piece.getContext("2d");
-    polygon(c, points); c.clip(); c.drawImage(body, 0, 0);
-    c.globalCompositeOperation = "source-atop";
-    c.fillStyle = index % 3 === 0 ? "#adb8ae" : "#404c5c";
-    c.globalAlpha = index % 3 === 0 ? .14 : .10; c.fillRect(0, 0, 512, 512);
-    c.globalAlpha = .64; c.strokeStyle = "#d3c7a6"; c.lineWidth = 2.4;
-    polygon(c, points); c.stroke();
-    return piece;
-  });
-  return { image, body, ghost, faded, dark, shards, bounds };
+  return { image, body, ghost, faded, dark, bounds };
 }
 function smoke(c, x, y, size, alpha, color) {
   c.save(); c.globalAlpha *= alpha; c.fillStyle = color;
@@ -387,17 +378,31 @@ function renderEffect(source, key, s, t, target) {
     }
     c.globalAlpha = 1;
   } else {
-    c.globalAlpha = s * .17; c.drawImage(source.faded, -27 * s, -8 * s); c.globalAlpha = 1;
-    for (let i = 0; i < source.shards.length; i++) {
-      const separation = s * (.8 + Math.sin(t * .62 + i * .7) * .2);
-      const dx = [-2,-8,7,-12,1,14,-5,9][i] * separation;
-      const dy = [0,-2,-4,2,0,-1,6,5][i] * separation;
-      c.globalAlpha = i === 3 || i === 5 ? 1 - s * .18 : 1;
-      c.drawImage(source.shards[i], dx, dy);
+    c.drawImage(source.body, 0, 0);
+    const [left, top, width, height] = source.bounds;
+    const paths = fracturePaths.map(points => points.map(([u,v]) => [
+      left + width * (u + .07 * Math.sin(t * .28 + v * 5.3 + u * 2.1)),
+      top + height * (v + .08 * Math.sin(t * .23 + u * 5.8 - v * 3.1))
+    ]));
+    const weight = Math.max(.9, Math.min(1.6, height * .004)) * (.5 + s * .5);
+    c.save();
+    c.beginPath(); c.rect(left, top, width, height); c.clip();
+    c.globalCompositeOperation = "source-atop"; c.lineCap = "round"; c.lineJoin = "round";
+    for (const points of paths) {
+      c.globalAlpha = s * .45; line(c, points, "#283849", weight * 3);
+      c.globalAlpha = s * .66; line(c, points.map(([x,y]) => [x+.5,y-.5]), "#d3c7a6", weight);
     }
-    c.globalAlpha = 1;
+    c.setLineDash([7,4,2,5]); c.lineDashOffset = -t * .8;
+    c.globalAlpha = s * .32;
+    for (const points of paths) line(c, points.map(([x,y]) => [x+.5,y-.8]), "#eee2c7", weight * .45);
+    c.restore();
     if (s < 1) { c.globalAlpha = 1 - s; c.drawImage(source.image, 0, 0); c.globalAlpha = 1; }
+    c.save(); c.globalCompositeOperation = "destination-over"; c.globalAlpha = s * .17;
+    c.drawImage(source.faded, -27 * s, -8 * s); c.restore();
   }
+}
+function fractureStrength(t) {
+  return fracturePulse ? .875 - .075 * Math.cos(t * Math.PI / 6) : fracture;
 }
 function line(context, points, color, width = 1) {
   context.strokeStyle = color; context.lineWidth = width; context.beginPath();
@@ -648,7 +653,10 @@ function updateState() {
   $("state").textContent=JSON.stringify({
     throwaway:true, variant, treatment:variants[variant].name, character, view,
     intensity:Math.round(strength*100), paused, originalBypass:holding, reference,
-    fractureAmount:Math.round(fracture*100), circleStrength:Math.round(circles*100),
+    fractureAmount:Math.round(fractureStrength(time)*100), circleStrength:Math.round(circles*100),
+    fracturePulse, fracturePulseRange:fracturePulse?[80,95]:null,
+    fracturePulsePeriodSeconds:fracturePulse?12:null,
+    fractureMotion:"Body-relative drifting cracks; intact silhouette",
     circleArtwork:circleStyle,
     circleAuthor:circleModels[circleStyle] ?? null,
     circleConcept:circleStudies[circleStyle]?.name ?? null,
@@ -664,7 +672,14 @@ function syncURL() {
   url.searchParams.set("variant",variant); url.searchParams.set("character",character); url.searchParams.set("view",view);
   url.searchParams.set("fracture",Math.round(fracture*100)); url.searchParams.set("circles",Math.round(circles*100));
   url.searchParams.set("circleStyle",circleStyle);
+  if(fracturePulse) url.searchParams.set("pulse","1"); else url.searchParams.delete("pulse");
   history.replaceState(null,"",url);
+}
+function updateStrengthControl() {
+  $("strength-title").textContent=variant==="C"?"Fracture strength":"Effect intensity";
+  $("strength").value=Math.round((variant==="C"?fractureStrength(time):strength)*100);
+  $("strength").disabled=variant==="C"&&fracturePulse;
+  $("strength-label").textContent=$("strength").value+"%";
 }
 function renderUI() {
   const choice=variants[variant];
@@ -690,10 +705,9 @@ function renderUI() {
     document.querySelector(`[data-circle-study="${key}"]`).setAttribute("aria-pressed",String(circleStyle===key));
   }
   $("character-label").textContent=characters.find(c=>c.id===character).name;
-  $("strength-title").textContent=variant==="C"?"Fracture amount":"Effect intensity";
-  $("strength").value=Math.round((variant==="C"?fracture:strength)*100);
-  $("strength-label").textContent=$("strength").value+"%";
+  updateStrengthControl();
   $("binding-controls").hidden=variant!=="C";
+  $("fracture-pulse").checked=fracturePulse;
   $("circles").value=Math.round(circles*100); $("circles-label").textContent=$("circles").value+"%";
   $("circle-style").value=circleStyle;
   $("pause").textContent=paused?"Resume":"Pause"; $("pause").setAttribute("aria-pressed",String(paused));
@@ -716,11 +730,13 @@ function frame(stamp) {
   if(!paused) time+=delta;
   if(ready) {
     const ids=view==="party"?characters.map(c=>c.id):[character];
+    const fractureLevel=fractureStrength(time);
     for(const id of ids) {
       const source=art.get(id);
-      for(const key of keys) renderEffect(source,key,holding?0:key==="C"?fracture:strength,time,frames.get(id)[key]);
+      for(const key of keys) renderEffect(source,key,holding?0:key==="C"?fractureLevel:strength,time,frames.get(id)[key]);
     }
     renderArena(holding?0:strength,time); renderThumbs();
+    if(variant==="C"&&fracturePulse){updateStrengthControl();updateState();}
   }
   requestAnimationFrame(frame);
 }
@@ -742,8 +758,11 @@ document.querySelectorAll("[data-circle-study]").forEach(b=>b.addEventListener("
 }));
 $("previous").addEventListener("click",()=>cycle(-1)); $("next").addEventListener("click",()=>cycle(1));
 $("strength").addEventListener("input",e=>{
-  if(variant==="C") fracture=Number(e.target.value)/100; else strength=Number(e.target.value)/100;
+  if(variant==="C"){fracture=Number(e.target.value)/100;fracturePulse=false;} else strength=Number(e.target.value)/100;
   syncURL();renderUI();
+});
+$("fracture-pulse").addEventListener("change",e=>{
+  fracture=fractureStrength(time);fracturePulse=e.target.checked;syncURL();renderUI();
 });
 $("circles").addEventListener("input",e=>{circles=Number(e.target.value)/100;syncURL();renderUI();});
 $("circle-style").addEventListener("change",e=>{
@@ -771,7 +790,8 @@ window.addEventListener("popstate",()=>{
   character=characters.some(c=>c.id===p.get("character"))?p.get("character"):"silent";
   view=["duel","study","party","circles"].includes(p.get("view"))?p.get("view"):"duel";
   if(view==="circles")variant="C";
-  fracture=amount(p,"fracture",view==="circles"?0:.4); circles=amount(p,"circles",.75);
+  fracturePulse=p.get("pulse")==="1";
+  fracture=amount(p,"fracture",view==="circles"?0:.4); circles=amount(p,"circles",fracturePulse?1:.75);
   circleStyle=circleStyles.includes(p.get("circleStyle"))?p.get("circleStyle"):view==="circles"?"sol":"etched";
   if(view==="circles"&&!circleKeys.includes(circleStyle))circleStyle="sol";renderUI();
 });
