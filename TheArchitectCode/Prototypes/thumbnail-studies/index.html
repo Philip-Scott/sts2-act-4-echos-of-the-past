@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mod thumbnail studies</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #13121a; color: #eee8dd; }
+    body { max-width: 1440px; margin: auto; padding: 24px; }
+    h1 { margin-bottom: 8px; }
+    p { color: #bdb5c8; line-height: 1.5; }
+    section { margin-top: 40px; }
+    h2 { font-size: 1.25rem; }
+    .candidates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    figure { margin: 0; }
+    a { color: #dac18e; }
+    a:focus-visible { outline: 3px solid #dac18e; outline-offset: 4px; }
+    img { display: block; width: 100%; height: auto; aspect-ratio: 1; background: #24202f; border-radius: 6px; }
+    figcaption { margin-top: 10px; }
+    @media (max-width: 700px) { body { padding: 16px; } .candidates { grid-template-columns: 1fr; gap: 24px; } }
+  </style>
+</head>
+<body>
+  <h1>Mod thumbnail studies</h1>
+  <p>Three independent models, three concepts each. Open an image to see the full-size candidate. Nothing here replaces the published thumbnail.</p>
+  <p><a href="contact-sheet.jpg">Open the nine-image comparison sheet</a></p>
+  <p>These are promotional composites, not gameplay screenshots. The existing tower artwork's provenance still needs confirmation before public distribution.</p>
+  <section aria-labelledby="sol">
+    <h2 id="sol">GPT-6.1 Sol</h2>
+    <div class="candidates">
+      <figure><a href="sol/candidate-1.jpg"><img src="sol/candidate-1.jpg" alt="Silent versus Corrupted Defect with opposing card hands" width="1024" height="1024"></a><figcaption>Sol 1: The opposing hands</figcaption></figure>
+      <figure><a href="sol/candidate-2.jpg"><img src="sol/candidate-2.jpg" alt="Corrupted Silent and her cards against the tower" width="1024" height="1024"></a><figcaption>Sol 2: The hand you left behind</figcaption></figure>
+      <figure><a href="sol/candidate-3.jpg"><img src="sol/candidate-3.jpg" alt="Architect towering over Corrupted Regent in a bronze frame" width="1024" height="1024" loading="lazy"></a><figcaption>Sol 3: The Architect's court</figcaption></figure>
+    </div>
+  </section>
+  <section aria-labelledby="astra">
+    <h2 id="astra">GPT-6 Astra</h2>
+    <div class="candidates">
+      <figure><a href="astra/candidate-1.jpg"><img src="astra/candidate-1.jpg" alt="Silent and Corrupted Defect facing off beneath the Architect" width="1024" height="1024" loading="lazy"></a><figcaption>Astra 1: The Architect's wager</figcaption></figure>
+      <figure><a href="astra/candidate-2.jpg"><img src="astra/candidate-2.jpg" alt="Ironclad facing his armillary-bound corrupted echo" width="1024" height="1024" loading="lazy"></a><figcaption>Astra 2: Face your echo</figcaption></figure>
+      <figure><a href="astra/candidate-3.jpg"><img src="astra/candidate-3.jpg" alt="Corrupted Regent in a brass alcove beside the Architect" width="1024" height="1024" loading="lazy"></a><figcaption>Astra 3: The gilded prisoner</figcaption></figure>
+    </div>
+  </section>
+  <section aria-labelledby="opus">
+    <h2 id="opus">Claude Opus 5.5</h2>
+    <div class="candidates">
+      <figure><a href="opus/candidate-1.jpg"><img src="opus/candidate-1.jpg" alt="Ironclad versus Corrupted Silent with their cards and a looming Architect" width="1024" height="1024" loading="lazy"></a><figcaption>Opus 1: The Architect's duel</figcaption></figure>
+      <figure><a href="opus/candidate-2.jpg"><img src="opus/candidate-2.jpg" alt="Defect facing his corrupted copy across a split sunset" width="1024" height="1024" loading="lazy"></a><figcaption>Opus 2: Mirror match</figcaption></figure>
+      <figure><a href="opus/candidate-3.jpg"><img src="opus/candidate-3.jpg" alt="First-person Ironclad cards facing Corrupted Ironclad at the tower" width="1024" height="1024" loading="lazy"></a><figcaption>Opus 3: Your move</figcaption></figure>
+    </div>
+  </section>
+</body>
+</html>

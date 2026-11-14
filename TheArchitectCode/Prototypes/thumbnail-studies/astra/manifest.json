@@ -1,0 +1,20 @@
+{
+  "model": "GPT-6 Astra",
+  "candidates": [
+    {
+      "file": "candidate-1.jpg",
+      "title": "The Architect's wager",
+      "description": "The Silent faces a Corrupted Defect above their native card hands while the Architect looms over the workshop."
+    },
+    {
+      "file": "candidate-2.jpg",
+      "title": "Face your echo",
+      "description": "Two Ironclads face each other across a brass mechanism, with the corrupted counterpart bound in the approved armillary."
+    },
+    {
+      "file": "candidate-3.jpg",
+      "title": "The gilded prisoner",
+      "description": "A Corrupted Regent stands inside a brass workshop alcove beside the Architect and an oversized, left-aligned title."
+    }
+  ]
+}
