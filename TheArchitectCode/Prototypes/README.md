@@ -42,23 +42,54 @@ inspect it close up, or use the floating arrows to switch model studies. The
 character, party, pause, original bypass, and independent strength controls still
 apply. The two previous circle styles remain available as baselines.
 
-The user prefers Opus's Verdigris Armillary circles. The
-[current Opus iteration](echo-visuals-prototype.html?variant=C&view=study&circleStyle=opus&fracture=85&circles=100&pulse=1)
-keeps those circles at 100% while the fracture cracks move across the body.
-`pulse=1` makes fracture strength rise from 80% to 95% and return over a
-12-second cycle. The moving cracks open transparent gaps between fragments, with
-thin ivory rims on each side. Gap width follows fracture strength. Pause freezes
-the cracks, pulse, and circle animation together. Disable the Slow fracture pulse
-control for a fixed strength or a circles-only comparison.
+The user selected Opus's Verdigris Armillary circles and later rejected the body
+cracks. The
+[approved Opus baseline](echo-visuals-prototype.html?variant=C&view=study&circleStyle=opus&fracture=0&circles=100)
+keeps circles at 100% with the native body intact.
+The older moving-gap experiment remains available through `fracture` and
+`pulse=1`, but is not approved for game integration.
 
 The optional current Bound Echo reference is a browser approximation, not a capture.
 The state panel records the current selection and outlines possible Godot implementations.
 
-The user wants to retain the current ground and side circles. Shattered echo is
-still under review, not approved for production. These Canvas effects do not establish native shader
+The user wants to retain the ground and side circles without new body fractures.
+These Canvas effects do not establish native shader
 cost, Spine compatibility, or final fracture placement. Health bars are illustrative
 and stay outside the effects. Prototype art is for local visual comparison with the
 installed game, not a new game-asset distribution or production UI.
+
+### Architect-themed armillary refinements
+
+Question: which refinement retains the Opus feel while making the binding look
+like the Architect's machinery and magic?
+
+Open the
+[three-model comparison](echo-visuals-prototype.html?round=architect&view=circles&character=ironclad).
+Each model starts from the approved Opus renderer and the native Architect art.
+The designs use workshop instruments, faceted ivory-gold fittings, lilac echoes,
+and restrained blue staff energy.
+
+| Model | Study | `circleStyle` |
+| --- | --- | --- |
+| GPT-6.1 Sol | Surveyor's Armillary, with supports and a sliding caliper | `sol-architect` |
+| GPT-6 Astra | Echo Collet, with articulated jaws and supply pipes | `astra-architect` |
+| Claude Opus 5.5 | Verdigris Escapement, with a timed ground-to-band energy cycle | `opus-architect` |
+
+`round=architect` selects this set. Character, animation time, and circle strength
+are shared. Click a preview for a close-up against the approved Opus circles;
+the bottom arrows switch models. Combat scale and party views remain available.
+This round always disables body cracks, including when restoring a URL.
+The Original circle studies selector restores the earlier comparison.
+
+To share the prototype on a trusted LAN, run from the repository root:
+
+```sh
+python3 -m http.server 8876 --bind 0.0.0.0 --directory TheArchitectCode/Prototypes
+```
+
+Open the comparison path on port 8876 using the host's LAN address. The server
+exposes only the prototype directory. These refinements are browser-only,
+pending review; none has been selected for native integration.
 
 ## Drag-and-drop party layout editor
 

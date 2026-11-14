@@ -2,6 +2,9 @@
 <!-- THROWAWAY: Which of three painterly Echo treatments fits native combat art?
      Open directly. ?variant=A|B|C&character=silent&view=duel|party|study|circles.
      Three model-authored binding-circle studies use ?variant=C&view=circles.
+     Three Architect-themed Opus refinements use ?round=architect&view=circles.
+     Which refinement makes the binding feel built by the Architect?
+     This round keeps native bodies intact and compares against the approved Opus.
      C keeps the native-style binding circles; fracture and circles are independent.
      Native idle-frame captures, live Canvas effects. No production hooks or saves. -->
 <html lang="en">
@@ -92,8 +95,8 @@
 <header>
   <div>
     <div class="eyebrow">The Architect / Echo studies</div>
-    <h1>A memory that should have stayed dead.</h1>
-    <p>Native character art. Muted supernatural effects. Three ways to keep the Echo theme.</p>
+    <h1 id="page-title">A memory that should have stayed dead.</h1>
+    <p id="page-description">Native character art. Muted supernatural effects. Three ways to keep the Echo theme.</p>
   </div>
   <span class="badge">THROWAWAY / NOT INSTALLED</span>
 </header>
@@ -106,7 +109,10 @@
         <button data-view="party" aria-pressed="false">Party of four</button>
         <button data-view="circles" aria-pressed="false">Compare models</button>
       </div>
-      <span id="scene-label">The Architect's workshop</span>
+      <select id="circle-round" aria-label="Circle study round">
+        <option value="original">Original circle studies</option>
+        <option value="architect">Architect / Opus refinements</option>
+      </select>
     </div>
     <div class="arena">
       <canvas id="arena" width="1600" height="900" aria-label="Original character beside the selected corrupted Echo treatment"></canvas>
@@ -155,22 +161,25 @@
     </div>
     <div class="label">Character <output id="character-label">Silent</output></div>
     <div class="characters" id="characters" aria-label="Choose a native character"></div>
-    <label class="label" for="strength"><span id="strength-title">Effect intensity</span> <output id="strength-label">70%</output></label>
+    <label class="label" for="strength" id="strength-control-label"><span id="strength-title">Effect intensity</span> <output id="strength-label">70%</output></label>
     <input id="strength" type="range" min="0" max="100" value="70">
     <div id="binding-controls" hidden>
-      <label class="reference"><input id="fracture-pulse" type="checkbox"> Slow fracture pulse, 80-95%</label>
+      <label class="reference" id="fracture-pulse-control"><input id="fracture-pulse" type="checkbox"> Slow fracture pulse, 80-95%</label>
       <label class="reference">Circle artwork
         <select id="circle-style">
           <option value="sol">GPT-6.1 Sol study</option>
           <option value="astra">GPT-6 Astra study</option>
           <option value="opus">Claude Opus 5.5 study</option>
+          <option value="sol-architect">GPT-6.1 Sol / Architect refinement</option>
+          <option value="astra-architect">GPT-6 Astra / Architect refinement</option>
+          <option value="opus-architect">Claude Opus 5.5 / Architect refinement</option>
           <option value="etched">Etched binding</option>
           <option value="current">Current thin circles</option>
         </select>
       </label>
       <label class="label" for="circles">Circle strength <output id="circles-label">75%</output></label>
       <input id="circles" type="range" min="0" max="100" value="75">
-      <p class="note">Disable the pulse to set fractures manually. Set fractures to 0 for circles only, or circles to 0 for the body alone.</p>
+      <p class="note" id="binding-note">Disable the pulse to set fractures manually. Set fractures to 0 for circles only, or circles to 0 for the body alone.</p>
     </div>
     <div class="actions">
       <button id="pause" aria-pressed="false">Pause</button>
@@ -180,9 +189,10 @@
       <select id="reference">
         <option value="native">Original character</option>
         <option value="current">Current Bound Echo approximation</option>
+        <option value="opus">Approved Opus circles</option>
       </select>
     </label>
-    <p class="note">The three model studies share the same native character, time, circle strength, and fracture amount. Only the circle artwork changes. The previous etched and thin circles remain available for comparison.</p>
+    <p class="note" id="study-note">The three model studies share the same native character, time, circle strength, and fracture amount. Only the circle artwork changes. The previous etched and thin circles remain available for comparison.</p>
     <details>
       <summary>Prototype state and implementation notes</summary>
       <pre id="state"></pre>
@@ -200,6 +210,9 @@
 <script src="echo-circle-studies/sol.js"></script>
 <script src="echo-circle-studies/astra.js"></script>
 <script src="echo-circle-studies/opus.js"></script>
+<script src="echo-circle-studies/sol-architect.js"></script>
+<script src="echo-circle-studies/astra-architect.js"></script>
+<script src="echo-circle-studies/opus-architect.js"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -234,14 +247,20 @@ const characters = [
   { id: "defect", name: "Defect", bounds: [152, 133, 208, 337] }
 ];
 const keys = Object.keys(variants);
-const circleModels = { sol: "GPT-6.1 Sol", astra: "GPT-6 Astra", opus: "Claude Opus 5.5" };
-const circleKeys = Object.keys(circleModels), circleStyles = [...circleKeys, "etched", "current"];
+const circleAuthors = { sol: "GPT-6.1 Sol", astra: "GPT-6 Astra", opus: "Claude Opus 5.5" };
+const circleSlots = Object.keys(circleAuthors);
+const circleModels = { ...circleAuthors,
+  "sol-architect": circleAuthors.sol, "astra-architect": circleAuthors.astra, "opus-architect": circleAuthors.opus };
+const allCircleKeys = Object.keys(circleModels), circleStyles = [...allCircleKeys, "etched", "current"];
 const circleStudies = window.EchoCircleStudies ?? {};
 const initial = new URLSearchParams(location.search);
+let circleRound = initial.get("round") === "architect" ? "architect" : "original";
+function roundKeys() { return circleSlots.map(key => circleRound === "architect" ? key + "-architect" : key); }
+let circleKeys = roundKeys();
 let variant = keys.includes(initial.get("variant")) ? initial.get("variant") : "A";
 let character = characters.some(c => c.id === initial.get("character")) ? initial.get("character") : "silent";
-let view = ["duel", "study", "party", "circles"].includes(initial.get("view")) ? initial.get("view") : "duel";
-if (view === "circles") variant = "C";
+let view = ["duel", "study", "party", "circles"].includes(initial.get("view")) ? initial.get("view") : circleRound === "architect" ? "circles" : "duel";
+if (view === "circles" || circleRound === "architect") variant = "C";
 let strength = .7, paused = matchMedia("(prefers-reduced-motion: reduce)").matches, holding = false;
 function amount(params, key, fallback) {
   const value = Number(params.get(key));
@@ -249,12 +268,14 @@ function amount(params, key, fallback) {
 }
 let fracturePulse = initial.get("pulse") === "1";
 let fracture = amount(initial, "fracture", view === "circles" ? 0 : .4), circles = amount(initial, "circles", fracturePulse ? 1 : .75);
-let circleStyle = circleStyles.includes(initial.get("circleStyle")) ? initial.get("circleStyle") : view === "circles" ? "sol" : "etched";
-if (view === "circles" && !circleKeys.includes(circleStyle)) circleStyle = "sol";
-let reference = "native", time = 3.5, last = 0, ready = false;
+if (circleRound === "architect") { fracture = 0; fracturePulse = false; circles = amount(initial, "circles", 1); }
+let circleStyle = circleStyles.includes(initial.get("circleStyle")) ? initial.get("circleStyle") : view === "circles" || circleRound === "architect" ? circleKeys[0] : "etched";
+if ((view === "circles" || circleRound === "architect") && !circleKeys.includes(circleStyle)) circleStyle = circleKeys[0];
+let reference = ["native", "current", "opus"].includes(initial.get("reference")) ? initial.get("reference") : circleRound === "architect" ? "opus" : "native";
+let time = 3.5, last = 0, ready = false;
 const arena = $("arena"), ctx = arena.getContext("2d");
 const art = new Map(), frames = new Map(), thumbs = keys.map(k => $("thumb-" + k).getContext("2d"));
-const circleThumbs = Object.fromEntries(circleKeys.map(key => [key, $("circle-" + key).getContext("2d")]));
+const circleThumbs = circleSlots.map(key => $("circle-" + key).getContext("2d"));
 const background = new Image();
 
 function surface(width = 512, height = width) {
@@ -555,7 +576,7 @@ function drawEtchedBinding(c, bounds, t, opacity, front) {
   c.restore();
 }
 function drawBinding(c, binding, front) {
-  if (circleKeys.includes(binding.style)) {
+  if (allCircleKeys.includes(binding.style)) {
     circleStudies[binding.style].draw(c, binding.bounds, binding.time, binding.opacity, front);
     return;
   }
@@ -619,17 +640,19 @@ function renderArena(s, t) {
       drawActor(ctx, holding ? art.get(id).image : frames.get(id)[variant],x,floor,410,true,bindingFor(id,variant));
       health(ctx,x,floor+32,190,"120 / 120",characters.find(c=>c.id===id).name+" echo");
     });
-    sceneLabel("FOUR ECHOES / " + variants[variant].name.toUpperCase(),800,75);
+    sceneLabel("FOUR ECHOES / " + (circleRound==="architect" ? circleStudies[circleStyle].name : variants[variant].name).toUpperCase(),800,75);
   } else {
     const close=view==="study", floor=close?737:694, size=close?650:510, lx=close?430:390, rx=close?1170:1170;
     let ref = source.image;
     if(reference==="current") { currentEffect(source,currentFrame,t); ref=currentFrame; }
-    const referenceBinding = reference === "current" ? { bounds: source.bounds, opacity: .75, time: t, style: "current" } : null;
+    const referenceBinding = reference === "opus" && !holding
+      ? { bounds: source.bounds, opacity: circles, time: t, style: "opus" }
+      : reference === "current" ? { bounds: source.bounds, opacity: .75, time: t, style: "current" } : null;
     drawActor(ctx,ref,lx,floor,size,false,referenceBinding);
     drawActor(ctx,holding ? source.image : frame,rx,floor,size,true,bindingFor(character,variant));
     health(ctx,lx,floor+36,225,"70 / 70",name);
     health(ctx,rx,floor+36,225,"140 / 140",name+" echo");
-    sceneLabel(reference==="current" ? "CURRENT BOUND ECHO / APPROXIMATION" : "ORIGINAL CHARACTER",lx,65);
+    sceneLabel(reference==="opus" ? "APPROVED OPUS / VERDIGRIS ARMILLARY" : reference==="current" ? "CURRENT BOUND ECHO / APPROXIMATION" : "ORIGINAL CHARACTER",lx,65);
     const treatment = variant==="C" && circleStudies[circleStyle] ? circleStudies[circleStyle].name : variants[variant].name;
     sceneLabel(holding ? "ORIGINAL / EFFECT BYPASSED" : variant+" / "+treatment.toUpperCase(),rx,65);
   }
@@ -637,12 +660,12 @@ function renderArena(s, t) {
   ctx.fillText("VISUAL STUDY / NO COMBAT OR HUD CHANGES",25,870); ctx.restore();
 }
 function renderThumbs() {
-  if (view === "circles") {
-    circleKeys.forEach(key => {
-      const c = circleThumbs[key]; c.clearRect(0,0,560,310); c.fillStyle="#292f29"; c.fillRect(0,0,560,310);
+  if (view === "circles" || circleRound === "architect") {
+    circleKeys.forEach((key, index) => {
+      const c = circleThumbs[index]; c.clearRect(0,0,560,310); c.fillStyle="#292f29"; c.fillRect(0,0,560,310);
       c.globalAlpha=.18; c.drawImage(background,0,300,1600,600,0,0,560,310); c.globalAlpha=1;
       const binding = holding ? null : { bounds: art.get(character).bounds, opacity: circles, time, style: key };
-      drawActor(c,frames.get(character).C,278,291,340,true,binding);
+      drawActor(c,holding ? art.get(character).image : frames.get(character).C,278,291,340,true,binding);
     });
     return;
   }
@@ -654,15 +677,17 @@ function renderThumbs() {
 }
 function updateState() {
   $("state").textContent=JSON.stringify({
-    throwaway:true, variant, treatment:variants[variant].name, character, view,
+    throwaway:true, variant, treatment:circleRound==="architect"?"Architect armillary refinement":variants[variant].name, character, view, circleRound,
     intensity:Math.round(strength*100), paused, originalBypass:holding, reference,
     fractureAmount:Math.round(fractureStrength(time)*100), circleStrength:Math.round(circles*100),
     fracturePulse, fracturePulseRange:fracturePulse?[80,95]:null,
     fracturePulsePeriodSeconds:fracturePulse?12:null,
-    fractureMotion:"Body-relative drifting cracks; separated fragments",
+    fractureMotion:fracture>0 || fracturePulse ? "Body-relative drifting cracks; separated fragments" : "Off / original native body",
     circleArtwork:circleStyle,
     circleAuthor:circleModels[circleStyle] ?? null,
     circleConcept:circleStudies[circleStyle]?.name ?? null,
+    baseline:reference==="opus" ? "Approved Opus / Verdigris Armillary" : reference,
+    architectMotifs:circleRound==="architect" ? "Faceted ivory-gold metal, workshop instruments, lilac echoes, restrained blue staff energy" : null,
     bindingApplied:variant==="C" && circles>0 && !holding,
     bindingGeometry:"Independent ground sigil and back/front body circles, approximating production",
     nativeArt:"Flattened native idle frame, not live Spine animation",
@@ -675,6 +700,7 @@ function syncURL() {
   url.searchParams.set("variant",variant); url.searchParams.set("character",character); url.searchParams.set("view",view);
   url.searchParams.set("fracture",Math.round(fracture*100)); url.searchParams.set("circles",Math.round(circles*100));
   url.searchParams.set("circleStyle",circleStyle);
+  url.searchParams.set("round",circleRound); url.searchParams.set("reference",reference);
   if(fracturePulse) url.searchParams.set("pulse","1"); else url.searchParams.delete("pulse");
   history.replaceState(null,"",url);
 }
@@ -692,32 +718,42 @@ function renderUI() {
     $("name").textContent=study.name;
     $("direction").textContent=circleModels[circleStyle]+" / circle study";
     $("description").textContent=study.description;
-    $("fit").textContent="Independent artwork from "+circleModels[circleStyle]+". Compare against the other models with the same character, strength, and lighting.";
-    $("implementation").textContent="An independently authored Canvas renderer for the ground and back/front body circles. The model study does not change the body shader, native game, or installed mod.";
+    $("fit").textContent=study.fit ?? "Independent artwork from "+circleModels[circleStyle]+". Compare against the other models with the same character, strength, and lighting.";
+    $("tradeoff").textContent=study.tradeoff ?? "Compare the moving bands at combat size and in a party of four. Ground detail should not compete with the character or health bar.";
+    $("implementation").textContent=study.implementation ?? "An independently authored Canvas renderer for the ground and back/front body circles. The model study does not change the body shader, native game, or installed mod.";
   }
+  const architect = circleRound==="architect";
+  $("page-title").textContent=architect?"Built by the Architect. Bound to an Echo.":"A memory that should have stayed dead.";
+  $("page-description").textContent=architect?"Three model-authored refinements of the Opus armillary. Workshop machinery, faceted metal, and controlled magic. No body changes.":"Native character art. Muted supernatural effects. Three ways to keep the Echo theme.";
+  $("circle-round").value=circleRound;
   $("current").textContent=study?"Circles / "+circleModels[circleStyle]:variant+" / "+choice.name;
   $("switcher-hint").textContent=study?"Arrow keys select a circle study":"Arrow keys switch body treatments";
-  $("body-studies").hidden=view==="circles"; $("circle-studies").hidden=view!=="circles";
-  for (const key of circleKeys) {
+  $("body-studies").hidden=view==="circles" || architect; $("circle-studies").hidden=view!=="circles" && !architect;
+  for (const [index, key] of circleKeys.entries()) {
+    const slot=circleSlots[index], card=$("circle-"+slot).closest("[data-circle-study]");
+    card.dataset.circleStudy=key;
     const concept=circleStudies[key];
     if (concept) {
-      $("circle-"+key+"-name").textContent=concept.name;
-      const option=$("circle-style").querySelector(`option[value="${key}"]`);
-      option.textContent=circleModels[key]+" / "+concept.name;
+      $("circle-"+slot+"-name").textContent=concept.name;
     }
-    document.querySelector(`[data-circle-study="${key}"]`).setAttribute("aria-pressed",String(circleStyle===key));
+    card.setAttribute("aria-pressed",String(circleStyle===key));
   }
+  for (const key of allCircleKeys) if(circleStudies[key]) $("circle-style").querySelector(`option[value="${key}"]`).textContent=circleModels[key]+" / "+circleStudies[key].name;
   $("character-label").textContent=characters.find(c=>c.id===character).name;
   updateStrengthControl();
+  $("strength-control-label").hidden=architect; $("strength").hidden=architect; $("fracture-pulse-control").hidden=architect;
+  $("binding-note").textContent=architect?"Native bodies stay unchanged. Circle strength applies equally to the selected refinement and the approved Opus reference.":"Disable the pulse to set fractures manually. Set fractures to 0 for circles only, or circles to 0 for the body alone.";
+  $("study-note").textContent=architect?"Each model starts from the approved Opus armillary and the same Architect references. Character, time, lighting, and circle strength are shared. Click a model for a close-up against the approved Opus, or inspect a party of four.":"The three model studies share the same native character, time, circle strength, and fracture amount. Only the circle artwork changes. The previous etched and thin circles remain available for comparison.";
   $("binding-controls").hidden=variant!=="C";
   $("fracture-pulse").checked=fracturePulse;
   $("circles").value=Math.round(circles*100); $("circles-label").textContent=$("circles").value+"%";
   $("circle-style").value=circleStyle;
+  $("reference").value=reference;
   $("pause").textContent=paused?"Resume":"Pause"; $("pause").setAttribute("aria-pressed",String(paused));
   $("original").setAttribute("aria-pressed",String(holding));
-  $("scene-label").textContent=view==="study"?"Neutral light / enlarged character":"The Architect's workshop";
   $("comparison-label").textContent=view==="circles"?"Same character and settings. Click a model preview for a close-up.":view==="party"?"Four enemies, one treatment. Character selection changes the first slot.":
-    `Left: ${reference==="native"?"original colors":"current effect approximation"}. Right: selected Echo.`;
+    `Left: ${reference==="opus"?"approved Opus circles":reference==="native"?"original colors":"current effect approximation"}. Right: selected Echo.`;
+  arena.setAttribute("aria-label",view==="circles"?"Three model-authored circle treatments on the same native character":reference==="opus"?"Approved Opus circles beside the selected refinement":"Original character beside the selected Echo treatment");
   document.querySelectorAll("[data-variant]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.variant===variant)));
   document.querySelectorAll("[data-character]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.character===character)));
   document.querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===view)));
@@ -736,7 +772,7 @@ function frame(stamp) {
     const fractureLevel=fractureStrength(time);
     for(const id of ids) {
       const source=art.get(id);
-      for(const key of keys) renderEffect(source,key,holding?0:key==="C"?fractureLevel:strength,time,frames.get(id)[key]);
+      for(const key of circleRound==="architect"?["C"]:keys) renderEffect(source,key,holding?0:key==="C"?fractureLevel:strength,time,frames.get(id)[key]);
     }
     renderArena(holding?0:strength,time); renderThumbs();
     if(variant==="C"&&fracturePulse){updateStrengthControl();updateState();}
@@ -753,9 +789,16 @@ characters.forEach(entry => {
 document.querySelectorAll("[data-variant]").forEach(b=>b.addEventListener("click",()=>{variant=b.dataset.variant;syncURL();renderUI();}));
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{
   view=b.dataset.view;
-  if(view==="circles"){variant="C";if(!circleKeys.includes(circleStyle))circleStyle="sol";}
+  if(view==="circles"){variant="C";if(!circleKeys.includes(circleStyle))circleStyle=circleKeys[0];}
   syncURL();renderUI();
 }));
+$("circle-round").addEventListener("change",e=>{
+  circleRound=e.target.value; circleKeys=roundKeys();
+  circleStyle=circleRound==="architect"?circleKeys[0]:"opus";
+  variant="C"; view="circles"; fracture=0; fracturePulse=false; circles=1;
+  reference=circleRound==="architect"?"opus":"native";
+  syncURL();renderUI();
+});
 document.querySelectorAll("[data-circle-study]").forEach(b=>b.addEventListener("click",()=>{
   circleStyle=b.dataset.circleStudy;variant="C";view="study";syncURL();renderUI();
 }));
@@ -770,11 +813,15 @@ $("fracture-pulse").addEventListener("change",e=>{
 $("circles").addEventListener("input",e=>{circles=Number(e.target.value)/100;syncURL();renderUI();});
 $("circle-style").addEventListener("change",e=>{
   circleStyle=e.target.value;
+  const nextRound=circleStyle.endsWith("-architect")?"architect":"original";
+  if(nextRound!==circleRound && nextRound==="architect") reference="opus";
+  circleRound=nextRound; circleKeys=roundKeys();
+  if(circleRound==="architect"){variant="C";fracture=0;fracturePulse=false;}
   if(view==="circles"&&!circleKeys.includes(circleStyle))view="study";
   syncURL();renderUI();
 });
 $("pause").addEventListener("click",()=>{paused=!paused;renderUI();});
-$("reference").addEventListener("change",e=>{reference=e.target.value;renderUI();});
+$("reference").addEventListener("change",e=>{reference=e.target.value;syncURL();renderUI();});
 function hold(value) { holding=value;renderUI(); }
 $("original").addEventListener("pointerdown",e=>{e.preventDefault();$("original").setPointerCapture(e.pointerId);hold(true);});
 $("original").addEventListener("pointerup",()=>hold(false));
@@ -789,14 +836,18 @@ document.addEventListener("keydown",e=>{
 });
 window.addEventListener("popstate",()=>{
   const p=new URLSearchParams(location.search);
+  circleRound=p.get("round")==="architect"?"architect":"original"; circleKeys=roundKeys();
   variant=keys.includes(p.get("variant"))?p.get("variant"):"A";
   character=characters.some(c=>c.id===p.get("character"))?p.get("character"):"silent";
-  view=["duel","study","party","circles"].includes(p.get("view"))?p.get("view"):"duel";
-  if(view==="circles")variant="C";
+  view=["duel","study","party","circles"].includes(p.get("view"))?p.get("view"):circleRound==="architect"?"circles":"duel";
+  if(view==="circles"||circleRound==="architect")variant="C";
   fracturePulse=p.get("pulse")==="1";
   fracture=amount(p,"fracture",view==="circles"?0:.4); circles=amount(p,"circles",fracturePulse?1:.75);
-  circleStyle=circleStyles.includes(p.get("circleStyle"))?p.get("circleStyle"):view==="circles"?"sol":"etched";
-  if(view==="circles"&&!circleKeys.includes(circleStyle))circleStyle="sol";renderUI();
+  if(circleRound==="architect"){fracture=0;fracturePulse=false;circles=amount(p,"circles",1);}
+  circleStyle=circleStyles.includes(p.get("circleStyle"))?p.get("circleStyle"):view==="circles"||circleRound==="architect"?circleKeys[0]:"etched";
+  if((view==="circles"||circleRound==="architect")&&!circleKeys.includes(circleStyle))circleStyle=circleKeys[0];
+  reference=["native","current","opus"].includes(p.get("reference"))?p.get("reference"):circleRound==="architect"?"opus":"native";
+  renderUI();
 });
 renderUI();
 Promise.all([
@@ -807,7 +858,7 @@ Promise.all([
     coloredCurrent.set(entry.id,colored(image,"#743bba",.75));
   })
 ]).then(()=>{
-  for(const key of circleKeys) if(typeof circleStudies[key]?.draw!=="function") throw new Error("Circle study unavailable: "+key+". Keep the echo-circle-studies folder beside the HTML file.");
+  for(const key of [...circleKeys,"opus"]) if(typeof circleStudies[key]?.draw!=="function") throw new Error("Circle study unavailable: "+key+". Keep the echo-circle-studies folder beside the HTML file.");
   ready=true;renderUI();
 }).catch(error=>{$("error").hidden=false;$("error").textContent=error.message;});
 requestAnimationFrame(frame);
