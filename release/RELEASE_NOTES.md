@@ -1,16 +1,18 @@
-# Act 4: Echos of the Past 1.5.1
+# Act 4: Echos of the Past 1.5.2
 
 **Your past is the final boss.**
 
-This update from **1.5.0** retunes the Corrupted Fool's character buff.
+This update from **1.5.1** refreshes Corrupted Player binding effects and the
+in-game mod thumbnail.
 It still requires Slay the Spire 2 public-beta **v0.113.0**.
-Published to Steam Workshop on November 13, 2026 at 12:48 p.m. PST.
+Prepared for release; not yet published.
 
 ## What's new
 
-- Discordant Bow now gives the Corrupted Fool 1 additional Arrow and 7 Aim at
-  the start of combat, and 7 Aim at the end of each of its turns. It previously
-  gave 12 Aim at the start of combat and 3 at the end of each turn.
+- Corrupted Players have new patinated bronze binding circles, with lilac
+  afterimages, orbiting glass shards and animated ground ripples.
+- The in-game mod thumbnail now uses the corrected Architect's Duel artwork.
+  Steam Workshop artwork is unchanged.
 
 The internal ID, runtime filenames and installation folder remain `TheArchitect`.
 Update the existing installation; do not install this as a second mod.
@@ -32,7 +34,9 @@ layouts are explicitly Unsupported. Not all vanilla or modded combinations are
 audited. Lineages are local, not Steam Cloud data. Changing hosts during an ongoing run is unsupported.
 Avoid force-closing during the result transition; full crash-transaction recovery
 is still tracked in issue #12.
+The new binding-circle animation has not been performance-benchmarked on
+lower-end hardware.
 
-Use `TheArchitect-v1.5.1.zip` for manual installation, not GitHub's source archives.
+Use `TheArchitect-v1.5.2.zip` for manual installation, not GitHub's source archives.
 Extract its `TheArchitect` folder into the game's `mods` folder with the game
 closed. See `INSTALL.md` for details and `SHA256SUMS` for file hashes.

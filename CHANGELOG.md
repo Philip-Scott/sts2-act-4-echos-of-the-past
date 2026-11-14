@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.2 Changes
+
+Prepared for release; not yet published.
+
+- Corrupted Players have new patinated bronze binding circles, with lilac
+  afterimages, orbiting glass shards and animated ground ripples.
+- The in-game mod thumbnail now uses the corrected Architect's Duel artwork.
+  Steam Workshop artwork is unchanged.
+
 ## 1.5.1 Changes
 
 Released November 13, 2026 at 12:48 p.m. PST.

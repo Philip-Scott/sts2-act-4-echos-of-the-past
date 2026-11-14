@@ -1,5 +1,5 @@
 {
   "title": "Act 4: Echos of the Past",
-  "changeNote": "## 1.5.1 Changes\n\n- Discordant Bow now gives the Corrupted Fool 1 additional Arrow and 7 Aim at the start of combat, and 7 Aim at the end of each of its turns. It previously gave 12 Aim at the start of combat and 3 at the end of each turn.\n",
+  "changeNote": "## 1.5.2 Changes\n\n- Corrupted Players have new patinated bronze binding circles, with lilac afterimages, orbiting glass shards and animated ground ripples.\n- The in-game mod thumbnail now uses the corrected Architect's Duel artwork. Steam Workshop artwork is unchanged.\n",
   "dependencies": [3737335127]
 }
