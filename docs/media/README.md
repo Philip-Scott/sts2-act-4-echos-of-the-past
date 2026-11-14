@@ -12,13 +12,17 @@ The thumbnail, banner and in-game mod image have been updated to the new title.
 | `release-banner.jpg` | 1920 x 1080 | README and release announcement |
 | `../../TheArchitect/mod_image.png` | 420 x 420 | In-game mod browser image, replacing the placeholder |
 
-The promotional artwork uses the repository's tower-approach illustration,
+The Workshop thumbnail and release banner use the repository's tower-approach illustration,
 the Architect in the upper right, and a right-facing shoulder portrait in the
 lower left. The text is centered, clear of both characters. Typography
 uses Noto Serif Bold and Lato Heavy. The editable layout is
 `scripts/build-release-media.sh`; no flattened text needs hand-editing.
 Run it from anywhere with `bash scripts/build-release-media.sh`. Font file paths
 can be overridden with `SERIF_FONT` and `SANS_FONT`.
+
+The in-game mod browser uses the corrected Architect's Duel composition, stored
+at `source/in-game-thumbnail.jpg`. The same script resizes it to 420 x 420,
+separately from the Workshop artwork.
 
 Reusable character layers live in `source/`. `shoulder.png` is the supplied
 transparent portrait, cropped during composition without mirroring.

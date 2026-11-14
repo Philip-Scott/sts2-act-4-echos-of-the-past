@@ -7,6 +7,7 @@ OUTPUT="$ROOT/docs/media"
 ART="$ROOT/TheArchitect/images/backgrounds/architect_approach/tower.png"
 ARCHITECT="$OUTPUT/source/architect.png"
 SHOULDER="$OUTPUT/source/shoulder.png"
+MOD_IMAGE="$OUTPUT/source/in-game-thumbnail.jpg"
 command -v magick >/dev/null
 command -v fc-match >/dev/null
 SERIF_FONT="${SERIF_FONT:-$(fc-match -f '%{file}' 'Noto Serif:style=Bold')}"
@@ -15,6 +16,7 @@ test -f "$SERIF_FONT"
 test -f "$SANS_FONT"
 test -f "$ARCHITECT"
 test -f "$SHOULDER"
+test -f "$MOD_IMAGE"
 mkdir -p "$OUTPUT"
 
 magick "$ART" -resize '1024x1024^' -gravity center -extent 1024x1024 \
@@ -64,7 +66,7 @@ magick "$ART" -resize '1920x1080^' -gravity center -extent 1920x1080 \
     -fill '#d0c9c3' -pointsize 25 -annotate +0+925 'SLAY THE SPIRE 2  /  SINGLE-PLAYER + CO-OP' \
     -strip -sampling-factor 4:4:4 -quality 93 "$OUTPUT/release-banner.jpg"
 
-magick "$OUTPUT/workshop-thumbnail.png" -resize 420x420 \
+magick "$MOD_IMAGE" -resize 420x420 \
     -strip "PNG24:$ROOT/TheArchitect/mod_image.png"
 
 if [[ $(wc -c < "$OUTPUT/workshop-thumbnail.png") -ge 1000000 ]]; then
