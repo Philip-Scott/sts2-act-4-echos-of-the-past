@@ -8,11 +8,11 @@ The thumbnail, banner and in-game mod image have been updated to the new title.
 
 | File | Size | Purpose |
 | --- | --- | --- |
-| `workshop-thumbnail.png` | 1024 x 1024 | Steam Workshop's main `image.png`, below 1 MB |
+| `workshop-thumbnail.png` | 920 x 920 | Steam Workshop's main `image.png`, below 1 MB |
 | `release-banner.jpg` | 1920 x 1080 | README and release announcement |
 | `../../TheArchitect/mod_image.png` | 420 x 420 | In-game mod browser image, replacing the placeholder |
 
-The Workshop thumbnail and release banner use the repository's tower-approach illustration,
+The release banner uses the repository's tower-approach illustration,
 the Architect in the upper right, and a right-facing shoulder portrait in the
 lower left. The text is centered, clear of both characters. Typography
 uses Noto Serif Bold and Lato Heavy. The editable layout is
@@ -20,9 +20,9 @@ uses Noto Serif Bold and Lato Heavy. The editable layout is
 Run it from anywhere with `bash scripts/build-release-media.sh`. Font file paths
 can be overridden with `SERIF_FONT` and `SANS_FONT`.
 
-The in-game mod browser uses the corrected Architect's Duel composition, stored
-at `source/in-game-thumbnail.jpg`. The same script resizes it to 420 x 420,
-separately from the Workshop artwork.
+The Workshop thumbnail and in-game mod browser use the corrected Architect's Duel
+composition, stored at `source/in-game-thumbnail.jpg`. The script resizes it to
+920 x 920 for Workshop's upload budget and 420 x 420 for the in-game mod browser.
 
 Reusable character layers live in `source/`. `shoulder.png` is the supplied
 transparent portrait, cropped during composition without mirroring.

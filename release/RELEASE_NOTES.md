@@ -5,14 +5,14 @@
 This update from **1.5.1** refreshes Corrupted Player binding effects and the
 in-game mod thumbnail.
 It still requires Slay the Spire 2 public-beta **v0.113.0**.
-Prepared for release; not yet published.
+Released November 15, 2026 at 8:52 p.m. PST.
 
 ## What's new
 
 - Corrupted Players have new patinated bronze binding circles, with lilac
   afterimages, orbiting glass shards and animated ground ripples.
 - The in-game mod thumbnail now uses the corrected Architect's Duel artwork.
-  Steam Workshop artwork is unchanged.
+  The Steam Workshop thumbnail was updated separately to match.
 
 The internal ID, runtime filenames and installation folder remain `TheArchitect`.
 Update the existing installation; do not install this as a second mod.

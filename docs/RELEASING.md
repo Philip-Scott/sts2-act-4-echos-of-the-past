@@ -1,4 +1,38 @@
-# Publishing 1.5.1 - Act 4: Echos of the Past
+# Publishing 1.5.2 - Act 4: Echos of the Past
+
+## Published 1.5.2
+
+The author approved publication on November 15, 2026. Steam accepted the
+content-only update to item **3799307965** at **8:52:26 p.m. PST**. The published
+runtime files exactly match the prepared `artifacts/releases/v1.5.2/` bundle
+and its manual-install ZIP. The preparation checkpoint is `52ac219`, and the
+release requires public-beta **v0.113.0** and BaseLib **3.4.8**.
+
+The upload workspace `artifacts/releases/v1.5.2-steam-content-only/` contains
+only the three runtime files in `content/`, `mod_id.txt` and `workshop.json`
+with `changeNote`, plus upload evidence and `publication-receipt.json`.
+The published change note matches the submitted note. The title, description,
+new Architect's Duel thumbnail and five screenshots are unchanged by this
+content update. No commit, push, tag or GitHub Release was made.
+Do not rerun the uploader without approval for another update.
+
+The original preparation bundle remains unchanged. Its release notes predate
+publication and the separately approved thumbnail update. Use this handoff and
+the publication receipt for the final publication status.
+
+## Published thumbnail update
+
+The author approved a thumbnail-only update on November 15, 2026. Steam accepted
+the corrected Architect's Duel artwork for item **3799307965**. Its published
+original matches `docs/media/workshop-thumbnail.png` byte-for-byte. The image is
+920 x 920 to stay below the uploader's 1 MB limit.
+
+The workspace `artifacts/releases/steam-thumbnail-2026-11-15-architect-duel/`
+retains the image, upload log, before/after listing snapshots and receipt.
+The title, description and five screenshots are unchanged. The thumbnail-only
+uploader did not submit mod content or other listing changes. At the time of
+this thumbnail update, the Workshop runtime was still 1.5.1. The subsequent
+1.5.2 content publication is recorded above.
 
 ## Published 1.5.1
 

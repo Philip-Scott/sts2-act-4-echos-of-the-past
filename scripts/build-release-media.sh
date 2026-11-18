@@ -19,30 +19,7 @@ test -f "$SHOULDER"
 test -f "$MOD_IMAGE"
 mkdir -p "$OUTPUT"
 
-magick "$ART" -resize '1024x1024^' -gravity center -extent 1024x1024 \
-    \( -size 1024x1024 'gradient:rgba(10,12,23,0.04)-rgba(10,12,23,1)' \) -composite \
-    \( "$ARCHITECT" -resize x650 \
-        -channel A -fx 'u*min(1,(h-1-j)/(0.24*h))' +channel \
-        \( +clone -background '#050711' -shadow 65x14+0+6 \) \
-        +swap -background none -layers merge +repage \) \
-    -gravity northwest -geometry +580+56 -composite \
-    \( "$SHOULDER" -trim +repage -resize x410 \) \
-    -gravity southwest -geometry +0+0 -composite \
-    -geometry +0+0 \
-    -fill none -stroke '#d1ac70' -strokewidth 2 -draw 'rectangle 30,30 993,993' \
-    -stroke 'rgba(209,172,112,0.4)' -strokewidth 1 -draw 'rectangle 40,40 983,983' \
-    -stroke none -fill 'rgba(10,12,23,0.85)' -draw 'roundrectangle 413,65 611,125 8,8' \
-    \( -background none -font "$SANS_FONT" -fill '#f0d09a' -pointsize 30 \
-        label:'ACT 4' -trim +repage -gravity center -extent 198x60 \) \
-    -gravity northwest -geometry +413+65 -composite \
-    -geometry +0+0 -gravity north \
-    -font "$SERIF_FONT" -fill '#f5e8d4' -pointsize 112 -annotate +0+598 'ECHOES' \
-    -pointsize 38 -annotate +0+710 'OF THE' \
-    -pointsize 94 -annotate +0+752 'PAST' \
-    -stroke '#d1ac70' -strokewidth 2 -draw 'line 350,849 674,849' \
-    -stroke none -font "$SANS_FONT" -fill '#f0d09a' -pointsize 27 \
-    -annotate +0+877 'YOUR PAST IS THE FINAL BOSS.' \
-    -fill '#b5b0b3' -pointsize 20 -annotate +0+929 'A SLAY THE SPIRE 2 MOD' \
+magick "$MOD_IMAGE" -resize 920x920 \
     -strip "PNG24:$OUTPUT/workshop-thumbnail.png"
 
 magick "$ART" -resize '1920x1080^' -gravity center -extent 1920x1080 \
