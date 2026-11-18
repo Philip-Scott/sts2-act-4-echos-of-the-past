@@ -1,18 +1,16 @@
-# Act 4: Echos of the Past 1.5.2
+# Act 4: Echos of the Past 1.5.3
 
 **Your past is the final boss.**
 
-This update from **1.5.1** refreshes Corrupted Player binding effects and the
-in-game mod thumbnail.
+This update from **1.5.2** addresses a multiplayer hang involving the Corrupted
+Defect.
 It still requires Slay the Spire 2 public-beta **v0.113.0**.
-Released November 15, 2026 at 8:52 p.m. PST.
+Prepared for release; not yet published.
 
 ## What's new
 
-- Corrupted Players have new patinated bronze binding circles, with lilac
-  afterimages, orbiting glass shards and animated ground ripples.
-- The in-game mod thumbnail now uses the corrected Architect's Duel artwork.
-  The Steam Workshop thumbnail was updated separately to match.
+- Attempt to fix the multiplayer hang regarding the OvervoltedMatrix power, and
+  how it interacted with other mods.
 
 The internal ID, runtime filenames and installation folder remain `TheArchitect`.
 Update the existing installation; do not install this as a second mod.
@@ -35,8 +33,9 @@ audited. Lineages are local, not Steam Cloud data. Changing hosts during an ongo
 Avoid force-closing during the result transition; full crash-transaction recovery
 is still tracked in issue #12.
 The new binding-circle animation has not been performance-benchmarked on
-lower-end hardware.
+lower-end hardware. The multiplayer fix was verified in isolated single-player
+and simulated-party playtests; real networked co-op was not tested.
 
-Use `TheArchitect-v1.5.2.zip` for manual installation, not GitHub's source archives.
+Use `TheArchitect-v1.5.3.zip` for manual installation, not GitHub's source archives.
 Extract its `TheArchitect` folder into the game's `mods` folder with the game
 closed. See `INSTALL.md` for details and `SHA256SUMS` for file hashes.

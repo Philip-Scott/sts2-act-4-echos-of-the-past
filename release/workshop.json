@@ -1,5 +1,5 @@
 {
   "title": "Act 4: Echos of the Past",
-  "changeNote": "## 1.5.2 Changes\n\n- Corrupted Players have new patinated bronze binding circles, with lilac afterimages, orbiting glass shards and animated ground ripples.\n- The in-game mod thumbnail now uses the corrected Architect's Duel artwork. The Steam Workshop thumbnail was updated separately to match.\n",
+  "changeNote": "## 1.5.3 Changes\n\n- Attempt to fix the multiplayer hang regarding the OvervoltedMatrix power, and how it interacted with other mods.\n",
   "dependencies": [3737335127]
 }
