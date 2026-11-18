@@ -21,8 +21,11 @@ container so BaseLib's property-fill deserializer runs; raw snapshots stay
 unchanged. Modifier listeners from private piles join combat dispatch exactly
 once, including global gem cost modifiers and delayed modifier hooks.
 Native card-cloning call sites also check for a wholly omitted modifier collection
-and invoke BaseLib's registered clone callback when needed. This preserves generated
-Gem ownership and clone hooks even when inlining bypasses BaseLib's clone postfix.
+(the clone has no BaseLib collection at all) and invoke BaseLib's registered clone
+callback when needed. This preserves generated Gem ownership and clone hooks even
+when inlining bypasses BaseLib's clone postfix. These call sites also clone human
+cards, so a collection the callback left empty (a modifier that drops itself from
+copies) is accepted as-is and the guard never fails a clone.
 Snapshot capture similarly invokes BaseLib's registered save getters if an inlined
 native serializer omitted its extension data, rather than saving an empty modifier payload.
 Live combat roster getters and their callers explicitly exclude registered corrupted
@@ -174,7 +177,9 @@ This is a state preview, **not an exact future-damage forecast**.
 
 The actual native `NOrbManager` renders slots, passive/evoke effects and native
 orb hover tips for every character, including characters initially having zero
-slots. Corrupted Player-owned Osty uses the enemy container and mirrored owner-relative
+slots. Callers of `NOrbManager`'s private `Player` getter are rewritten to the
+actor-owner bridge, because the JIT can inline that getter and read the enemy
+body's null `Creature.Player`. Corrupted Player-owned Osty uses the enemy container and mirrored owner-relative
 position, with native health, hitbox, summon/revive and scaling behavior. Ordinary
 human pet layout is unchanged.
 

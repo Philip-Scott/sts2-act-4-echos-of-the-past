@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using BaseLib.Abstracts;
 using BaseLib.Utils;
 using HarmonyLib;
@@ -11,6 +12,10 @@ internal static class NativeCardCloning
     private static readonly MethodInfo CloneMethod = AccessTools.Method(typeof(AbstractModel), "MutableClone");
     private static readonly ICloneableField ModifierField =
         (ICloneableField)AccessTools.Field(typeof(CardModifier), "_modifiers").GetValue(null)!;
+    // Read without Modifiers(card), which would create the very collection we probe for.
+    internal static readonly ConditionalWeakTable<CardModel, List<CardModifier>> ModifierCollections =
+        (ConditionalWeakTable<CardModel, List<CardModifier>>)AccessTools
+            .Field(ModifierField.GetType(), "_table").GetValue(ModifierField)!;
 
     internal static AbstractModel MutableClone(AbstractModel source)
     {
@@ -30,21 +35,19 @@ internal static class NativeCardCloning
     internal static AbstractModel ClonePreservingMutability(AbstractModel source) =>
         source.IsMutable ? MutableClone(source) : source;
 
+    // These clone call sites are rewritten for every card, including the human party's,
+    // so this must never fail a clone the game itself would have accepted.
     internal static void PreserveModifiers(CardModel source, CardModel clone)
     {
-        var originals = CardModifier.Modifiers(source);
-        if (originals.Count == 0 || CardModifier.Modifiers(clone).Count != 0)
+        // BaseLib's clone callback always creates the clone's collection when it runs, even
+        // if a modifier then drops itself from the copy (AfterClonedOnCard, stacking, ...).
+        if (ModifierCollections.TryGetValue(clone, out _) || CardModifier.Modifiers(source).Count == 0)
             return;
 
         // An inlined/tiered native clone can miss BaseLib's MutableClone postfix.
-        // Dispatch its actual registered callback, including AfterClonedOnCard,
-        // only when the entire source modifier collection was omitted.
+        // Dispatch its actual registered callback, including AfterClonedOnCard.
         ModifierField.Clone(source, clone);
-        var copied = CardModifier.Modifiers(clone);
-        if (copied.Count != originals.Count || copied.Zip(originals).Any(pair =>
-                pair.First.Id != pair.Second.Id || pair.First.Owner != clone ||
-                ReferenceEquals(pair.First, pair.Second)))
-            throw new InvalidOperationException($"Native clone failed to preserve BaseLib modifiers for {source.Id}.");
-        MainFile.Logger.Info($"NATIVE restored omitted BaseLib modifier clone: {source.Id}; count={copied.Count}");
+        MainFile.Logger.Info($"NATIVE restored omitted BaseLib modifier clone: {source.Id}; " +
+            $"source={CardModifier.Modifiers(source).Count}, clone={CardModifier.Modifiers(clone).Count}");
     }
 }

@@ -859,7 +859,7 @@ internal sealed class NativeDownfallKeywordPlaytest
         var missingModifiers = Card("Ruby");
         // Fault-inject only the omitted extension collection, not a Gem effect.
         // The production boundary must recover it through BaseLib's real clone callback.
-        CardModifier.DirectModifiers(missingModifiers).Clear();
+        NativeCardCloning.ModifierCollections.Remove(missingModifiers);
         NativeCardCloning.PreserveModifiers(canonicalRuby, missingModifiers);
         NativeCardCloning.PreserveModifiers(canonicalRuby, missingModifiers);
         await Probe("Gem-omitted-clone-collection-boundary", ["Gem"], [missingModifiers], _ =>

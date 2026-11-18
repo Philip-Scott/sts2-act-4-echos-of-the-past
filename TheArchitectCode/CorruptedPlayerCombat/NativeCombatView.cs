@@ -6,6 +6,8 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Hooks;
+using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.Orbs;
 using MegaCrit.Sts2.Core.Runs;
 using TheArchitect.TheArchitectCode.Lifecycle;
 using TheArchitect.TheArchitectCode.UI;
@@ -161,6 +163,8 @@ internal static class NativeCombatCallSites
             AccessTools.Method(typeof(NativeCombatCallSites), nameof(CreatureOwner)),
         [AccessTools.PropertyGetter(typeof(Creature), nameof(Creature.IsPlayer))] =
             AccessTools.Method(typeof(NativeCombatCallSites), nameof(IsPartyPlayer)),
+        [AccessTools.PropertyGetter(typeof(NOrbManager), "Player")] =
+            AccessTools.Method(typeof(NativeCombatCallSites), nameof(OrbManagerOwner)),
         [AccessTools.Method(typeof(Hook), nameof(Hook.AfterBlockCleared))] =
             AccessTools.Method(typeof(NativeTurnPhases), nameof(NativeTurnPhases.AfterBlockCleared)),
         [AccessTools.Method(typeof(Hook), nameof(Hook.AfterSideTurnStart))] =
@@ -309,6 +313,11 @@ internal static class NativeCombatCallSites
         orb.Owner is { } owner && NativeCorruptedPlayer.TryGet(owner, out var actor) ? actor.View : orb.CombatState;
     internal static Player? CreatureOwner(Creature creature) =>
         NativeCorruptedPlayer.TryGet(creature, out var actor) ? actor.Player : creature.Player;
+    // NOrbManager.Player is small enough for the JIT to inline into AddOrbAnim and its other
+    // callers, bypassing the detoured getter and reading the enemy body's null Creature.Player.
+    private static readonly AccessTools.FieldRef<NOrbManager, NCreature> OrbManagerCreature =
+        AccessTools.FieldRefAccess<NOrbManager, NCreature>("_creatureNode");
+    private static Player? OrbManagerOwner(NOrbManager manager) => CreatureOwner(OrbManagerCreature(manager).Entity);
     internal static bool IsPartyPlayer(Creature creature) =>
         !NativeCorruptedPlayer.TryGet(creature, out _) && creature.IsPlayer;
     internal static bool IsCardPlayer(Creature creature) =>
