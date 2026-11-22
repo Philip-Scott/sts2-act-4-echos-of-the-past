@@ -1,4 +1,5 @@
 using BaseLib.Abstracts;
+using MegaCrit.Sts2.Core.Entities.Ascension;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
@@ -57,7 +58,8 @@ public sealed class CorruptedPlayerEncounter : CustomEncounterModel
                 : null;
             var corruptedPlayer = (CorruptedPlayer)ArchitectModels.CorruptedPlayer.ToMutable();
             corruptedPlayer.Configure(characters[index]!,
-                CorruptedPlayerHealth.CalculateMaxHp(snapshot.MaxHp, run.AscensionLevel), snapshot.Deck,
+                CorruptedPlayerHealth.CalculateMaxHp(snapshot.MaxHp,
+                    CorruptedAscension.Has(run, AscensionLevel.ToughEnemies)), snapshot.Deck,
                 $"{run.Rng.StringSeed}|{state.EncounterRevision}|{snapshot.ContentHash}|{Id}" +
                 (snapshots.Count > 1 ? $"|party:{index}" : ""), counterpart);
             corruptedPlayer.SetFormationIndex(counterpart == null ? index : Array.IndexOf(formation, counterpart));

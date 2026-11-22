@@ -36,9 +36,6 @@ public static class ArchitectLifecycle
     public static bool IsBossEncounter([NotNullWhen(true)] IRunState? run) =>
         run is { CurrentRoom: CombatRoom { Encounter: ArchitectEncounter } };
 
-    // Blitz builds its own short maps and merchant, so it keeps the native three-act finale.
-    public static bool Supports(IRunState run) => run.GameMode != GameMode.Blitz;
-
     public static void AppendAct(RunState run)
     {
         if (run.Acts.Any(act => act is ArchitectAct))
@@ -79,7 +76,7 @@ internal static class EnterArchitectActPatch
     private static void Prefix(RunManager __instance)
     {
         var run = __instance.DebugOnlyGetState();
-        if (run is { CurrentActIndex: 2, Acts.Count: 3 } && !__instance.IsAbandoned && ArchitectLifecycle.Supports(run))
+        if (run is { CurrentActIndex: 2, Acts.Count: 3 } && !__instance.IsAbandoned)
             ArchitectLifecycle.AppendAct(run);
     }
 }
@@ -93,7 +90,7 @@ internal static class ResumeLegacyArchitectEntryPatch
         var run = __instance.DebugOnlyGetState();
         if (run is not { CurrentActIndex: 2,
                 CurrentRoom: EventRoom { CanonicalEvent: MegaCrit.Sts2.Core.Models.Events.TheArchitect } } ||
-            __instance.IsAbandoned || !ArchitectLifecycle.Supports(run))
+            __instance.IsAbandoned)
             return true;
         ArchitectLifecycle.AppendAct(run);
         // The event's callback must return before its room can be exited.
@@ -157,7 +154,7 @@ internal static class CaptureCorruptedPlayerAtEntryPatch
                 throw new InvalidOperationException("Act 4 cannot start before every peer validates the host's frozen party.");
         }
         else
-            ArchitectRun.Get(run).Enter();
+            ArchitectRun.Get(run).Enter(CorruptedPlayerStore.HistoryFor(run.GameMode));
     }
 }
 
@@ -224,7 +221,8 @@ internal static class ArchitectOutcomePatch
                     state.SnapshotRevision = ArchitectMultiplayer.IsMultiplayer(__instance)
                         ? ArchitectMultiplayer.RecordOutcome(run, state.Outcome)
                         : CorruptedPlayerStore.Commit(state.Id, state.Outcome,
-                            CorruptedPlayerSnapshot.Capture(run.Players.Single()));
+                            CorruptedPlayerSnapshot.Capture(run.Players.Single()),
+                            CorruptedPlayerStore.HistoryFor(run.GameMode));
                 }
                 catch (Exception error) when (error is JsonException or IOException or UnauthorizedAccessException or
                     InvalidOperationException or NotSupportedException or OverflowException)
@@ -280,8 +278,6 @@ public sealed class ArchitectConsoleCommand : AbstractConsoleCmd
             return new CmdResult(false, "Use 'architect' during a single-player run.");
         if (run.Act is ArchitectAct)
             return new CmdResult(false, "You are already in the Architect Act.");
-        if (!ArchitectLifecycle.Supports(run))
-            return new CmdResult(false, "The Architect Act is not available in Blitz runs.");
         ArchitectLifecycle.AppendAct(run);
         NMapScreen.Instance?.SetTravelEnabled(true);
         return new CmdResult(RunManager.Instance.EnterAct(3), true, "Entering Act 4 - The Architect.");

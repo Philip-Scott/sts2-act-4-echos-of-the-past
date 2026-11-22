@@ -22,6 +22,10 @@ Default target is modded Slot 2. `--slot 3` is supported; Slot 1 is protected.
 One to four corrupted decks can face a single player. Opponents receive only
 character, cards, and maximum HP. Their relics and other resources are ignored.
 
+Add `--blitz` for a Blitz run. Blitz allows Ascension 0 to 5; pass
+`--ascension` when the first player's deck is higher. The receipt's `GameMode`
+must read `Blitz`.
+
 For the existing unsaved local fake-multiplayer mode:
 
 ```sh

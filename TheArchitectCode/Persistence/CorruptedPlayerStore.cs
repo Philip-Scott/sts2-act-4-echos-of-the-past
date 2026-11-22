@@ -4,6 +4,7 @@ using System.Text.Json;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
 using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
@@ -32,24 +33,45 @@ public sealed partial record CorruptedPlayerSnapshot
 
 }
 
+// Each game mode keeps separate opponents; Blitz decks are not comparable to full-run decks.
+public enum CorruptedHistory
+{
+    Standard,
+    Blitz
+}
+
 public static class CorruptedPlayerStore
 {
+    private const string SnapshotFile = "corrupted_player_snapshot.json";
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
-    private static string FilePath => ProjectSettings.GlobalizePath(
-        SaveManager.Instance.GetProfileScopedPath("TheArchitect/corrupted_player_snapshot.json"));
 
-    internal static string ProfileDirectory => Path.GetDirectoryName(FilePath)!;
+    internal static string ProfileDirectory => ProjectSettings.GlobalizePath(
+        SaveManager.Instance.GetProfileScopedPath("TheArchitect"));
+
+    public static CorruptedHistory HistoryFor(GameMode mode) =>
+        mode == GameMode.Blitz ? CorruptedHistory.Blitz : CorruptedHistory.Standard;
+
+    // Holds the solo snapshot and the multiplayer lineages of one history.
+    internal static string HistoryDirectory(CorruptedHistory history) => history switch
+    {
+        CorruptedHistory.Standard => ProfileDirectory,
+        CorruptedHistory.Blitz => Path.Combine(ProfileDirectory, "blitz"),
+        _ => throw new ArgumentOutOfRangeException(nameof(history))
+    };
+
+    private static string FilePath(CorruptedHistory history) => Path.Combine(HistoryDirectory(history), SnapshotFile);
 
     public static Guid GetProfileUuid() => ProfileIdentityStore.GetOrCreate(
         Path.Combine(ProfileDirectory, "profile_identity.json"), () => Load()?.ProfileUuid);
 
-    public static CorruptedPlayerEnvelope? Load(bool forWrite = false) => Load(FilePath, forWrite);
+    public static CorruptedPlayerEnvelope? Load(CorruptedHistory history = CorruptedHistory.Standard,
+        bool forWrite = false) => Load(FilePath(history), forWrite);
 
-    public static void Delete()
+    public static void Delete(CorruptedHistory history = CorruptedHistory.Standard)
     {
         // Older solo saves may be the only copy of the persistent co-op profile identity.
         _ = GetProfileUuid();
-        AtomicSnapshotFile.Delete(FilePath);
+        AtomicSnapshotFile.Delete(FilePath(history));
     }
 
     internal static CorruptedPlayerEnvelope? Load(string path, bool forWrite = false)
@@ -84,8 +106,9 @@ public static class CorruptedPlayerStore
         return null;
     }
 
-    public static long? Commit(string terminalRunId, string outcome, CorruptedPlayerSnapshot snapshot) =>
-        Commit(FilePath, terminalRunId, outcome, snapshot, GetProfileUuid());
+    public static long? Commit(string terminalRunId, string outcome, CorruptedPlayerSnapshot snapshot,
+        CorruptedHistory history = CorruptedHistory.Standard) =>
+        Commit(FilePath(history), terminalRunId, outcome, snapshot, GetProfileUuid());
 
     internal static long? Commit(string path, string terminalRunId, string outcome, CorruptedPlayerSnapshot snapshot,
         Guid? profileUuid = null)

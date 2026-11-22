@@ -50,6 +50,17 @@ Keep the same character and content mods enabled.
 If the game cannot load a saved card model or synchronize the party, the mod
 blocks entry and reports an error. Changing hosts during an ongoing run is not supported.
 
+### Blitz
+
+Blitz runs also get Act 4. Defeating the Act 3 boss in Blitz grants a Rare card
+choice and a potion. Act 4 is a fixed line: The Watcher, a Rest Site, the free
+Blitz Shop, the Corrupted Player Elite when you have saved opponents, and the
+Architect. The Corrupted Player Elite grants normal Blitz Elite rewards.
+Blitz keeps separate Corrupted Players from other runs, for solo and co-op.
+The Blitz lobby's "View Corrupted Deck" button shows and resets them.
+Corrupted Players gain more HP from Tough Enemies (Blitz Ascension 3) and Echo
+Shard from Deadly Enemies (Blitz Ascension 4).
+
 Installed modded cards use the game's card engine. Cards that need human input
 or character data missing from the saved build may need compatibility work.
 
@@ -59,7 +70,7 @@ or character data missing from the saved build may need compatibility work.
 
 | Category | Relic | Effect |
 | --- | --- | --- |
-| Preparation | The Last Wish | Gain 99 Gold. Start combat with 4 Plating and 1 Strength. |
+| Preparation | The Last Wish | Gain 99 Gold, or a random relic in Blitz. Start combat with 4 Plating and 1 Strength. |
 | Preparation | Golden Eye | Scry 8 at the start of combat. |
 | Preparation | Orange Pearl | Start combat with 1 Artifact. |
 | Preparation | Medieval Meal | Gain 20 maximum HP and receive two potion rewards and one rare-card reward. |

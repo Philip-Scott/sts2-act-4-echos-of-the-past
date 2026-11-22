@@ -6,4 +6,6 @@ The starting host remains authoritative for the full run and atomically replaces
 
 The host freezes and synchronizes the whole entry party rather than allowing peers to choose from their own local snapshots. No lineage produces First Visit behavior; incomplete or incompatible party data must never silently create a partial party or different fights on different peers. Missing card content blocks entry visibly, and unsupported effects remain preserved but unplayed.
 
+Lineages are also kept per history: Blitz runs use a separate set of solo snapshots and Successor Lineages under `TheArchitect/blitz/`, keyed the same way. Blitz decks come from a much shorter run, so mixing them with full-run opponents would make both fights unrepresentative. Daily, custom and other modes share the standard history.
+
 Participation implies consent to host-local persistence. There is no in-game reset or host migration: manual deletion of the local profile-scoped data is the only reset mechanism.

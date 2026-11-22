@@ -87,10 +87,11 @@ internal static class CorruptedDeckReset
             !ExtendedSaveHandlers<IRunState, SerializableRun>.ExtendedData[written.SaveData].DictForType<string>()
                 .TryGetValue(ContinueRunPreviewSelection.SaveKey, out var savedJson) || savedJson != selection.Json)
             throw new IOException("The corrected opponent could not be verified in the saved run.");
+        var history = CorruptedPlayerStore.HistoryFor(save.GameMode);
         if (selection.Party is { } party)
-            CorruptedPartyStore.Delete(CorruptedPlayerStore.ProfileDirectory, party.HostProfileUuid,
+            CorruptedPartyStore.Delete(CorruptedPlayerStore.HistoryDirectory(history), party.HostProfileUuid,
                 party.Participants.Select(player => player.ProfileUuid).ToArray());
         else
-            CorruptedPlayerStore.Delete();
+            CorruptedPlayerStore.Delete(history);
     }
 }

@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using Godot;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Entities.Ascension;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
@@ -28,7 +29,7 @@ internal static class ArchitectSavePlaytest
 {
     private static bool _started;
     private sealed record Request(int ProfileId, string OutputDirectory);
-    private sealed record Template(string Seed, int Ascension, string[] Characters);
+    private sealed record Template(string Seed, int Ascension, string[] Characters, string? GameMode = null);
 
     private static void Postfix(NGame __instance, Task __result)
     {
@@ -81,14 +82,22 @@ internal static class ArchitectSavePlaytest
         var root = NativeDemoSafety.RuntimePath;
         var config = JsonSerializer.Deserialize<Template>(File.ReadAllText(Path.Combine(root, "save-template.json"))) ??
             throw new InvalidDataException("Template request is empty.");
-        if (string.IsNullOrWhiteSpace(config.Seed) || config.Ascension is < 0 or > 10 ||
+        var mode = config.GameMode switch
+        {
+            null or nameof(GameMode.Standard) => GameMode.Standard,
+            nameof(GameMode.Blitz) => GameMode.Blitz,
+            _ => throw new InvalidDataException("Template game mode must be Standard or Blitz.")
+        };
+        var maxAscension = AscensionManager.GetMaxAllowed(mode);
+        if (string.IsNullOrWhiteSpace(config.Seed) || config.Ascension < 0 || config.Ascension > maxAscension ||
             config.Characters == null || config.Characters.Length is < 1 or > 4)
-            throw new InvalidDataException("Template requires a seed, Ascension from 0 to 10, and one to four characters.");
+            throw new InvalidDataException(
+                $"Template requires a seed, Ascension from 0 to {maxAscension}, and one to four characters.");
         var players = config.Characters.Select((id, index) => Player.CreateForNewRun(
             ModelDb.GetById<CharacterModel>(ModelId.Deserialize(id)), UnlockState.all, (ulong)index + 1)).ToArray();
         var run = RunState.CreateForNewRun(players,
             [ModelDb.Act<Overgrowth>().ToMutable(), ModelDb.Act<Hive>().ToMutable(), ModelDb.Act<Glory>().ToMutable()],
-            [], GameMode.Standard, false, config.Ascension, config.Seed);
+            [], mode, false, config.Ascension, config.Seed);
         var manager = RunManager.Instance;
         manager.SetUpTest(run, new NetSingleplayerGameService(), shouldSave: false);
         manager.GenerateRooms();
@@ -157,7 +166,8 @@ internal static class ArchitectSavePlaytest
             var expected = state.EncounterSnapshots[((CorruptedPlayer)enemy.Body.Monster!).FormationIndex];
             if (enemy.Player.Character.Id.ToString() != expected.CharacterId ||
                 enemy.Player.Deck.Cards.Count != expected.Deck.Length ||
-                enemy.Body.MaxHp != CorruptedPlayerHealth.CalculateMaxHp(expected.MaxHp, run.AscensionLevel))
+                enemy.Body.MaxHp != CorruptedPlayerHealth.CalculateMaxHp(expected.MaxHp,
+                    CorruptedAscension.Has(run, AscensionLevel.ToughEnemies)))
                 throw new InvalidDataException("The scripted enemy does not match its deck.");
         }
         File.Copy(Path.Combine(NativeDemoSafety.RuntimePath, "starting.json"),
@@ -190,7 +200,7 @@ internal static class ArchitectSavePlaytest
             Saved = saved, Profile = saved ? SaveManager.Instance.CurrentProfileId : (int?)null,
             Visible = game.GetWindow().Visible,
             Location = saved ? "Watcher" : "CorruptedPlayer",
-            Seed = run.Rng.StringSeed, Ascension = run.AscensionLevel,
+            Seed = run.Rng.StringSeed, Ascension = run.AscensionLevel, GameMode = run.GameMode.ToString(),
             Players = run.Players.Select(player => new
             {
                 Character = player.Character.Id.ToString(), Cards = player.Deck.Cards.Count,

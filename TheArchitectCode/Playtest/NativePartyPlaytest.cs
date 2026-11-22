@@ -1,6 +1,7 @@
 using Godot;
 using System.IO;
 using System.Text.Json;
+using MegaCrit.Sts2.Core.Entities.Ascension;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -255,7 +256,8 @@ internal static class NativePartyPlaytest
                     var expected = snapshots[((CorruptedPlayer)actor.Body.Monster!).FormationIndex];
                     Require(actor.Player.Character.Id.ToString() == expected.CharacterId &&
                         actor.Player.Deck.Cards.Count == expected.Deck.Length &&
-                        actor.Body.MaxHp == CorruptedPlayerHealth.CalculateMaxHp(expected.MaxHp, ascension),
+                        actor.Body.MaxHp == CorruptedPlayerHealth.CalculateMaxHp(expected.MaxHp,
+                            CorruptedAscension.Has(run, AscensionLevel.ToughEnemies)),
                         "history opponent character, complete deck and scaled HP restored");
                 }
                 history.WriteReceipt(players, snapshots, ascension);
@@ -286,7 +288,8 @@ internal static class NativePartyPlaytest
         for (var index = 0; index < count; index++)
         {
             actors[index].AssertIdentity();
-            var expected = CorruptedPlayerHealth.CalculateMaxHp(snapshots[count - index - 1].MaxHp, ascension);
+            var expected = CorruptedPlayerHealth.CalculateMaxHp(snapshots[count - index - 1].MaxHp,
+                CorruptedAscension.Has(run, AscensionLevel.ToughEnemies));
             Require(enemies[index].MaxHp == expected, $"{count}: member {index} has exactly {expected} HP");
             enemies[index].ScaleMonsterHpForMultiplayer(combat.Encounter, count, 3);
             Require(enemies[index].MaxHp == expected, $"{count}: native multiplayer cannot add HP scaling");

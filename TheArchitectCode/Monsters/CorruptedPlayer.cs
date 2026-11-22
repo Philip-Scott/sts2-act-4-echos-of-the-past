@@ -2,6 +2,7 @@ using System.Text.Json;
 using BaseLib.Abstracts;
 using Godot;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Entities.Ascension;
 using MegaCrit.Sts2.Core.Animation;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
 using MegaCrit.Sts2.Core.Combat;
@@ -123,7 +124,8 @@ public sealed class CorruptedPlayer : CustomMonsterModel
         }
         // Applied before BeforeCombatStart so start-of-combat buff effects resolve natively.
         var context = new ThrowingPlayerChoiceContext();
-        foreach (var buff in CorruptedPlayerBuffs.For(Character, Creature.CombatState!.RunState.AscensionLevel))
+        foreach (var buff in CorruptedPlayerBuffs.For(Character,
+                     CorruptedAscension.Has(Creature.CombatState!.RunState, AscensionLevel.DeadlyEnemies)))
             await PowerCmd.Apply(context, ModelDb.GetById<PowerModel>(buff).ToMutable(), Creature, 1, Creature, null);
     }
 

@@ -29,6 +29,8 @@ SAVE_KEY = "TheArchitect.Run.v1"
 RESOURCES = ("current_hp", "max_hp", "gold", "max_energy", "base_orb_slot_count",
              "max_potion_slot_count")
 FIELDS = {"schema", "name", "character", "ascension", "cards", "relics", "potions", *RESOURCES}
+# AscensionManager.GetMaxAllowed(GameMode)
+MAX_ASCENSION = {"Standard": 10, "Blitz": 5}
 NATIVE_SPEC = importlib.util.spec_from_file_location("act4_native_demo", ROOT / "scripts/native-demo.py")
 NATIVE = importlib.util.module_from_spec(NATIVE_SPEC)
 NATIVE_SPEC.loader.exec_module(NATIVE)
@@ -411,7 +413,8 @@ def native_run(game, flag, source, artifact, *, visible=False, expected=None):
                     run = candidates[0]
                 if visible and run and (run / "ready.json").exists():
                     if expected is not None:
-                        verify_receipt(json.loads((run / "ready.json").read_text()), *expected, saved=False)
+                        *build, mode = expected
+                        verify_receipt(json.loads((run / "ready.json").read_text()), *build, saved=False, mode=mode)
                     print(f"Fake multiplayer is ready at the Corrupted Player fight. It is not a profile save.\nArtifacts: {run}", flush=True)
                     print((run / "ready.json").read_text(), flush=True)
                     return process.wait()
@@ -434,7 +437,7 @@ def native_run(game, flag, source, artifact, *, visible=False, expected=None):
                     process.wait()
 
 
-def verify_receipt(receipt, players, opponents, seed, ascension, *, saved, profile=None):
+def verify_receipt(receipt, players, opponents, seed, ascension, *, saved, profile=None, mode="Standard"):
     expected_players = [{"Character": deck["character"], "Cards": len(deck["cards"]),
                          "Relics": len(deck["relics"]), "Hp": deck["current_hp"],
                          "MaxHp": deck["max_hp"], "Gold": deck["gold"],
@@ -447,6 +450,7 @@ def verify_receipt(receipt, players, opponents, seed, ascension, *, saved, profi
             receipt.get("Visible") is not True or
             receipt.get("Location") != ("Watcher" if saved else "CorruptedPlayer") or
             receipt.get("Seed") != seed or receipt.get("Ascension") != ascension or
+            receipt.get("GameMode", "Standard") != mode or
             receipt.get("Players") != expected_players or receipt.get("Opponents") != expected_opponents or
             not isinstance(receipt.get("Offers"), list) or len(receipt["Offers"]) != 3):
         raise PlaytestFailure("Native receipt does not match the requested starting builds. "
@@ -636,12 +640,13 @@ def save_identity(save):
             "Opponents": state["PlaytestOpponents"], "Schema": save.get("schema_version")}
 
 
-def record_preparation(artifact, account, slot, game, players, opponents, seed, ascension, *, parent=None):
+def record_preparation(artifact, account, slot, game, players, opponents, seed, ascension, *, parent=None,
+                       mode="Standard"):
     immutable = ("verified.save", "native-receipt.json", "inputs.json")
     receipt = json.loads((artifact / "native-receipt.json").read_text())
-    verify_receipt(receipt, players, opponents, seed, ascension, saved=False)
-    write_json(artifact / "inputs.json", {"Players": players, "Corrupted": opponents,
-                                         "Seed": seed, "Ascension": ascension, "Offers": receipt["Offers"]})
+    verify_receipt(receipt, players, opponents, seed, ascension, saved=False, mode=mode)
+    write_json(artifact / "inputs.json", {"Players": players, "Corrupted": opponents, "Seed": seed,
+                                         "Ascension": ascension, "GameMode": mode, "Offers": receipt["Offers"]})
     save = json.loads((account / f"modded/profile{slot}/saves/current_run.save").read_text())
     record = {"Version": 1, "Worktree": str(ROOT), "Account": str(account), "Slot": slot,
               "Game": str(game), "GameFiles": game_identity(game), "Identity": save_identity(save),
@@ -702,11 +707,16 @@ def validate_preparation(artifact):
     inputs = json.loads((artifact / "inputs.json").read_text())
     native_receipt = json.loads((artifact / "native-receipt.json").read_text())
     verify_receipt(native_receipt, inputs["Players"], inputs["Corrupted"],
-                   inputs["Seed"], inputs["Ascension"], saved=False)
+                   inputs["Seed"], inputs["Ascension"], saved=False, mode=input_mode(inputs))
     if status["State"] == "ready" or status["Receipt"] is not None:
         verify_receipt(status["Receipt"], inputs["Players"], inputs["Corrupted"],
-                       inputs["Seed"], inputs["Ascension"], saved=True, profile=slot)
+                       inputs["Seed"], inputs["Ascension"], saved=True, profile=slot, mode=input_mode(inputs))
     return record, status, inputs
+
+
+def input_mode(inputs):
+    # Preparations recorded before Blitz support were always Standard runs.
+    return inputs.get("GameMode", "Standard")
 
 
 def check_pending_attempts(artifact, confirmed):
@@ -782,7 +792,7 @@ def launch_prepared(artifact, steam, timeout):
     attempt, receipt = dispatch(game, steam, artifact, slot, timeout=timeout)
     try:
         verify_receipt(receipt, inputs["Players"], inputs["Corrupted"], inputs["Seed"],
-                       inputs["Ascension"], saved=True, profile=slot)
+                       inputs["Ascension"], saved=True, profile=slot, mode=input_mode(inputs))
         if (receipt["Offers"] != inputs["Offers"] or
                 previous["Receipt"] and receipt["Offers"] != previous["Receipt"]["Offers"]):
             raise PlaytestFailure("Natural offers changed while resuming the existing playtest.", "receipt-assertion")
@@ -853,7 +863,7 @@ def recover(args):
                 raise ValueError("The save changed during restart. Do not launch; backups are preserved.")
             new_record = record_preparation(destination, account, slot, game, inputs["Players"],
                                             inputs["Corrupted"], inputs["Seed"], inputs["Ascension"],
-                                            parent=artifact)
+                                            parent=artifact, mode=input_mode(inputs))
             checkpoint(destination, new_record, state="prepared", receipt=status["Receipt"])
         artifact = destination
     with stages.run("steam-launch-and-receipt"):
@@ -871,6 +881,10 @@ def load(args):
             raise ValueError("Choose one to four builds for each role.")
         if len(players) > 1 and live:
             raise ValueError("Multiple local players require --fake-multiplayer.")
+        mode = "Blitz" if args.blitz else "Standard"
+        ascension = players[0]["ascension"] if args.ascension is None else args.ascension
+        if ascension > MAX_ASCENSION[mode]:
+            raise ValueError(f"{mode} allows Ascension 0 to {MAX_ASCENSION[mode]}; pass --ascension.")
         if args.fake_multiplayer and args.no_launch:
             raise ValueError("--fake-multiplayer is an unsaved runtime; use --no-launch without it to prepare files.")
         game = game_path(args.game)
@@ -894,10 +908,9 @@ def load(args):
                 target_before = hashes(account / f"modded/profile{args.slot}")
                 selection_before = sha(account / "modded/profile.save")
     seed = args.seed or uuid.uuid4().hex
-    ascension = players[0]["ascension"] if args.ascension is None else args.ascension
     with stages.run("native-template"):
         request = artifact / "template-request.json"
-        write_json(request, {"Seed": seed, "Ascension": ascension,
+        write_json(request, {"Seed": seed, "Ascension": ascension, "GameMode": mode,
                              "Characters": [deck["character"] for deck in players]})
         native = native_run(game, "--save-template", request, artifact)
         template = json.loads((native / "template.save").read_text())
@@ -909,11 +922,11 @@ def load(args):
         write_json(save_path, prepared)
         write_json(artifact / "request.json", {"Players": [str(Path(path).resolve()) for path in args.player],
                                              "Corrupted": [str(Path(path).resolve()) for path in args.corrupted],
-                                             "Seed": seed, "Ascension": ascension})
+                                             "Seed": seed, "Ascension": ascension, "GameMode": mode})
     if args.fake_multiplayer:
         with stages.run("visible-fixture"):
             result = native_run(game, "--save-input", save_path, artifact, visible=True,
-                                expected=(players, opponents, seed, ascension))
+                                expected=(players, opponents, seed, ascension, mode))
             if result:
                 raise ValueError(f"Fake multiplayer exited with code {result}. Inspect {artifact}.")
         return
@@ -923,7 +936,7 @@ def load(args):
             raise PlaytestFailure(f"The native save/encounter check did not finish. Inspect {verified}/game.log.",
                                   "native-receipt-missing")
         receipt = json.loads((verified / "ready.json").read_text())
-        verify_receipt(receipt, players, opponents, seed, ascension, saved=False)
+        verify_receipt(receipt, players, opponents, seed, ascension, saved=False, mode=mode)
         shutil.copyfile(verified / "verified.json", artifact / "verified.save")
         shutil.copyfile(verified / "ready.json", artifact / "native-receipt.json")
         if frozen != hashes(artifact / "mods") or original_game != game_identity(game):
@@ -938,7 +951,7 @@ def load(args):
             raise ValueError("The target profile changed during preparation. No profile was overwritten.")
         validated_save = json.loads((artifact / "verified.save").read_text())
         write_profile(account, args.slot, artifact, game, validated_save, replace=args.replace)
-        record_preparation(artifact, account, args.slot, game, players, opponents, seed, ascension)
+        record_preparation(artifact, account, args.slot, game, players, opponents, seed, ascension, mode=mode)
     if args.no_launch:
         print(f"Prepared Slot {args.slot}; live game not launched. Backup: {artifact / 'backup'}\n"
               f"Launch without preparing again: python3 scripts/setup-act4.py launch-only '{artifact}'")
@@ -969,6 +982,7 @@ def main():
     load_parser.add_argument("--no-launch", action="store_true", help="Write the solo save without launching the live game.")
     load_parser.add_argument("--seed")
     load_parser.add_argument("--ascension", type=int, choices=range(11))
+    load_parser.add_argument("--blitz", action="store_true", help="Compose a Blitz run (Ascension 0 to 5).")
     recovery_parsers = []
     for name in ("launch-only", "restart-existing-playtest"):
         command = commands.add_parser(name, help="Resume a versioned preparation without resetting its save.")

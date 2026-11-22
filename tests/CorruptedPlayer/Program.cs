@@ -40,20 +40,20 @@ string Json<T>(T value) => JsonSerializer.Serialize(value);
 CorruptedPlayerPlan Plan(params CardDescriptor[] cards) => planner.BuildPlan(State(cards), inputs);
 void Register(string id, Func<CardDescriptor, AdapterContext, AdapterResult> recipe) => registry.Register(new TestAdapter(id, recipe));
 
-foreach (int ascension in new[] { 0, 1, 7, 8, 9, 10 })
+foreach (bool tough in new[] { false, true })
 {
-    Test($"maximum HP scales from the original snapshot at A{ascension}", () =>
+    Test($"maximum HP scales from the original snapshot (Tough Enemies: {tough})", () =>
     {
-        Check(CorruptedPlayerHealth.CalculateMaxHp(80, ascension) == (ascension >= 8 ? 328 : 280));
-        Check(CorruptedPlayerHealth.CalculateMaxHp(81, ascension) == (ascension >= 8 ? 333 : 284));
-        Check(CorruptedPlayerHealth.CalculateMaxHp(1, ascension) == (ascension >= 8 ? 5 : 4));
+        Check(CorruptedPlayerHealth.CalculateMaxHp(80, tough) == (tough ? 328 : 280));
+        Check(CorruptedPlayerHealth.CalculateMaxHp(81, tough) == (tough ? 333 : 284));
+        Check(CorruptedPlayerHealth.CalculateMaxHp(1, tough) == (tough ? 5 : 4));
     });
 }
 Test("maximum HP scaling rejects nonpositive snapshot HP", () =>
 {
     foreach (int hp in new[] { 0, -1 })
     {
-        try { CorruptedPlayerHealth.CalculateMaxHp(hp, 8); }
+        try { CorruptedPlayerHealth.CalculateMaxHp(hp, true); }
         catch (ArgumentOutOfRangeException) { continue; }
         throw new InvalidOperationException("Invalid snapshot HP must not produce enemy HP.");
     }

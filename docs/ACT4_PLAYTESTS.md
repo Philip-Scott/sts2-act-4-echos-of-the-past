@@ -262,6 +262,12 @@ The first player's Ascension applies to the run unless `--ascension` overrides i
 `--seed` fixes the run seed. Otherwise the script generates one seed without
 searching Ancient offers.
 
+`--blitz` composes a Blitz run instead of a Standard one, with the Blitz Act 4
+map (Watcher, Rest, Shop, Corrupted Elite, Architect). Blitz allows Ascension 0
+to 5, so a deck above 5 needs `--ascension`. The receipt and recovery records
+carry the game mode and fail on a mismatch. It works with `--fake-multiplayer`,
+`--verify`, and `--no-launch`.
+
 Scripted runs preserve the YAML's exact arrival HP instead of applying The
 Watcher's automatic entry heal. This also applies when Continue reloads that
 Ancient. Normal runs keep their usual healing.
@@ -316,7 +322,8 @@ checked-in builds use 3 base energy. Defect uses 3 base orb slots; the others us
 
 Python does not reconstruct RNG streams, map serialization, or native run
 initialization. A small mod hook exports a fresh native Act 4 save in the existing
-isolated launcher, using the selected player characters, seed, and Ascension.
+isolated launcher, using the selected player characters, seed, Ascension, and
+game mode.
 Character-specific relic pools and native player fields therefore match the build.
 Python edits its loadouts and opponent snapshots, verifies the edited save in an
 isolated game, then writes the native-serialized result to the target profile.

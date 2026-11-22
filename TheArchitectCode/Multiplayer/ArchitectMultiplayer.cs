@@ -66,7 +66,7 @@ public static class ArchitectMultiplayer
             ArchitectRun.Get(state), state.Players.Select(player => player.NetId).ToArray(),
             net.NetId, host, state.Rng.Seed, state.Act is ArchitectAct,
             CorruptedPlayerStore.GetProfileUuid,
-            (profile, participants) => CorruptedPartyStore.Load(CorruptedPlayerStore.ProfileDirectory, profile, participants),
+            (profile, participants) => CorruptedPartyStore.Load(HistoryDirectory(state), profile, participants),
             ValidateContent,
             (packet, target) =>
             {
@@ -93,9 +93,12 @@ public static class ArchitectMultiplayer
         frozen.Validate(run.Players.Select(player => player.NetId).ToArray(), frozen.HostNetId);
         var members = frozen.Participants.Select(participant => new CorruptedPartyMember(participant.ProfileUuid,
             CorruptedPlayerSnapshot.Capture(run.Players.Single(player => player.NetId == participant.NetId)))).ToArray();
-        return CorruptedPartyStore.Commit(CorruptedPlayerStore.ProfileDirectory,
+        return CorruptedPartyStore.Commit(HistoryDirectory(run),
             CorruptedPlayerStore.GetProfileUuid(), frozen, outcome, members);
     }
+
+    private static string HistoryDirectory(IRunState run) =>
+        CorruptedPlayerStore.HistoryDirectory(CorruptedPlayerStore.HistoryFor(run.GameMode));
 
     private static void ValidateContent(FrozenCorruptedParty party)
     {

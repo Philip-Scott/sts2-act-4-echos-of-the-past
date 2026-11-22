@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased Changes
+
+Prepared for release; not yet published.
+
+- Blitz runs now continue to Act 4: The Watcher, a Rest Site, the Blitz Shop,
+  the Corrupted Player Elite when you have saved opponents, and the Architect.
+  Standard runs are unchanged.
+- Defeating the Act 3 boss in Blitz grants a Rare card choice and a potion.
+- Blitz keeps its own Corrupted Players, separate from other runs. The Blitz
+  lobby can view and reset them.
+- In Blitz, Corrupted Players gain more HP at Ascension 3 (Tough Enemies) and
+  Echo Shard at Ascension 4 (Deadly Enemies).
+- In Blitz, The Last Wish grants a random relic instead of 99 Gold.
+
 ## 1.5.3 Changes
 
 Released November 17, 2026 at 11:23 p.m. PST.

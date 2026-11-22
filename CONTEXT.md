@@ -32,6 +32,10 @@ _Avoid_: Bargain slot, guaranteed drawback
 An Architect Act entered when no compatible Corrupted Player Snapshot exists for the active profile or Successor Group, so the Corrupted Player is skipped.
 _Avoid_: First attempt, first run, empty lineage
 
+**Blitz History**:
+The separate set of Corrupted Player Snapshots and Successor Lineages used by Blitz runs. Every other game mode uses the standard history.
+_Avoid_: Blitz lineage, mode profile
+
 **Repeat Visit**:
 An Architect Act entered with a compatible Corrupted Player Snapshot or complete saved Successor Group, adding a separate Corrupted Player Elite before the Architect boss.
 _Avoid_: Rematch, second visit

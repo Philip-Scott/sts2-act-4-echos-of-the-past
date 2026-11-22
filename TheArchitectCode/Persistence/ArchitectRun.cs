@@ -47,13 +47,13 @@ public sealed partial class ArchitectRun
             reader => reader.ReadString());
     }
 
-    public void Enter()
+    public void Enter(CorruptedHistory history)
     {
         if (Entered)
             return;
         if (Origin != null)
             throw new InvalidOperationException("Multiplayer entry requires the host's synchronized party.");
-        EntrySnapshot = CorruptedPlayerStore.Load();
+        EntrySnapshot = CorruptedPlayerStore.Load(history);
         if (EntrySnapshot?.Snapshot?.ResolveCharacter() == null && EntrySnapshot != null)
         {
             MainFile.Logger.Warn("Previous Corrupted Player character is unavailable; using First Visit.");

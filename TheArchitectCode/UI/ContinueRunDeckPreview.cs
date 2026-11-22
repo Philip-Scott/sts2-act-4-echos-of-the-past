@@ -131,7 +131,8 @@ internal partial class ContinueRunDeckPreview : Control
                 throw new InvalidOperationException("The preview requires the lobby's host/client service.");
             synchronizer = new LobbyPreviewSynchronizer(new LobbyPreviewEnvironment(
                 net.NetId, host, CorruptedPlayerStore.GetProfileUuid,
-                (profile, members) => CorruptedPartyStore.Load(CorruptedPlayerStore.ProfileDirectory, profile, members),
+                (profile, members) => CorruptedPartyStore.Load(
+                    CorruptedPlayerStore.HistoryDirectory(CorruptedPlayerStore.HistoryFor(save.GameMode)), profile, members),
                 (packet, target) =>
                 {
                     // The saved group includes absent peers. Only connected peers can receive replies.

@@ -1,5 +1,7 @@
+using MegaCrit.Sts2.Core.Entities.Ascension;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Characters;
+using MegaCrit.Sts2.Core.Runs;
 
 namespace TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 
@@ -14,10 +16,7 @@ internal static class CorruptedPlayerBuffs
     internal static readonly ModelId DiscordantBow = PowerId("DISCORDANT_BOW_POWER");
     internal static readonly ModelId EchoShard = PowerId("ECHO_SHARD_POWER");
 
-    // Ascension 9 (Deadly Enemies).
-    internal const int EchoShardAscension = 9;
-
-    internal static IReadOnlyList<ModelId> For(CharacterModel character, int ascension)
+    internal static IReadOnlyList<ModelId> For(CharacterModel character, bool deadlyEnemies)
     {
         var buffs = new List<ModelId>();
         if (character switch
@@ -31,10 +30,19 @@ internal static class CorruptedPlayerBuffs
                 _ => null
             } is { } characterBuff)
             buffs.Add(characterBuff);
-        if (ascension >= EchoShardAscension)
+        if (deadlyEnemies)
             buffs.Add(EchoShard);
         return buffs;
     }
 
     private static ModelId PowerId(string entry) => new("POWER", "THEARCHITECT-" + entry);
+}
+
+// Scaling follows ascension effects, so Blitz levels map to the same effects as Standard ones.
+internal static class CorruptedAscension
+{
+    internal static bool Has(GameMode mode, int level, AscensionLevel effect) =>
+        new AscensionManager(mode, AscensionManager.ClampToMode(mode, level)).HasLevel(effect);
+
+    internal static bool Has(IRunState run, AscensionLevel effect) => Has(run.GameMode, run.AscensionLevel, effect);
 }

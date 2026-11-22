@@ -282,6 +282,22 @@ class ProfileTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "does not match"):
                 act4.verify_receipt({**receipt, **change}, [build], [build], "seed", 5, saved=False)
 
+    def test_receipt_game_mode_must_match_and_defaults_to_standard(self):
+        build = deck()
+        receipt = {"Saved": False, "Profile": None, "Seed": "seed", "Ascension": 5,
+                   "Visible": True, "Location": "CorruptedPlayer",
+                   "Players": [{"Character": build["character"], "Cards": 1, "Relics": 1, "Hp": 31,
+                                "MaxHp": 80, "Gold": 123, "MaxEnergy": 3, "BaseOrbSlotCount": 0}],
+                   "Opponents": [{"Character": build["character"], "Cards": 1, "MaxHp": 80,
+                                  "ContentHash": act4.snapshot(build)["ContentHash"]}],
+                   "Offers": ["a", "b", "c"]}
+        act4.verify_receipt(receipt, [build], [build], "seed", 5, saved=False)
+        act4.verify_receipt({**receipt, "GameMode": "Blitz"}, [build], [build], "seed", 5, saved=False, mode="Blitz")
+        for actual, expected in ((None, "Blitz"), ("Standard", "Blitz"), ("Blitz", "Standard")):
+            changed = receipt if actual is None else {**receipt, "GameMode": actual}
+            with self.subTest(actual=actual), self.assertRaisesRegex(ValueError, "does not match"):
+                act4.verify_receipt(changed, [build], [build], "seed", 5, saved=False, mode=expected)
+
     def test_linked_target_cannot_alias_source_slot(self):
         with tempfile.TemporaryDirectory() as directory:
             account = Path(directory)
@@ -470,7 +486,7 @@ class StartupTests(unittest.TestCase):
         load_args = SimpleNamespace(player=["deck"], corrupted=["deck"], fake_multiplayer=False,
                                     verify=False, no_launch=False, game=str(self.game), steam="/steam",
                                     data_root=str(self.root / "data"), account=None, slot=2,
-                                    replace=False, stop_game=True)
+                                    replace=False, stop_game=True, ascension=None, blitz=False)
         (self.account.parent / "456").mkdir()
         with patch.object(act4, "ARTIFACTS", self.root / "artifacts"), \
              patch.object(act4, "read_deck", return_value=deck()), \
@@ -545,7 +561,7 @@ class StartupTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Natural offers changed"):
                 act4.launch_prepared(self.artifact, "/steam", 30)
 
-    def test_full_no_launch_flow_keeps_both_native_checks_and_records_recoverable_state(self):
+    def load_no_launch(self, mode="Standard", build=None, **changes):
         def native(game, flag, source, artifact, **kwargs):
             output = artifact / flag.removeprefix("--")
             output.mkdir()
@@ -555,21 +571,26 @@ class StartupTests(unittest.TestCase):
             else:
                 act4.write_json(output / "verified.json", json.loads(source.read_text()))
                 act4.write_json(output / "ready.json",
-                                {**self.receipt(), "Saved": False, "Profile": None, "Location": "CorruptedPlayer"})
+                                {**self.receipt(), "Saved": False, "Profile": None, "Location": "CorruptedPlayer",
+                                 "GameMode": mode})
             return output
-        args = SimpleNamespace(player=["player"], corrupted=["opponent"], fake_multiplayer=False,
-                               verify=False, no_launch=True, game=str(self.game), steam=None,
-                               data_root=str(self.root / "data"), account=None, slot=2, seed="fixed",
-                               ascension=None, replace=False, stop_game=False, ready_timeout=30)
+        args = SimpleNamespace(**{**dict(player=["player"], corrupted=["opponent"], fake_multiplayer=False,
+                                         verify=False, no_launch=True, game=str(self.game), steam=None,
+                                         data_root=str(self.root / "data"), account=None, slot=2, seed="fixed",
+                                         ascension=None, replace=False, stop_game=False, ready_timeout=30,
+                                         blitz=False), **changes})
         with patch.object(act4, "ARTIFACTS", self.root / "artifacts"), \
-             patch.object(act4, "read_deck", return_value=deck()), \
+             patch.object(act4, "read_deck", return_value=build or deck()), \
              patch.object(act4.NATIVE, "private_preflight"), \
              patch.object(act4, "native_run", side_effect=native) as run, \
              patch.object(act4, "dispatch") as dispatch:
             act4.load(args)
-        self.assertEqual([call.args[1] for call in run.call_args_list], ["--save-template", "--save-input"])
         dispatch.assert_not_called()
-        artifact = next((self.root / "artifacts").glob("load-*"))
+        return run, next((self.root / "artifacts").glob("load-*"))
+
+    def test_full_no_launch_flow_keeps_both_native_checks_and_records_recoverable_state(self):
+        run, artifact = self.load_no_launch()
+        self.assertEqual([call.args[1] for call in run.call_args_list], ["--save-template", "--save-input"])
         record, status, _ = act4.validate_preparation(artifact)
         self.assertEqual(record["Verification"], "native")
         self.assertEqual(status["State"], "prepared")
@@ -577,6 +598,18 @@ class StartupTests(unittest.TestCase):
         self.assertTrue(all(stage["Status"] == "ok" for stage in stages))
         self.assertEqual(stages[0]["Stage"], "preflight")
         self.assertEqual(stages[-1]["Stage"], "backup-and-write-profile")
+
+    def test_blitz_requests_a_blitz_template_and_records_the_mode(self):
+        _, artifact = self.load_no_launch("Blitz", blitz=True)
+        self.assertEqual(json.loads((artifact / "template-request.json").read_text())["GameMode"], "Blitz")
+        _, _, inputs = act4.validate_preparation(artifact)
+        self.assertEqual(inputs["GameMode"], "Blitz")
+
+    def test_blitz_rejects_standard_only_ascension_before_native_work(self):
+        for build, changes in (({**deck(), "ascension": 6}, {}), (deck(), {"ascension": 6})):
+            with self.subTest(changes=changes), self.assertRaisesRegex(ValueError, "Blitz allows Ascension 0 to 5"):
+                self.load_no_launch("Blitz", build=build, blitz=True, **changes)
+        self.assertEqual(list((self.root / "artifacts").glob("load-*/template-request.json")), [])
 
     def test_restart_rechecks_save_after_stop_before_installing(self):
         self.prepare(ready=True)

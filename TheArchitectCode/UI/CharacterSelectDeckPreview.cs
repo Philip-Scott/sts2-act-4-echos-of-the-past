@@ -9,6 +9,7 @@ using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Nodes.Screens.Blitz;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using TheArchitect.TheArchitectCode.Multiplayer;
 using TheArchitect.TheArchitectCode.Persistence;
@@ -26,13 +27,18 @@ internal partial class CharacterSelectDeckPreview : Control
     private string? lastError;
     private bool stopped;
 
-    internal static void Attach(NCharacterSelectScreen screen, StartRunLobby lobby)
+    // The lobby can switch modes while open, so read the history on each use.
+    private CorruptedHistory History => CorruptedPlayerStore.HistoryFor(lobby.GameMode);
+    private string HistoryDirectory => CorruptedPlayerStore.HistoryDirectory(History);
+
+    // Standard and Blitz character select share the button layout this preview anchors to.
+    internal static void Attach(Control screen, StartRunLobby lobby)
     {
         Detach(screen);
         screen.AddChild(new CharacterSelectDeckPreview { Name = "ArchitectDeckPreview", lobby = lobby });
     }
 
-    internal static void Detach(NCharacterSelectScreen screen)
+    internal static void Detach(Control screen)
     {
         // Run startup can free the screen before CleanUpLobby resumes; _ExitTree already stopped the preview.
         if (!GodotObject.IsInstanceValid(screen))
@@ -83,7 +89,7 @@ internal partial class CharacterSelectDeckPreview : Control
             throw new InvalidOperationException("The preview requires the lobby's host/client service.");
         synchronizer = new LobbyPreviewSynchronizer(new LobbyPreviewEnvironment(
             net.NetId, host, CorruptedPlayerStore.GetProfileUuid,
-            (profile, members) => CorruptedPartyStore.Load(CorruptedPlayerStore.ProfileDirectory, profile, members),
+            (profile, members) => CorruptedPartyStore.Load(HistoryDirectory, profile, members),
             (packet, target) =>
             {
                 var message = new CustomMessageWrapper { Message = new LobbyDeckPreviewMessage { Packet = packet } };
@@ -104,7 +110,7 @@ internal partial class CharacterSelectDeckPreview : Control
     {
         try
         {
-            var snapshot = CorruptedPlayerStore.Load()?.Snapshot;
+            var snapshot = CorruptedPlayerStore.Load(History)?.Snapshot;
             if (snapshot?.ResolveCharacter() is not null)
                 SetPreview([snapshot], null);
             else
@@ -134,12 +140,12 @@ internal partial class CharacterSelectDeckPreview : Control
     {
         if (synchronizer == null)
         {
-            CorruptedPlayerStore.Delete();
+            CorruptedPlayerStore.Delete(History);
             LoadSingleplayer();
         }
         else
             synchronizer.ResetLineage((host, profiles) =>
-                CorruptedPartyStore.Delete(CorruptedPlayerStore.ProfileDirectory, host, profiles));
+                CorruptedPartyStore.Delete(HistoryDirectory, host, profiles));
         return Task.CompletedTask;
     });
 
@@ -227,4 +233,17 @@ internal static class CharacterSelectDeckPreviewPatch
 internal static class CharacterSelectDeckPreviewCleanupPatch
 {
     private static void Prefix(NCharacterSelectScreen __instance) => CharacterSelectDeckPreview.Detach(__instance);
+}
+
+[HarmonyPatch(typeof(NBlitzScreen), "AfterInitialized")]
+internal static class BlitzDeckPreviewPatch
+{
+    private static void Postfix(NBlitzScreen __instance, StartRunLobby ____lobby) =>
+        CharacterSelectDeckPreview.Attach(__instance, ____lobby);
+}
+
+[HarmonyPatch(typeof(NBlitzScreen), "CleanUpLobby")]
+internal static class BlitzDeckPreviewCleanupPatch
+{
+    private static void Prefix(NBlitzScreen __instance) => CharacterSelectDeckPreview.Detach(__instance);
 }

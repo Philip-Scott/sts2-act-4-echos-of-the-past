@@ -37,8 +37,10 @@ public sealed class ArchitectAct : CustomActModel, ILocalizationProvider
     public override Color MapBgColor => ModelDb.Act<Glory>().MapBgColor;
     public override Color MapTraveledColor => new("292929");
     public override Color MapUntraveledColor => new("555555");
-    protected override ActMap CustomCreateMap(RunState runState, bool replaceTreasureWithElites) =>
-        new ArchitectMap(Ancient != null, ArchitectRun.Get(runState).EncounterSnapshots.Count > 0);
+    protected override ActMap CustomCreateMap(RunState runState, bool replaceTreasureWithElites) => CreateLayout(runState);
+
+    internal ArchitectMap CreateLayout(IRunState runState) =>
+        new(Ancient != null, ArchitectRun.Get(runState).EncounterSnapshots.Count > 0);
 
     public void InitializeRooms()
     {

@@ -2,12 +2,14 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Entities.Ascension;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Models.Monsters;
 using MegaCrit.Sts2.Core.Models.Powers;
+using MegaCrit.Sts2.Core.Runs;
 using TheArchitect.TheArchitectCode.CorruptedPlayerCombat;
 using TheArchitect.TheArchitectCode.Powers;
 
@@ -79,25 +81,39 @@ internal static class CorruptedPlayerBuffTests
             ];
             foreach (var (character, buff) in expected)
             {
-                var buffs = CorruptedPlayerBuffs.For(character, 8);
+                var buffs = CorruptedPlayerBuffs.For(character, false);
                 check(buffs.SequenceEqual([buff]), $"{character.GetType().Name}: {string.Join(",", buffs)}");
             }
         });
 
-        test("Corruption buffs: Ascension 9+ adds Echo Shard after the character buff", () =>
+        test("Corruption buffs: Deadly Enemies adds Echo Shard after the character buff", () =>
         {
-            check(CorruptedPlayerBuffs.For(ModelDb.Character<Ironclad>(), 9)
-                .SequenceEqual([CorruptedPlayerBuffs.SingeingIchor, CorruptedPlayerBuffs.EchoShard]), "A9 Ironclad");
-            check(CorruptedPlayerBuffs.For(ModelDb.Character<Defect>(), 10)
-                .SequenceEqual([CorruptedPlayerBuffs.OvervoltedMatrix, CorruptedPlayerBuffs.EchoShard]), "A10 Defect");
-            check(!CorruptedPlayerBuffs.For(ModelDb.Character<Silent>(), 0).Contains(CorruptedPlayerBuffs.EchoShard), "A0 Silent");
+            check(CorruptedPlayerBuffs.For(ModelDb.Character<Ironclad>(), true)
+                .SequenceEqual([CorruptedPlayerBuffs.SingeingIchor, CorruptedPlayerBuffs.EchoShard]), "Deadly Ironclad");
+            check(!CorruptedPlayerBuffs.For(ModelDb.Character<Silent>(), false).Contains(CorruptedPlayerBuffs.EchoShard),
+                "Silent without Deadly Enemies");
         });
 
-        test("Corruption buffs: characters without a buff still receive Echo Shard at Ascension 9", () =>
+        test("Corrupted ascension: Standard A8/A9 and Blitz A3/A4 enable Tough and Deadly Enemies", () =>
         {
-            check(CorruptedPlayerBuffs.For(Unmapped(), 8).Count == 0, "No character buff below A9");
-            check(CorruptedPlayerBuffs.For(Unmapped(), 9).SequenceEqual([CorruptedPlayerBuffs.EchoShard]),
-                "Only Echo Shard at A9");
+            foreach (var (mode, level, tough, deadly) in new[]
+                     {
+                         (GameMode.Standard, 7, false, false), (GameMode.Standard, 8, true, false),
+                         (GameMode.Standard, 9, true, true), (GameMode.Blitz, 2, false, false),
+                         (GameMode.Blitz, 3, true, false), (GameMode.Blitz, 4, true, true),
+                         (GameMode.Blitz, 10, true, true)
+                     })
+            {
+                check(CorruptedAscension.Has(mode, level, AscensionLevel.ToughEnemies) == tough, $"{mode} A{level} tough");
+                check(CorruptedAscension.Has(mode, level, AscensionLevel.DeadlyEnemies) == deadly, $"{mode} A{level} deadly");
+            }
+        });
+
+        test("Corruption buffs: characters without a buff still receive Echo Shard with Deadly Enemies", () =>
+        {
+            check(CorruptedPlayerBuffs.For(Unmapped(), false).Count == 0, "No buff without Deadly Enemies");
+            check(CorruptedPlayerBuffs.For(Unmapped(), true).SequenceEqual([CorruptedPlayerBuffs.EchoShard]),
+                "Only Echo Shard with Deadly Enemies");
         });
 
         test("Corruption buffs: IDs match their BaseLib power classes and have localized text and icons", () =>
