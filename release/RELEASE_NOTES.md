@@ -5,7 +5,7 @@
 This update from **1.5.3** adds Blitz support: Blitz runs now continue to
 the Architect Act.
 It still requires Slay the Spire 2 public-beta **v0.113.0**.
-Prepared for release; not yet published.
+Released November 21, 2026 at 7:51 p.m. PST.
 
 ## What's new
 

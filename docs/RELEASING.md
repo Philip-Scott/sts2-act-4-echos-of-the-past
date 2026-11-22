@@ -1,4 +1,26 @@
-# Publishing 1.5.3 - Act 4: Echos of the Past
+# Publishing 1.6.0 - Act 4: Echos of the Past
+
+## Published 1.6.0
+
+The author approved publication on November 21, 2026. Steam accepted the
+content-only update to item **3799307965** at **7:51 p.m. PST**. The submitted
+runtime files exactly match the prepared `artifacts/releases/v1.6.0/` bundle
+and its manual-install ZIP. The preparation checkpoint is `9222c13`, and the
+release requires public-beta **v0.113.0** and BaseLib **3.4.8**.
+
+This release adds Blitz support: Blitz runs continue to the Architect Act, with
+a separate Blitz Corrupted Player history. The feature is in `95d1c06`.
+
+The upload workspace `artifacts/releases/v1.6.0-steam-content-only/` contains
+only the three runtime files in `content/`, `mod_id.txt` and `workshop.json`
+with `changeNote`, plus upload evidence and `publication-receipt.json`.
+The published change note matches the submitted note. The title, description,
+thumbnail and screenshots are unchanged. No push, tag or GitHub Release was made.
+Do not rerun the uploader without approval for another update.
+
+The C# suites passed: 161 Corrupted Player tests and 194 Architect tests, plus
+85 Python tests. The author played one Blitz run through Act 4 in-game.
+Networked co-op Blitz was not tested.
 
 ## Published 1.5.3
 

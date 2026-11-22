@@ -2,7 +2,7 @@
 
 ## 1.6.0 Changes
 
-Prepared for release; not yet published.
+Released November 21, 2026 at 7:51 p.m. PST.
 
 - Blitz runs now continue to Act 4: The Watcher, a Rest Site, the Blitz Shop,
   the Corrupted Player Elite when you have saved opponents, and the Architect.
