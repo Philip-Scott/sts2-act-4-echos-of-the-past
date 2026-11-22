@@ -5,7 +5,7 @@
 This update from **1.5.2** addresses a multiplayer hang involving the Corrupted
 Defect.
 It still requires Slay the Spire 2 public-beta **v0.113.0**.
-Prepared for release; not yet published.
+Released November 17, 2026 at 11:23 p.m. PST.
 
 ## What's new
 

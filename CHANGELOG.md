@@ -2,7 +2,7 @@
 
 ## 1.5.3 Changes
 
-Prepared for release; not yet published.
+Released November 17, 2026 at 11:23 p.m. PST.
 
 - Attempt to fix the multiplayer hang regarding the OvervoltedMatrix power, and
   how it interacted with other mods.

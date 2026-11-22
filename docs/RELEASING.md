@@ -1,4 +1,30 @@
-# Publishing 1.5.2 - Act 4: Echos of the Past
+# Publishing 1.5.3 - Act 4: Echos of the Past
+
+## Published 1.5.3
+
+The author approved publication on November 17, 2026. Steam accepted the
+content-only update to item **3799307965** at **11:23:36 p.m. PST**. The published
+runtime files exactly match the prepared `artifacts/releases/v1.5.3/` bundle
+and its manual-install ZIP. The preparation checkpoint is `7f635da`, and the
+release requires public-beta **v0.113.0** and BaseLib **3.4.8**.
+
+This release fixes the Corrupted Defect's Overvolted Matrix orbs crashing the
+multiplayer turn loop when another mod also patches the orb display, and run
+loading or combat setup failing when a card carries a modifier that drops
+itself from copies. The fixes are in `3105572`.
+
+The upload workspace `artifacts/releases/v1.5.3-steam-content-only/` contains
+only the three runtime files in `content/`, `mod_id.txt` and `workshop.json`
+with `changeNote`, plus upload evidence and `publication-receipt.json`.
+The published change note matches the submitted note. The title, description,
+thumbnail and screenshots are unchanged. No push, tag or GitHub Release was made.
+Do not rerun the uploader without approval for another update.
+
+The C# suites passed: 165 Corrupted Player tests and 193 Architect tests.
+Isolated native playtests on v0.113.1 passed for a Corrupted Defect elite opening
+(solo and a simulated two-player party), encounters, the Ancient and the ending.
+Other native scenarios fail identically with and without these fixes. Real
+networked co-op was not tested.
 
 ## Published 1.5.2
 
