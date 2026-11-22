@@ -2,15 +2,22 @@
 
 **Your past is the final boss.**
 
-This update from **1.5.2** addresses a multiplayer hang involving the Corrupted
-Defect.
+This update from **1.5.3** adds Blitz support: Blitz runs now continue to
+the Architect Act.
 It still requires Slay the Spire 2 public-beta **v0.113.0**.
-Released November 17, 2026 at 11:23 p.m. PST.
+Prepared for release; not yet published.
 
 ## What's new
 
-- Attempt to fix the multiplayer hang regarding the OvervoltedMatrix power, and
-  how it interacted with other mods.
+- Blitz runs now continue to Act 4: The Watcher, a Rest Site, the Blitz Shop,
+  the Corrupted Player Elite when you have saved opponents, and the Architect.
+  Standard runs are unchanged.
+- Defeating the Act 3 boss in Blitz grants a Rare card choice and a potion.
+- Blitz keeps its own Corrupted Players, separate from other runs. The Blitz
+  lobby can view and reset them.
+- In Blitz, Corrupted Players gain more HP at Ascension 3 (Tough Enemies) and
+  Echo Shard at Ascension 4 (Deadly Enemies).
+- In Blitz, The Last Wish grants a random relic instead of 99 Gold.
 
 The internal ID, runtime filenames and installation folder remain `TheArchitect`.
 Update the existing installation; do not install this as a second mod.
@@ -32,10 +39,10 @@ layouts are explicitly Unsupported. Not all vanilla or modded combinations are
 audited. Lineages are local, not Steam Cloud data. Changing hosts during an ongoing run is unsupported.
 Avoid force-closing during the result transition; full crash-transaction recovery
 is still tracked in issue #12.
-The new binding-circle animation has not been performance-benchmarked on
-lower-end hardware. The multiplayer fix was verified in isolated single-player
-and simulated-party playtests; real networked co-op was not tested.
+The binding-circle animation has not been performance-benchmarked on
+lower-end hardware. Blitz support was verified by automated tests only; it has
+not yet been played in-game, solo or in co-op.
 
-Use `TheArchitect-v1.5.3.zip` for manual installation, not GitHub's source archives.
+Use `TheArchitect-v1.6.0.zip` for manual installation, not GitHub's source archives.
 Extract its `TheArchitect` folder into the game's `mods` folder with the game
 closed. See `INSTALL.md` for details and `SHA256SUMS` for file hashes.

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased Changes
+## 1.6.0 Changes
 
 Prepared for release; not yet published.
 

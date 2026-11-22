@@ -1,5 +1,7 @@
 {
   "title": "Act 4: Echos of the Past",
-  "changeNote": "## 1.5.3 Changes\n\n- Attempt to fix the multiplayer hang regarding the OvervoltedMatrix power, and how it interacted with other mods.\n",
-  "dependencies": [3737335127]
+  "changeNote": "## 1.6.0 Changes\n\n- Blitz runs now continue to Act 4: The Watcher, a Rest Site, the Blitz Shop, the Corrupted Player Elite when you have saved opponents, and the Architect. Standard runs are unchanged.\n- Defeating the Act 3 boss in Blitz grants a Rare card choice and a potion.\n- Blitz keeps its own Corrupted Players, separate from other runs. The Blitz lobby can view and reset them.\n- In Blitz, Corrupted Players gain more HP at Ascension 3 (Tough Enemies) and Echo Shard at Ascension 4 (Deadly Enemies).\n- In Blitz, The Last Wish grants a random relic instead of 99 Gold.\n",
+  "dependencies": [
+    3737335127
+  ]
 }
