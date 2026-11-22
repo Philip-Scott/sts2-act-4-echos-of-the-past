@@ -40,8 +40,8 @@ audited. Lineages are local, not Steam Cloud data. Changing hosts during an ongo
 Avoid force-closing during the result transition; full crash-transaction recovery
 is still tracked in issue #12.
 The binding-circle animation has not been performance-benchmarked on
-lower-end hardware. Blitz support was verified by automated tests only; it has
-not yet been played in-game, solo or in co-op.
+lower-end hardware. Blitz support was verified by automated tests and one
+in-game Blitz run; networked co-op Blitz was not tested.
 
 Use `TheArchitect-v1.6.0.zip` for manual installation, not GitHub's source archives.
 Extract its `TheArchitect` folder into the game's `mods` folder with the game
